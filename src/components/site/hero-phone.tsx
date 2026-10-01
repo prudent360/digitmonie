@@ -6,7 +6,7 @@ import { CountUp } from "./count-up";
 function Floater({ className, delay, children }: { className: string; delay: number; children: React.ReactNode }) {
   return (
     <div className={`pop-in absolute z-20 ${className}`} style={{ animationDelay: `${delay}ms` }}>
-      <div className="animate-float rounded-2xl bg-white p-3 shadow-[0_24px_50px_-20px_rgba(4,19,47,.55)] ring-1 ring-black/5" style={{ animationDelay: `${delay + 400}ms` }}>
+      <div className="animate-float rounded-[5px] bg-white p-3 shadow-[0_24px_50px_-20px_rgba(4,19,47,.55)] ring-1 ring-black/5" style={{ animationDelay: `${delay + 400}ms` }}>
         {children}
       </div>
     </div>
@@ -24,7 +24,7 @@ export function HeroPhone() {
     <div className="relative mx-auto h-[560px] w-full max-w-[460px]">
       {/* Glow and the gold stripe echo behind the phone */}
       <div className="absolute left-1/2 top-1/2 size-[420px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-400/40 blur-3xl" />
-      <div className="absolute -right-10 bottom-24 h-16 w-[380px] -rotate-[38deg] rounded-full bg-gold/90" />
+      <div className="absolute -right-10 bottom-24 h-16 w-[380px] -rotate-[38deg] bg-gold/90" />
 
       {/* Phone */}
       <div className="rise-in absolute left-1/2 top-2 z-10 w-[270px] -translate-x-1/2 rounded-[44px] bg-brand-950 p-2.5 shadow-[0_50px_100px_-30px_rgba(0,0,0,.6)]" style={{ animationDelay: "150ms" }}>
@@ -50,7 +50,7 @@ export function HeroPhone() {
           </div>
 
           {/* Balance card */}
-          <div className="gold-corner diamond-pattern relative mx-4 mt-3 rounded-2xl bg-brand p-4 text-white">
+          <div className="gold-corner diamond-pattern relative mx-4 mt-3 rounded-[5px] bg-brand p-4 text-white">
             <div className="flex items-center justify-between">
               <p className="text-[9px] font-medium text-white/70">Total balance</p>
               <LogoMark inverted className="size-5" />
@@ -109,7 +109,7 @@ export function HeroPhone() {
         </div>
       </div>
 
-      <Floater className="-left-2 top-6 sm:-left-10" delay={1100}>
+      <Floater className="-left-2 top-0 sm:-left-20" delay={1100}>
         <div className="flex items-center gap-2.5">
           <span className="flex size-9 items-center justify-center rounded-full bg-success-soft text-success"><CheckIcon className="size-4" /></span>
           <div>

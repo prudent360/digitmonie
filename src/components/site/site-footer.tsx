@@ -32,7 +32,7 @@ export function SiteFooter() {
           ))}
         </div>
         <div className="mt-14 border-t border-white/10 pt-8 text-xs leading-relaxed text-white/50">
-          <p>DigitMonie is a financial technology company. Banking services are provided by licensed partner institutions. Deposits are insured by the NDIC up to the applicable limit. Investments carry risk; past returns do not guarantee future performance.</p>
+          <p>DigitMonie is licensed by the Federal Competition and Consumer Protection Commission (FCCPC) as a digital lender. Banking services are provided by licensed partner institutions. Deposits are insured by the NDIC up to the applicable limit. Investments carry risk; past returns do not guarantee future performance.</p>
           <p className="mt-3">© {new Date().getFullYear()} DigitMonie. All rights reserved.</p>
         </div>
       </div>

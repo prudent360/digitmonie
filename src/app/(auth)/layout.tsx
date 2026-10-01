@@ -10,7 +10,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <LogoMark inverted className="size-14" />
           <h2 className="mt-8 max-w-md font-display text-4xl font-extrabold leading-tight">Simple Money.<br />Bigger Possibilities.</h2>
           <ul className="mt-8 space-y-3 text-white/80">
-            {["Earn up to 21% p.a. on investments", "Loans in minutes, up to ₦50m", "NDIC-insured partner banks"].map((t) => (
+            {["Earn up to 21% p.a. on investments", "Loans in minutes, up to ₦50m", "Licensed by the FCCPC"].map((t) => (
               <li key={t} className="flex items-center gap-3"><span className="flex size-6 items-center justify-center rounded-full bg-gold text-ink"><CheckIcon className="size-3.5" /></span>{t}</li>
             ))}
           </ul>

@@ -9,8 +9,8 @@ const NAV = [
   { href: "/#save", label: "Save" },
   { href: "/#invest", label: "Invest" },
   { href: "/#borrow", label: "Borrow" },
+  { href: "/#how-it-works", label: "How it works" },
   { href: "/#security", label: "Security" },
-  { href: "/#faq", label: "Help" },
 ];
 
 /** Sits transparent over the blue hero, then turns solid white once the page scrolls. */
@@ -34,17 +34,17 @@ export function SiteHeader() {
 
         <nav className="hidden items-center gap-1 lg:flex" aria-label="Main">
           {NAV.map((item) => (
-            <a key={item.href} href={item.href} className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${solid ? "text-body hover:bg-brand-50 hover:text-brand" : "text-white/85 hover:bg-white/10 hover:text-white"}`}>
+            <a key={item.href} href={item.href} className={`rounded-[5px] px-4 py-2 text-sm font-semibold transition-colors ${solid ? "text-body hover:bg-brand-50 hover:text-brand" : "text-white/85 hover:bg-white/10 hover:text-white"}`}>
               {item.label}
             </a>
           ))}
         </nav>
 
         <div className="hidden items-center gap-2 lg:flex">
-          <Link href="/login" className={`rounded-full px-5 py-2.5 text-sm font-semibold transition-colors ${solid ? "text-brand hover:bg-brand-50" : "text-white hover:bg-white/10"}`}>
+          <Link href="/login" className={`rounded-[5px] px-5 py-2.5 text-sm font-semibold transition-colors ${solid ? "text-brand hover:bg-brand-50" : "text-white hover:bg-white/10"}`}>
             Log in
           </Link>
-          <Link href="/register" className={`rounded-full px-5 py-2.5 text-sm font-bold transition-all hover:-translate-y-0.5 ${solid ? "bg-brand text-white shadow-[0_10px_24px_-10px_rgba(1,80,200,.7)] hover:bg-brand-600" : "bg-gold text-ink hover:bg-gold-600"}`}>
+          <Link href="/register" className={`rounded-[5px] px-5 py-2.5 text-sm font-bold transition-all hover:-translate-y-0.5 ${solid ? "bg-brand text-white shadow-[0_10px_24px_-10px_rgba(1,80,200,.7)] hover:bg-brand-600" : "bg-gold text-ink hover:bg-gold-600"}`}>
             Open free account
           </Link>
         </div>
@@ -64,8 +64,8 @@ export function SiteHeader() {
             ))}
           </nav>
           <div className="mt-5 grid grid-cols-2 gap-3">
-            <Link href="/login" className="rounded-full border border-line py-3 text-center text-sm font-semibold text-brand">Log in</Link>
-            <Link href="/register" className="rounded-full bg-brand py-3 text-center text-sm font-bold text-white">Open account</Link>
+            <Link href="/login" className="rounded-[5px] border border-line py-3 text-center text-sm font-semibold text-brand">Log in</Link>
+            <Link href="/register" className="rounded-[5px] bg-brand py-3 text-center text-sm font-bold text-white">Open account</Link>
           </div>
         </div>
       )}
