@@ -1,0 +1,150 @@
+@import "tailwindcss";
+
+/* DigitMonie brand: Primary Blue #0150C8, Accent Gold #F0CA56, White. */
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
+
+  --color-brand-50: #eef4ff;
+  --color-brand-100: #dbe7fe;
+  --color-brand-200: #b6cefc;
+  --color-brand-300: #7fa8f5;
+  --color-brand-400: #3c7ae6;
+  --color-brand: #0150c8;
+  --color-brand-600: #0146b0;
+  --color-brand-700: #013b94;
+  --color-brand-800: #032f73;
+  --color-brand-900: #061f4d;
+  --color-brand-950: #04132f;
+
+  --color-gold-50: #fdf8e7;
+  --color-gold-100: #fbefc6;
+  --color-gold: #f0ca56;
+  --color-gold-600: #d9ad2a;
+  --color-gold-700: #a9821a;
+
+  --color-ink: #0b1733;
+  --color-body: #3b4865;
+  --color-muted: #6b7794;
+  --color-line: #e4e9f2;
+  --color-canvas: #f4f7fc;
+
+  --color-success: #0f9d6b;
+  --color-success-soft: #e3f6ee;
+  --color-danger: #d93f3f;
+  --color-danger-soft: #fdeaea;
+  --color-warning: #c27c00;
+  --color-warning-soft: #fdf3dc;
+
+  /* Chart series, validated for colour-vision deficiency (adjacent pairs). */
+  --color-series-1: #0150c8;
+  --color-series-2: #e0a800;
+  --color-series-3: #14a37f;
+  --color-series-4: #7c5cff;
+
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-marquee: marquee 40s linear infinite;
+}
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  body { background: #fff; color: var(--color-ink); font-family: var(--font-sans); }
+  h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.02em; }
+  ::selection { background: var(--color-gold); color: var(--color-ink); }
+}
+
+/* The diamond motif from the brand stationery, as a repeatable background. */
+.diamond-pattern {
+  background-image:
+    linear-gradient(45deg, rgba(255,255,255,.06) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(255,255,255,.06) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(255,255,255,.06) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(255,255,255,.06) 75%);
+  background-size: 56px 56px;
+  background-position: 0 0, 0 28px, 28px -28px, -28px 0;
+}
+
+/* The diagonal gold stripe in the corner of brand cards. */
+.gold-corner { position: relative; overflow: hidden; }
+.gold-corner::after {
+  content: "";
+  position: absolute;
+  right: -40px;
+  bottom: -40px;
+  width: 160px;
+  height: 60px;
+  background: var(--color-gold);
+  transform: rotate(-38deg);
+  transform-origin: center;
+  pointer-events: none;
+}
+
+/* Scroll reveal, driven by <Reveal>. */
+.reveal { opacity: 0; transform: translateY(24px); transition: opacity .7s cubic-bezier(.2,.7,.2,1), transform .7s cubic-bezier(.2,.7,.2,1); }
+.reveal.is-visible { opacity: 1; transform: none; }
+
+.rise-in { animation: rise-in .8s cubic-bezier(.2,.7,.2,1) both; }
+.pop-in { animation: pop-in .7s cubic-bezier(.2,.9,.3,1.2) both; }
+.page-in { animation: rise-in .45s ease-out both; }
+.draw-line { stroke-dasharray: 600; stroke-dashoffset: 600; animation: draw 2s ease-out .4s forwards; }
+.grow-x { transform-origin: left; animation: grow-x 1.2s cubic-bezier(.2,.7,.2,1) both; }
+.grow-y { transform-origin: bottom; transform-box: fill-box; animation: grow-y .9s cubic-bezier(.2,.7,.2,1) both; }
+
+@keyframes rise-in { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+@keyframes pop-in { from { opacity: 0; transform: translateY(16px) scale(.9); } to { opacity: 1; transform: none; } }
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+@keyframes grow-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes grow-y { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes pulse-ring { 0% { transform: scale(.8); opacity: .7; } 100% { transform: scale(2.2); opacity: 0; } }
+.pulse-ring { animation: pulse-ring 2s ease-out infinite; }
+
+/* Landing "how it works" showcase: the active step's bar fills, then the next scene floats in. */
+@keyframes scene-in { from { opacity: 0; transform: translateY(14px) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes step-progress { from { width: 0; } to { width: 100%; } }
+@keyframes showcase-float { from { opacity: 0; transform: translateY(14px) scale(.92); } to { opacity: 1; transform: none; } }
+@keyframes showcase-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+@keyframes showcase-ring { from { stroke-dashoffset: 94.2; } to { stroke-dashoffset: var(--ring-to, 0); } }
+@keyframes showcase-row { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: none; } }
+.scene-in { animation: scene-in .55s cubic-bezier(.2,.8,.2,1) both; }
+.step-progress { animation: step-progress 5.5s linear both; }
+.showcase-float { opacity: 0; animation: showcase-float .6s cubic-bezier(.2,.8,.2,1) both; }
+.showcase-bob { animation: showcase-bob 4s ease-in-out infinite; }
+.showcase-fill { transform-origin: left; animation: grow-x 1.1s cubic-bezier(.2,.8,.2,1) .25s both; }
+.showcase-ring { stroke-dashoffset: var(--ring-to, 0); animation: showcase-ring 1.3s cubic-bezier(.2,.8,.2,1) .2s both; }
+.showcase-rows > * { animation: showcase-row .45s ease-out both; }
+.showcase-rows > :nth-child(2) { animation-delay: .1s; }
+.showcase-rows > :nth-child(3) { animation-delay: .2s; }
+.showcase-rows > :nth-child(4) { animation-delay: .3s; }
+
+/* Range inputs in the calculator. */
+input[type="range"].range {
+  -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 999px;
+  background: linear-gradient(to right, var(--color-brand) var(--fill, 50%), var(--color-line) var(--fill, 50%));
+  outline: none;
+}
+input[type="range"].range::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 22px; height: 22px; border-radius: 999px; background: #fff;
+  border: 6px solid var(--color-brand); box-shadow: 0 4px 12px rgba(1,80,200,.35); cursor: pointer;
+}
+input[type="range"].range::-moz-range-thumb {
+  width: 12px; height: 12px; border-radius: 999px; background: #fff;
+  border: 6px solid var(--color-brand); box-shadow: 0 4px 12px rgba(1,80,200,.35); cursor: pointer;
+}
+
+details > summary { list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details[open] .faq-icon { transform: rotate(45deg); }
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  .reveal { opacity: 1; transform: none; }
+  .draw-line { stroke-dashoffset: 0; }
+  /* No auto-advance: the step bar sits full and steps change only on click. */
+  .step-progress { animation: none !important; width: 100%; }
+  .showcase-float { opacity: 1; }
+}
