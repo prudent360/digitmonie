@@ -84,6 +84,10 @@ Customers verify in three CBN tiers at **Verify identity** (`/dashboard/verify`)
 
 Every payout and repayment posts a balanced double-entry journal (`src/lib/ledger.ts`): cash accounts per provider, loans receivable, interest, fee and late-fee income. Console → Money shows the Flutterwave balance, payouts, repayments, payouts needing attention and the trial balance.
 
+## Branding
+
+Console → Settings → **Branding**: upload a logo for light backgrounds, a logo for dark/blue backgrounds and a favicon (PNG/WebP/JPG, max 1 MB; borders are trimmed automatically). They replace the built-in mark on the website, sign-in, the app and console sidebars, and email headers. Uploads go to Vercel Blob in production (connect a Blob store) and `.data/uploads` locally.
+
 ## Settings (Console → Settings)
 
 Administrators (`settings.manage`) control, without a redeploy:
