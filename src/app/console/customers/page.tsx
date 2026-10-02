@@ -3,14 +3,13 @@ import { DownloadIcon, FilterIcon } from "@/components/icons";
 import { Avatar, Badge, Card, PageHeader, StatTile, StatusBadge, Table, buttonSecondary } from "@/components/ui";
 import { formatDate, formatNaira, formatNumber } from "@/lib/format";
 import { consoleKpis, customers } from "@/lib/mock-data";
-import { can } from "@/lib/roles";
-import { requirePermission } from "@/lib/session";
+import { can, requirePermission } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Customers" };
 
 export default async function CustomersPage() {
-  const session = await requirePermission("users.view");
-  const canManage = can(session.role, "users.manage");
+  const user = await requirePermission("users.view");
+  const canManage = can(user, "users.manage");
 
   return (
     <div className="space-y-6">

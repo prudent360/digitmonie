@@ -4,20 +4,29 @@ import { AreaChart, GroupedBars } from "@/components/charts/charts";
 import { AlertIcon, ChartIcon, IdCardIcon, LandmarkIcon, TrendUpIcon, UsersIcon } from "@/components/icons";
 import { Avatar, Badge, Card, CardHeader, PageHeader, StatTile, StatusBadge } from "@/components/ui";
 import { formatCompactNaira, formatDate, formatNaira, formatNumber } from "@/lib/format";
-import { auditLog, consoleKpis, disbursements, kycQueue, loanApplications, platformTransactions, signups } from "@/lib/mock-data";
-import { ROLE_LABELS, can } from "@/lib/roles";
-import { requirePermission } from "@/lib/session";
+import { consoleKpis, disbursements, kycQueue, loanApplications, platformTransactions, signups } from "@/lib/mock-data";
+import { listAudit } from "@/lib/audit-queries";
+import { can, requirePermission } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Console" };
 
-export default async function ConsoleOverview() {
-  const session = await requirePermission("console.access");
+export default async function ConsoleOverview({ searchParams }: { searchParams: Promise<{ denied?: string }> }) {
+  const { denied } = await searchParams;
+  const user = await requirePermission("console.access");
+  const showAudit = can(user, "audit.view");
+  const audit = showAudit ? (await listAudit({ limit: 5 })).rows : [];
   const flagged = platformTransactions.filter((t) => t.flagged);
   const pendingLoans = loanApplications.filter((l) => l.status === "pending");
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Operations overview" subtitle={`Signed in as ${ROLE_LABELS[session.role]} · ${formatDate(new Date().toISOString(), { weekday: "long", day: "numeric", month: "long" })}`} actions={<Badge tone="success" dot>All systems operational</Badge>} />
+      <PageHeader title="Operations overview" subtitle={`Signed in as ${user.role.name} · ${formatDate(new Date().toISOString(), { weekday: "long", day: "numeric", month: "long" })}`} actions={<Badge tone="success" dot>All systems operational</Badge>} />
+
+      {denied && (
+        <p role="status" className="rounded-[5px] border border-warning/30 bg-warning-soft px-4 py-3 text-sm font-medium text-warning">
+          Your role ({user.role.name}) doesn&apos;t have access to that page. Ask an administrator if you need it.
+        </p>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatTile label="Assets under management" value={formatCompactNaira(consoleKpis.aum)} change={consoleKpis.aumChange} icon={<TrendUpIcon className="size-5" />} />
@@ -26,7 +35,7 @@ export default async function ConsoleOverview() {
         <StatTile label="NPL ratio" value={`${(consoleKpis.nplRatio * 100).toFixed(1)}%`} hint="▼ 0.4pt vs last month · target < 5%" icon={<ChartIcon className="size-5" />} />
       </div>
 
-      {flagged.length > 0 && can(session.role, "transactions.view") && (
+      {flagged.length > 0 && can(user, "transactions.view") && (
         <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-danger/20 bg-danger-soft p-4">
           <span className="flex size-10 items-center justify-center rounded-xl bg-danger text-white"><AlertIcon /></span>
           <div className="flex-1">
@@ -73,17 +82,21 @@ export default async function ConsoleOverview() {
             ))}
           </ul>
         </Card>
-        <Card>
-          <CardHeader title="Audit trail" subtitle="Recent staff actions" />
-          <ol className="space-y-4 p-5">
-            {auditLog.map((a, i) => (
-              <li key={i} className="flex gap-3">
-                <span className="mt-1.5 size-2 shrink-0 rounded-full bg-brand" />
-                <div><p className="text-sm text-ink"><b>{a.who}</b> {a.what}</p><p className="text-xs text-muted">{formatDate(a.when, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</p></div>
-              </li>
-            ))}
-          </ol>
-        </Card>
+        {showAudit && (
+          <Card>
+            <CardHeader title="Audit trail" subtitle="Recent staff and security actions" action={<Link href="/console/audit" className="text-sm font-semibold text-brand">Open</Link>} />
+            {audit.length ? (
+              <ol className="space-y-4 p-5">
+                {audit.map((a) => (
+                  <li key={a.id} className="flex gap-3">
+                    <span className="mt-1.5 size-2 shrink-0 rounded-full bg-brand" />
+                    <div><p className="text-sm text-ink"><b>{a.actorName ?? "System"}</b> {a.summary}</p><p className="text-xs text-muted">{formatDate(a.createdAt.toISOString(), { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</p></div>
+                  </li>
+                ))}
+              </ol>
+            ) : <p className="p-5 text-sm text-muted">Nothing recorded yet.</p>}
+          </Card>
+        )}
       </div>
 
       <Card>

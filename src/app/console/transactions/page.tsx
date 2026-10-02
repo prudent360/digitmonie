@@ -3,14 +3,13 @@ import { AlertIcon, DownloadIcon } from "@/components/icons";
 import { Badge, Card, PageHeader, StatusBadge, Table, buttonSecondary } from "@/components/ui";
 import { formatDate, formatNaira } from "@/lib/format";
 import { platformTransactions } from "@/lib/mock-data";
-import { can } from "@/lib/roles";
-import { requirePermission } from "@/lib/session";
+import { can, requirePermission } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Transactions" };
 
 export default async function ConsoleTransactionsPage() {
-  const session = await requirePermission("transactions.view");
-  const canReverse = can(session.role, "transactions.reverse");
+  const user = await requirePermission("transactions.view");
+  const canReverse = can(user, "transactions.reverse");
 
   return (
     <div className="space-y-6">

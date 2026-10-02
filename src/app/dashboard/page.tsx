@@ -7,7 +7,7 @@ import { ArrowRightIcon, BoltIcon, ClockIcon, GiftIcon, IdCardIcon, LandmarkIcon
 import { Badge, Card, CardHeader, Progress } from "@/components/ui";
 import { formatDate, formatNaira, formatNairaWhole } from "@/lib/format";
 import { account, activeLoan, allocation, cashflow, investments, netWorthHistory, savingsPlans, transactions } from "@/lib/mock-data";
-import { requireSession } from "@/lib/session";
+import { requireCustomer } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Home" };
 
@@ -26,8 +26,8 @@ function greeting() {
 }
 
 export default async function DashboardHome() {
-  const session = await requireSession();
-  const firstName = session.name.split(" ")[0];
+  const user = await requireCustomer();
+  const firstName = user.firstName;
   const netWorth = account.walletBalance + account.savingsBalance + account.investmentBalance;
   const maturing = investments.find((i) => i.status === "maturing");
 

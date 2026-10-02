@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en-NG" className={`${inter.variable} ${montserrat.variable}`}>
+    <html lang="en-NG" data-scroll-behavior="smooth" className={`${inter.variable} ${montserrat.variable}`}>
       <body className="antialiased">{children}</body>
     </html>
   );

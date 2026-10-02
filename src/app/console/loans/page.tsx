@@ -3,8 +3,7 @@ import { DecisionButtons } from "@/components/app/decision-buttons";
 import { Card, PageHeader, StatTile, Table } from "@/components/ui";
 import { formatDate, formatNaira } from "@/lib/format";
 import { loanApplications } from "@/lib/mock-data";
-import { can } from "@/lib/roles";
-import { requirePermission } from "@/lib/session";
+import { can, requirePermission } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Loan applications" };
 
@@ -13,8 +12,8 @@ function scoreTone(score: number) {
 }
 
 export default async function LoanApplicationsPage() {
-  const session = await requirePermission("loans.review");
-  const canApprove = can(session.role, "loans.approve");
+  const user = await requirePermission("loans.review");
+  const canApprove = can(user, "loans.approve");
 
   return (
     <div className="space-y-6">

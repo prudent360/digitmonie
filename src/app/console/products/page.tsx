@@ -3,7 +3,7 @@ import { PlusIcon } from "@/components/icons";
 import { Badge, Card, PageHeader, Progress, Table, buttonPrimary } from "@/components/ui";
 import { formatNairaWhole } from "@/lib/format";
 import { investmentProducts, loanProducts } from "@/lib/mock-data";
-import { requirePermission } from "@/lib/session";
+import { requirePermission } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Investment products" };
 

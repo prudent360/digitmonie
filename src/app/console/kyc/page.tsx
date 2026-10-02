@@ -4,7 +4,7 @@ import { IdCardIcon } from "@/components/icons";
 import { Avatar, Badge, Card, PageHeader, Progress } from "@/components/ui";
 import { formatDate } from "@/lib/format";
 import { kycQueue } from "@/lib/mock-data";
-import { requirePermission } from "@/lib/session";
+import { requirePermission } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "KYC reviews" };
 

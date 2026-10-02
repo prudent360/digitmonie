@@ -1,7 +1,6 @@
 import { AppShell, type NavSection } from "@/components/app/app-shell";
 import { CardIcon, HomeIcon, LandmarkIcon, PiggyIcon, ReceiptIcon, SettingsIcon, TrendUpIcon, WalletIcon } from "@/components/icons";
-import { ROLE_LABELS, can } from "@/lib/roles";
-import { requireSession } from "@/lib/session";
+import { fullName, requireCustomer } from "@/lib/auth";
 
 const SECTIONS: NavSection[] = [
   { items: [
@@ -21,14 +20,9 @@ const SECTIONS: NavSection[] = [
 ];
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const session = await requireSession();
+  const user = await requireCustomer();
   return (
-    <AppShell
-      variant="customer"
-      sections={SECTIONS}
-      user={{ name: session.name, email: session.email, roleLabel: session.role === "customer" ? "Personal account" : ROLE_LABELS[session.role] }}
-      switchLink={can(session.role, "console.access") ? { href: "/console", label: "Go to console →" } : undefined}
-    >
+    <AppShell variant="customer" sections={SECTIONS} user={{ name: fullName(user), email: user.email, roleLabel: `Personal · Tier ${user.kycTier}` }}>
       {children}
     </AppShell>
   );
