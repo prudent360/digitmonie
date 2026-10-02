@@ -6,8 +6,9 @@ import { AreaChart, Donut, GroupedBars } from "@/components/charts/charts";
 import { ArrowRightIcon, BoltIcon, ClockIcon, GiftIcon, IdCardIcon, LandmarkIcon, PiggyIcon, PlusIcon, SendIcon, TrendUpIcon } from "@/components/icons";
 import { Badge, Card, CardHeader, Progress } from "@/components/ui";
 import { formatDate, formatNaira, formatNairaWhole } from "@/lib/format";
-import { account, activeLoan, allocation, cashflow, investments, netWorthHistory, savingsPlans, transactions } from "@/lib/mock-data";
+import { account, allocation, cashflow, investments, netWorthHistory, savingsPlans, transactions } from "@/lib/mock-data";
 import { requireCustomer } from "@/lib/auth";
+import { loanBalance, loanEligibility, owedOn } from "@/lib/loans/service";
 
 export const metadata: Metadata = { title: "Home" };
 
@@ -28,6 +29,9 @@ function greeting() {
 export default async function DashboardHome() {
   const user = await requireCustomer();
   const firstName = user.firstName;
+  const { openLoan, limit } = await loanEligibility(user);
+  const balance = openLoan?.status === "active" ? await loanBalance(openLoan.id) : null;
+  const nextDue = balance?.next ?? null;
   const netWorth = account.walletBalance + account.savingsBalance + account.investmentBalance;
   const maturing = investments.find((i) => i.status === "maturing");
 
@@ -70,7 +74,7 @@ export default async function DashboardHome() {
           {[
             { label: "Savings", value: account.savingsBalance, note: "+₦18,240 interest this month", icon: <PiggyIcon className="size-5" />, href: "/dashboard/savings" },
             { label: "Investments", value: account.investmentBalance, note: "Avg. 19.6% p.a. across 4 assets", icon: <TrendUpIcon className="size-5" />, href: "/dashboard/investments" },
-            { label: "Loan balance", value: account.loanOutstanding, note: `Next: ${formatNairaWhole(activeLoan.monthly)} on ${formatDate(activeLoan.nextDue, { day: "numeric", month: "short" })}`, icon: <LandmarkIcon className="size-5" />, href: "/dashboard/loans" },
+            { label: balance ? "Loan balance" : "Loan limit", value: balance ? balance.outstanding / 100 : limit / 100, note: balance ? (balance.overdueCount ? `${formatNairaWhole(balance.overdueAmount / 100)} overdue` : nextDue ? `Next: ${formatNairaWhole(owedOn(nextDue) / 100)} on ${formatDate(nextDue.dueDate, { day: "numeric", month: "short" })}` : "") : openLoan ? "Application in progress" : "Available to borrow", icon: <LandmarkIcon className="size-5" />, href: "/dashboard/loans" },
           ].map((s) => (
             <Link key={s.label} href={s.href} className="group flex items-center gap-4 rounded-2xl border border-line bg-white p-4 transition hover:border-brand-200">
               <span className="flex size-11 items-center justify-center rounded-xl bg-brand-50 text-brand">{s.icon}</span>
@@ -108,13 +112,15 @@ export default async function DashboardHome() {
           <Card>
             <CardHeader title="Coming up" />
             <ul className="space-y-3 p-5">
-              <li className="flex gap-3 rounded-xl bg-canvas p-3.5">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-warning-soft text-warning"><ClockIcon className="size-4" /></span>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-ink">Loan repayment</p>
-                  <p className="text-xs text-muted">{formatNaira(activeLoan.monthly)} · {formatDate(activeLoan.nextDue)}</p>
-                </div>
-              </li>
+              {nextDue && (
+                <li className="flex gap-3 rounded-[5px] bg-canvas p-3.5">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-[5px] bg-warning-soft text-warning"><ClockIcon className="size-4" /></span>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-ink">Loan repayment</p>
+                    <p className="text-xs text-muted">{formatNaira(owedOn(nextDue) / 100)} · {formatDate(nextDue.dueDate)}</p>
+                  </div>
+                </li>
+              )}
               {maturing && (
                 <li className="flex gap-3 rounded-xl bg-canvas p-3.5">
                   <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-gold-100 text-gold-700"><TrendUpIcon className="size-4" /></span>

@@ -54,6 +54,18 @@ Customers verify in three CBN tiers at **Verify identity** (`/dashboard/verify`)
 - **Provider:** set `KYC_PROVIDER=dojah` with `DOJAH_APP_ID` / `DOJAH_SECRET_KEY` (`DOJAH_ENV=live` for production). Without it, a built-in test provider is used in development:
   BVN/NIN ending `0000` → not found · starting `1` → someone else's · NIN ending `1` → face 78% (staff review) · NIN ending `2` → face 41% (rejected) · anything else → match.
 
+## Lending
+
+- **Products** (Console → Products): amount range, repayment periods, monthly rate (reducing or flat), processing and late fees, minimum KYC tier, when to ask for a bank statement and how much can be auto-approved. Edits only affect new applications.
+- **Applying** (`/dashboard/loans/apply`): the customer sees a key-facts summary (amount received, fees, total repayable, APR, schedule) before accepting the terms and confirming with their PIN.
+- **Assessment:** a transparent rules-based score (`src/lib/credit/score.ts`) using KYC tier, repayment-to-income, DigitMonie history and the credit bureau report. Hard stops (e.g. delinquent elsewhere, repayment over 50% of income) decline automatically. Strong small applications can be approved automatically if the product allows.
+- **Limits** start at ₦50k / ₦200k / ₦1m for KYC Tier 1 / 2 / 3 and grow 50% per loan repaid on time (`src/lib/credit/limits.ts`). Staff can override.
+- **Four eyes:** one person reviews (`loans.review`), a different person approves (`loans.approve`).
+- **Payout** is recorded manually (bank transfer reference) until a payout provider is connected; the schedule starts on the payout date.
+- **Repayments:** customers pay through Paystack (`PAYSTACK_SECRET_KEY`; webhook `/api/webhooks/paystack`). Staff with `loans.collect` can record transfers received. Payments go to the oldest instalment first.
+- **Overdue:** a daily job (`/api/cron/loans`, `CRON_SECRET`, scheduled in `vercel.json`) marks instalments overdue, adds the one-off late fee, and sends reminders 3 days before due dates. Pages also run it when opened.
+- **Credit bureau:** `src/lib/credit/bureau.ts` defines the adapter; a test bureau runs in development (BVN ending 9 → delinquent, 8 → many loans, else clean). Add the CRC/FirstCentral adapter once subscribed.
+
 ## Roles & permissions
 
 Permissions are defined in `src/lib/permissions.ts`. Roles live in the database and are managed in

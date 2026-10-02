@@ -8,6 +8,7 @@ export const PERMISSIONS = [
   "kyc.review",
   "loans.review",
   "loans.approve",
+  "loans.collect",
   "investments.manage",
   "transactions.view",
   "transactions.reverse",
@@ -29,12 +30,13 @@ export const PERMISSION_GROUPS: { title: string; items: { key: Permission; label
   ] },
   { title: "Lending", items: [
     { key: "loans.review", label: "Review loan applications", hint: "See applications and recommend a decision" },
-    { key: "loans.approve", label: "Approve and disburse loans", hint: "Make the final decision" },
+    { key: "loans.approve", label: "Approve and disburse loans", hint: "Make the final decision (never on a loan you reviewed)" },
+    { key: "loans.collect", label: "Repayments and collections", hint: "Record repayments, contact overdue borrowers" },
   ] },
   { title: "Money", items: [
     { key: "transactions.view", label: "View transactions", hint: "Platform-wide activity and AML flags" },
     { key: "transactions.reverse", label: "Reverse transactions", hint: "Undo a completed transaction" },
-    { key: "investments.manage", label: "Manage products", hint: "Create products and change rates" },
+    { key: "investments.manage", label: "Manage products", hint: "Loan and investment products, rates and fees" },
   ] },
   { title: "Administration", items: [
     { key: "team.manage", label: "Manage team and roles", hint: "Invite staff and change what roles can do" },

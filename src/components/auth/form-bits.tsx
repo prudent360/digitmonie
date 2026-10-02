@@ -3,10 +3,11 @@
 import { useFormStatus } from "react-dom";
 import { AlertIcon, ArrowRightIcon, CheckIcon } from "@/components/icons";
 
-export function SubmitButton({ children, className = "", arrow = true }: { children: React.ReactNode; className?: string; arrow?: boolean }) {
+export function SubmitButton({ children, className = "", arrow = true, tone = "brand" }: { children: React.ReactNode; className?: string; arrow?: boolean; tone?: "brand" | "danger" }) {
   const { pending } = useFormStatus();
+  const colours = tone === "danger" ? "bg-danger hover:brightness-110" : "bg-brand hover:bg-brand-600";
   return (
-    <button disabled={pending} className={`flex w-full items-center justify-center gap-2 rounded-[5px] bg-brand py-3.5 font-bold text-white transition hover:bg-brand-600 disabled:cursor-wait disabled:opacity-70 ${className}`}>
+    <button disabled={pending} className={`flex w-full items-center justify-center gap-2 rounded-[5px] py-3.5 font-bold text-white transition disabled:cursor-wait disabled:opacity-70 ${colours} ${className}`}>
       {pending ? <span className="size-4 animate-spin rounded-full border-2 border-white/40 border-t-white" /> : null}
       {children}
       {!pending && arrow && <ArrowRightIcon className="size-4" />}

@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 import { closeDb, createDb, runMigrations } from "../src/db/client";
-import { roles, users } from "../src/db/schema";
+import { loanProducts, roles, users } from "../src/db/schema";
 import { ADMIN_ROLE, CUSTOMER_ROLE, DEFAULT_STAFF_ROLE, PERMISSIONS } from "../src/lib/permissions";
 
 /**
@@ -19,6 +19,16 @@ async function main() {
     { key: DEFAULT_STAFF_ROLE, name: "Staff", description: "Day-to-day operations: customers, KYC and loan reviews.", kind: "staff", permissions: ["console.access", "users.view", "kyc.review", "loans.review", "transactions.view"], system: true },
   ]).onConflictDoNothing();
   await db.update(roles).set({ permissions: [...PERMISSIONS] }).where(eq(roles.key, ADMIN_ROLE));
+
+  // Starter loan products (placeholders; edit rates and limits in Console → Products).
+  const [anyProduct] = await db.select({ id: loanProducts.id }).from(loanProducts).limit(1);
+  if (!anyProduct) {
+    await db.insert(loanProducts).values([
+      { name: "Quick loan", description: "Small, fast loans for everyday needs. Repay in 1 to 3 months.", minAmount: 1_000_000, maxAmount: 30_000_000, tenors: [1, 2, 3], monthlyRateBps: 450, interestMethod: "reducing", processingFeeBps: 100, lateFeeBps: 100, minKycTier: 1, statementAbove: null, autoApproveUpTo: 5_000_000 },
+      { name: "Personal loan", description: "Bigger amounts for rent, school fees or emergencies. Repay over 3 to 12 months.", minAmount: 5_000_000, maxAmount: 500_000_000, tenors: [3, 6, 9, 12], monthlyRateBps: 350, interestMethod: "reducing", processingFeeBps: 150, lateFeeBps: 100, minKycTier: 2, statementAbove: 50_000_000, autoApproveUpTo: null },
+      { name: "Business loan", description: "Working capital for SMEs. Repay over 3 to 18 months.", minAmount: 50_000_000, maxAmount: 5_000_000_000, tenors: [3, 6, 9, 12, 18], monthlyRateBps: 300, interestMethod: "reducing", processingFeeBps: 200, lateFeeBps: 100, minKycTier: 3, statementAbove: 0, autoApproveUpTo: null },
+    ]);
+  }
 
   const created: string[] = [];
   async function ensureUser(values: typeof users.$inferInsert & { password: string; pin?: string }, label: string) {
