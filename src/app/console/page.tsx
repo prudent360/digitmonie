@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AreaChart, GroupedBars } from "@/components/charts/charts";
-import { AlertIcon, ChartIcon, LandmarkIcon, TrendUpIcon, UsersIcon } from "@/components/icons";
+import { AlertIcon, ChartIcon, CheckIcon, LandmarkIcon, TrendUpIcon, UsersIcon } from "@/components/icons";
 import { Avatar, Badge, Card, CardHeader, PageHeader, StatTile, StatusBadge } from "@/components/ui";
 import { formatCompactNaira, formatDate, formatNaira, formatNumber } from "@/lib/format";
 import { customerStats, monthlySeries, portfolio } from "@/lib/reports";
@@ -10,6 +10,7 @@ import { staffLoanQueue } from "@/lib/loans/queries";
 import { listAudit } from "@/lib/audit-queries";
 import { listKycSubmissions } from "@/lib/kyc/queries";
 import { can, requirePermission } from "@/lib/auth";
+import { launchChecklist } from "@/lib/launch-checklist";
 
 export const metadata: Metadata = { title: "Console" };
 
@@ -26,6 +27,8 @@ export default async function ConsoleOverview({ searchParams }: { searchParams: 
        ...(await recentRepayments(5)).map((r) => ({ id: `i${r.p.id}`, ref: r.p.reference, who: `${r.firstName} ${r.lastName}`, what: "Repayment", amount: r.p.amount, at: r.p.paidAt ?? r.p.createdAt, status: "successful" }))]
         .sort((a, b) => b.at.getTime() - a.at.getTime()).slice(0, 6)
     : [];
+  const checklist = can(user, "settings.manage") ? await launchChecklist() : null;
+  const todo = checklist?.filter((c) => !c.ok) ?? [];
   const pendingLoans = can(user, "loans.review") ? (await staffLoanQueue("review")).rows.slice(0, 5) : null;
   const [book, series, people] = await Promise.all([portfolio(), monthlySeries(12), customerStats(30)]);
   const thisMonth = series.at(-1)!;
@@ -34,12 +37,30 @@ export default async function ConsoleOverview({ searchParams }: { searchParams: 
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Operations overview" subtitle={`Signed in as ${user.role.name} · ${formatDate(new Date().toISOString(), { weekday: "long", day: "numeric", month: "long" })}`} actions={<Badge tone="success" dot>All systems operational</Badge>} />
+      <PageHeader title="Operations overview" subtitle={`Signed in as ${user.role.name} · ${formatDate(new Date().toISOString(), { weekday: "long", day: "numeric", month: "long" })}`} actions={checklist && <span className={`rounded-[7px] px-2.5 py-1 text-xs font-semibold ${todo.length ? "bg-warning-soft text-warning" : "bg-success-soft text-success"}`}>{todo.length ? `${todo.length} launch item${todo.length > 1 ? "s" : ""} left` : "Ready for launch"}</span>} />
 
       {denied && (
         <p role="status" className="rounded-[7px] border border-warning/30 bg-warning-soft px-4 py-3 text-sm font-medium text-warning">
           Your role ({user.role.name}) doesn&apos;t have access to that page. Ask an administrator if you need it.
         </p>
+      )}
+
+      {checklist && todo.length > 0 && (
+        <Card>
+          <CardHeader title="Launch checklist" subtitle={`${checklist.length - todo.length} of ${checklist.length} done. Finish these before real customers use DigitMonie.`} />
+          <ul className="divide-y divide-line px-5 pb-2 pt-2">
+            {checklist.map((c) => (
+              <li key={c.label} className="flex items-start gap-3 py-3">
+                <span className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full ${c.ok ? "bg-success text-white" : "border-2 border-warning"}`}>{c.ok && <CheckIcon className="size-3" />}</span>
+                <div className="min-w-0 flex-1">
+                  <p className={`text-sm font-semibold ${c.ok ? "text-muted" : "text-ink"}`}>{c.label}</p>
+                  {!c.ok && <p className="mt-0.5 text-xs text-body">{c.fix}</p>}
+                </div>
+                {!c.ok && c.href && <Link href={c.href} className="shrink-0 text-sm font-semibold text-brand">Fix</Link>}
+              </li>
+            ))}
+          </ul>
+        </Card>
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

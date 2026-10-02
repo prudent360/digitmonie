@@ -6,11 +6,10 @@ import { Logo, type Logos } from "@/components/logo";
 import { MenuIcon, XIcon } from "@/components/icons";
 
 const NAV = [
-  { href: "/#save", label: "Save" },
-  { href: "/#invest", label: "Invest" },
-  { href: "/#borrow", label: "Borrow" },
+  { href: "/#borrow", label: "Loans" },
   { href: "/#how-it-works", label: "How it works" },
   { href: "/#security", label: "Security" },
+  { href: "/#faq", label: "FAQ" },
 ];
 
 /** Sits transparent over the blue hero, then turns solid white once the page scrolls. */

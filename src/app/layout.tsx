@@ -8,7 +8,7 @@ const montserrat = Montserrat({ variable: "--font-montserrat", subsets: ["latin"
 
 export const metadata: Metadata = {
   title: { default: "DigitMonie — Simple Money. Bigger Possibilities.", template: "%s · DigitMonie" },
-  description: "Save, invest, borrow and move money in Naira with DigitMonie.",
+  description: "Loans paid straight to your bank account, with the full cost shown upfront. Licensed by the FCCPC. Savings and investments coming soon.",
   // Resolves to the favicon uploaded in Settings → Branding, or the built-in mark.
   icons: { icon: "/brand-icon", apple: "/brand-icon" },
 };

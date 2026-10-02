@@ -7,18 +7,18 @@ import { fullName, requireCustomer } from "@/lib/auth";
 const SECTIONS: NavSection[] = [
   { items: [
     { href: "/dashboard", label: "Home", icon: <HomeIcon /> },
-    { href: "/dashboard/wallet", label: "Wallet & transfers", icon: <WalletIcon /> },
+    { href: "/dashboard/loans", label: "Loans", icon: <LandmarkIcon /> },
     { href: "/dashboard/transactions", label: "Transactions", icon: <ReceiptIcon /> },
   ] },
-  { title: "Grow", items: [
-    { href: "/dashboard/savings", label: "Savings", icon: <PiggyIcon /> },
-    { href: "/dashboard/investments", label: "Investments", icon: <TrendUpIcon />, badge: "21%" },
-    { href: "/dashboard/loans", label: "Loans", icon: <LandmarkIcon /> },
+  { title: "Coming soon", items: [
+    { href: "/dashboard/wallet", label: "Wallet & transfers", icon: <WalletIcon />, badge: "Soon" },
+    { href: "/dashboard/savings", label: "Savings", icon: <PiggyIcon />, badge: "Soon" },
+    { href: "/dashboard/investments", label: "Investments", icon: <TrendUpIcon />, badge: "Soon" },
+    { href: "/dashboard/cards", label: "Cards", icon: <CardIcon />, badge: "Soon" },
   ] },
   { title: "Account", items: [
     { href: "/dashboard/verify", label: "Verify identity", icon: <IdCardIcon /> },
     { href: "/dashboard/settings", label: "Settings", icon: <SettingsIcon /> },
-    { href: "/dashboard/wallet#cards", label: "Cards", icon: <CardIcon /> },
   ] },
 ];
 

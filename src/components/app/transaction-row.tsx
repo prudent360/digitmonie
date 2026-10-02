@@ -1,16 +1,11 @@
-import { BoltIcon, CardIcon, LandmarkIcon, PiggyIcon, PlusIcon, ReceiveIcon, SendIcon, TrendUpIcon } from "@/components/icons";
+import { LandmarkIcon, ReceiptIcon } from "@/components/icons";
 import { StatusBadge } from "@/components/ui";
 import { formatDate, formatNaira } from "@/lib/format";
-import type { Transaction, TxCategory } from "@/lib/mock-data";
+import type { Transaction, TxCategory } from "@/lib/activity";
 
 const CATEGORY_ICON: Record<TxCategory, React.ReactNode> = {
-  transfer: <SendIcon className="size-4" />,
-  savings: <PiggyIcon className="size-4" />,
-  investment: <TrendUpIcon className="size-4" />,
   loan: <LandmarkIcon className="size-4" />,
-  bills: <BoltIcon className="size-4" />,
-  card: <CardIcon className="size-4" />,
-  deposit: <PlusIcon className="size-4" />,
+  repayment: <ReceiptIcon className="size-4" />,
 };
 
 export function TransactionRow({ tx, showStatus = true }: { tx: Transaction; showStatus?: boolean }) {
@@ -18,7 +13,7 @@ export function TransactionRow({ tx, showStatus = true }: { tx: Transaction; sho
   return (
     <li className="flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-canvas/70">
       <span className={`flex size-10 shrink-0 items-center justify-center rounded-[7px] ${credit ? "bg-success-soft text-success" : "bg-brand-50 text-brand"}`}>
-        {tx.category === "transfer" && credit ? <ReceiveIcon className="size-4" /> : CATEGORY_ICON[tx.category]}
+        {CATEGORY_ICON[tx.category]}
       </span>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold text-ink">{tx.title}</p>

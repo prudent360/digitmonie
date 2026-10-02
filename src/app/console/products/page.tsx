@@ -1,15 +1,13 @@
 import type { Metadata } from "next";
-import { Badge, Card, PageHeader, Progress, Table } from "@/components/ui";
-import { formatNairaWhole } from "@/lib/format";
+import { Badge, PageHeader } from "@/components/ui";
 import { asc } from "drizzle-orm";
 import { saveLoanProduct } from "@/app/actions/loans";
 import { LoanProductForm, type ProductValues } from "@/components/app/product-form";
 import { getDb } from "@/db";
 import { loanProducts, type LoanProduct } from "@/db/schema";
-import { investmentProducts } from "@/lib/mock-data";
 import { requirePermission } from "@/lib/auth";
 
-export const metadata: Metadata = { title: "Investment products" };
+export const metadata: Metadata = { title: "Products" };
 
 const kobo = (v: number | null) => (v == null ? "" : String(v / 100));
 const pct = (bps: number) => String(bps / 100);
@@ -26,26 +24,7 @@ export default async function ProductsPage() {
   const products = await (await getDb()).select().from(loanProducts).orderBy(asc(loanProducts.minAmount));
   return (
     <div className="space-y-6">
-      <PageHeader title="Products" subtitle="Configure investment and loan products offered to customers."  />
-      <Card>
-        <div className="px-5 pt-5"><h2 className="font-bold text-ink">Investment products <span className="text-xs font-normal text-muted">(sample data, arrives with Step 6)</span></h2></div>
-        <div className="mt-3">
-          <Table head={["Product", "Type", "Rate (p.a.)", "Minimum", "Tenor", "Risk", "Subscribed", ""]}>
-            {investmentProducts.map((p) => (
-              <tr key={p.id}>
-                <td className="px-5 py-3.5 font-semibold text-ink">{p.name}</td>
-                <td className="px-5 py-3.5"><Badge tone="brand">{p.kind}</Badge></td>
-                <td className="px-5 py-3.5 font-bold tabular-nums text-brand">{(p.rate * 100).toFixed(1)}%</td>
-                <td className="px-5 py-3.5 tabular-nums">{formatNairaWhole(p.min)}</td>
-                <td className="px-5 py-3.5">{p.tenor}</td>
-                <td className="px-5 py-3.5">{p.risk}</td>
-                <td className="w-40 px-5 py-3.5"><Progress value={p.subscribed} tone="bg-gold" track="bg-gold-50" className="h-1.5" /><span className="text-xs text-muted">{Math.round(p.subscribed * 100)}%</span></td>
-                <td className="px-5 py-3.5 text-right"><button type="button" className="text-sm font-semibold text-brand">Edit</button></td>
-              </tr>
-            ))}
-          </Table>
-        </div>
-      </Card>
+      <PageHeader title="Products" subtitle="Loan products offered to customers. Savings and investment products are coming soon."  />
       <div>
         <h2 className="font-display text-lg font-bold text-ink">Loan products</h2>
         <p className="mt-1 text-sm text-muted">Changes apply to new applications only. Existing loans keep the terms the customer accepted.</p>

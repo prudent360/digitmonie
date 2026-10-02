@@ -29,9 +29,9 @@ export const SECTIONS: Section[] = [
     title: "General",
     description: "Company details and switches that affect everyone.",
     fields: [
-      { key: "legalName", label: "Registered company name", type: "text", default: "DigitMonie Limited", help: "As registered with the CAC. Used in the Terms, Privacy Policy and Loan Terms." },
+      { key: "legalName", label: "Registered company name", type: "text", default: "", help: "As registered with the CAC. Used in the Terms, Privacy Policy and Loan Terms." },
       { key: "rcNumber", label: "CAC registration (RC) number", type: "text", default: "" },
-      { key: "companyAddress", label: "Registered address", type: "text", default: "123 Innovation Drive, Victoria Island, Lagos, Nigeria" },
+      { key: "companyAddress", label: "Registered address", type: "text", default: "" },
       { key: "dpoEmail", label: "Data protection officer email", type: "text", default: "privacy@digitmonie.com", help: "Shown in the Privacy Policy for data requests." },
       { key: "supportEmail", label: "Support email", type: "text", default: "hello@digitmonie.com" },
       { key: "supportPhone", label: "Support phone", type: "text", default: "" },

@@ -50,7 +50,7 @@ export default async function TermsPage() {
       id: "services", title: "Our services",
       content: <>
         <p>DigitMonie provides short-term consumer and small-business loans. Every loan is subject to an assessment, our <Link href="/loan-terms">Loan Terms</Link> and the Key Facts we show you before you accept, which set out exactly what you will receive and repay.</p>
-        <p>Where we offer savings, investment or payment features, they are provided with licensed partners and their terms will be shown to you before you use them. We are not a bank, and money in your own bank account is not held by us.</p>
+        <p>Savings, investment and payment features are not yet available. When we offer them, they will be provided with licensed partners, and their terms will be shown to you before you use them. We are not a bank, and money in your own bank account is not held by us.</p>
       </>,
     },
     {

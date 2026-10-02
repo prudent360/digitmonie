@@ -1,20 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { DownloadIcon, SearchIcon } from "@/components/icons";
-import { Card, buttonSecondary } from "@/components/ui";
+import { SearchIcon } from "@/components/icons";
+import { Card } from "@/components/ui";
 import { formatNaira } from "@/lib/format";
-import type { Transaction } from "@/lib/mock-data";
+import type { Transaction } from "@/lib/activity";
 import { TransactionRow } from "./transaction-row";
 
 const FILTERS = [
   { id: "all", label: "All" },
-  { id: "credit", label: "Money in" },
-  { id: "debit", label: "Money out" },
-  { id: "savings", label: "Savings" },
-  { id: "investment", label: "Investments" },
-  { id: "loan", label: "Loans" },
-  { id: "bills", label: "Bills" },
+  { id: "loan", label: "Loans paid to you" },
+  { id: "repayment", label: "Repayments" },
 ] as const;
 
 export function TransactionsTable({ transactions }: { transactions: Transaction[] }) {
@@ -24,7 +20,7 @@ export function TransactionsTable({ transactions }: { transactions: Transaction[
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
     return transactions.filter((tx) => {
-      const byFilter = filter === "all" || tx.type === filter || tx.category === filter;
+      const byFilter = filter === "all" || tx.category === filter;
       const byQuery = !q || `${tx.title} ${tx.detail} ${tx.reference}`.toLowerCase().includes(q);
       return byFilter && byQuery;
     });
@@ -45,16 +41,15 @@ export function TransactionsTable({ transactions }: { transactions: Transaction[
           <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by name or reference" className="w-full rounded-[7px] border border-line py-2 pl-9 pr-3 text-sm outline-none focus:border-brand focus:ring-4 focus:ring-brand-100" />
         </label>
-        <button type="button" className={buttonSecondary}><DownloadIcon className="size-4" /> Statement</button>
       </div>
       <div className="grid grid-cols-2 divide-x divide-line border-b border-line text-center">
-        <div className="p-3"><p className="text-xs text-muted">Money in</p><p className="font-bold tabular-nums text-success">+{formatNaira(inflow)}</p></div>
-        <div className="p-3"><p className="text-xs text-muted">Money out</p><p className="font-bold tabular-nums text-ink">−{formatNaira(outflow)}</p></div>
+        <div className="p-3"><p className="text-xs text-muted">Paid to you</p><p className="font-bold tabular-nums text-success">+{formatNaira(inflow)}</p></div>
+        <div className="p-3"><p className="text-xs text-muted">You repaid</p><p className="font-bold tabular-nums text-ink">−{formatNaira(outflow)}</p></div>
       </div>
       {rows.length ? (
         <ul className="divide-y divide-line">{rows.map((tx) => <TransactionRow key={tx.id} tx={tx} />)}</ul>
       ) : (
-        <p className="p-12 text-center text-sm text-muted">No transactions match your filters.</p>
+        <p className="p-12 text-center text-sm text-muted">{transactions.length ? "No transactions match your filters." : "No transactions yet. Loans paid to you and your repayments will show here."}</p>
       )}
     </Card>
   );
