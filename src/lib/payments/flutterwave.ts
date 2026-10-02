@@ -90,3 +90,34 @@ export async function ngnBalance(): Promise<{ available: number; ledger: number 
   const data = await flw<{ available_balance: number; ledger_balance: number }>("/balances/NGN");
   return { available: Math.round(data.available_balance * 100), ledger: Math.round(data.ledger_balance * 100) };
 }
+
+/* ---------- Listings for reconciliation ---------- */
+
+type Page<T> = { data: T[]; meta?: { page_info?: { total_pages?: number } } };
+
+async function flwPages<T>(path: string, maxPages = 25): Promise<T[]> {
+  const secret = await getSetting("flwSecretKey");
+  if (!secret) throw new Error("Flutterwave isn't configured.");
+  const out: T[] = [];
+  for (let page = 1; page <= maxPages; page++) {
+    const res = await fetch(`https://api.flutterwave.com/v3${path}${path.includes("?") ? "&" : "?"}page=${page}`, { headers: { Authorization: `Bearer ${secret}` }, cache: "no-store" });
+    const body = (await res.json().catch(() => ({}))) as Page<T> & { status?: string; message?: string };
+    if (!res.ok || body.status !== "success") throw new Error(`Flutterwave: ${body.message ?? res.status}`);
+    out.push(...(body.data ?? []));
+    if (page >= (body.meta?.page_info?.total_pages ?? 1)) break;
+  }
+  return out;
+}
+
+export type FlwListedTransfer = { id: number; reference: string; amount: number; fee: number; status: string; created_at: string; full_name?: string };
+export type FlwListedCharge = { id: number; tx_ref: string; amount: number; currency: string; status: string; created_at: string };
+
+/** Transfers (payouts) between two dates inclusive, in the given status. */
+export function listTransfers(from: string, to: string, status: "successful" | "failed") {
+  return flwPages<FlwListedTransfer>(`/transfers?from=${from}&to=${to}&status=${status}`);
+}
+
+/** Successful collections (customer payments) between two dates inclusive. */
+export function listCollections(from: string, to: string) {
+  return flwPages<FlwListedCharge>(`/transactions?from=${from}&to=${to}&status=successful`);
+}

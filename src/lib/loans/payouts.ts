@@ -9,6 +9,7 @@ import { siteUrl } from "@/lib/messaging";
 import { createTransfer, flutterwaveConfigured, getTransfer } from "@/lib/payments/flutterwave";
 import { getSetting } from "@/lib/settings";
 import { naira, newReference, notify, report } from "./common";
+import { notifyStaff } from "@/lib/notifications";
 import { quoteLoan, todayIso } from "./math";
 
 export type PayoutOutcome = { ok: true; message: string } | { ok: false; error: string };
@@ -23,11 +24,11 @@ export async function loanPayouts(loanId: number) {
  * The money has reached the customer: mark the payout successful, start the loan (schedule from today),
  * and post the ledger entry. Runs once per payout even if called repeatedly.
  */
-async function completePayout(payoutId: number, actorId: number | null): Promise<Loan | null> {
+async function completePayout(payoutId: number, actorId: number | null, feeKobo = 0): Promise<Loan | null> {
   const db = await getDb();
   const start = todayIso();
   const loan = await db.transaction(async (tx) => {
-    const [payout] = await tx.update(payouts).set({ status: "successful", completedAt: new Date() })
+    const [payout] = await tx.update(payouts).set({ status: "successful", completedAt: new Date(), fee: feeKobo })
       .where(and(eq(payouts.id, payoutId), eq(payouts.status, "processing"))).returning();
     if (!payout) return null;
     const [active] = await tx.update(loans)
@@ -45,11 +46,14 @@ async function completePayout(payoutId: number, actorId: number | null): Promise
         { account: "feeIncome", credit: active.processingFee },
       ],
     });
+    if (feeKobo > 0) {
+      await postJournal(tx, { reference: `fee:${payout.reference}`, description: `Flutterwave transfer fee on ${payout.reference}`, loanId: active.id, createdById: actorId, lines: [{ account: "providerFees", debit: feeKobo }, { account: "flutterwave", credit: feeKobo }] });
+    }
     return active;
   });
   if (!loan) return null;
   await report(loan, "disbursed");
-  await notify(loan.userId, `we've sent ${naira(sendAmount(loan))} to your ${loan.payoutBank} account. Your first repayment of ${naira(loan.instalment)} is due one month from today.`);
+  await notify(loan.userId, `we've sent ${naira(sendAmount(loan))} to your ${loan.payoutBank} account. Your first repayment of ${naira(loan.instalment)} is due one month from today.`, { title: "Your loan has been paid out", email: true });
   return loan;
 }
 
@@ -108,7 +112,7 @@ export async function sendAutomaticPayout(loanId: number, actor: CurrentUser | n
     });
     await db.update(payouts).set({ providerId: String(transfer.id) }).where(eq(payouts.id, payout.id));
     if (transfer.status === "FAILED") return await failPayout(payout, transfer.complete_message ?? "Flutterwave rejected the transfer.");
-    if (transfer.status === "SUCCESSFUL") await completePayout(payout.id, actor?.id ?? null);
+    if (transfer.status === "SUCCESSFUL") await completePayout(payout.id, actor?.id ?? null, Math.round((transfer.fee ?? 0) * 100));
     return { ok: true, message: "Transfer sent to Flutterwave. The loan starts as soon as the bank confirms it." };
   } catch (error) {
     return failPayout(payout, error instanceof Error ? error.message : "Couldn't reach Flutterwave.");
@@ -119,7 +123,10 @@ async function failPayout(payout: Payout, reason: string): Promise<PayoutOutcome
   const db = await getDb();
   const [failed] = await db.update(payouts).set({ status: "failed", failureReason: reason.slice(0, 300), completedAt: new Date() })
     .where(and(eq(payouts.id, payout.id), eq(payouts.status, "processing"))).returning();
-  if (failed) await logAudit({ actorId: null, action: "payout.failed", summary: `transfer ${payout.reference} failed: ${reason}`, target: { type: "loan", id: payout.loanId } });
+  if (failed) {
+    await logAudit({ actorId: null, action: "payout.failed", summary: `transfer ${payout.reference} failed: ${reason}`, target: { type: "loan", id: payout.loanId } });
+    await notifyStaff("loans.approve", { category: "payout", title: "A loan payout failed", body: `${naira(payout.amount)} to ${payout.accountName}: ${reason}`, href: `/console/loans/${payout.loanId}` });
+  }
   return fail(`The transfer failed: ${reason}. You can try again or pay out manually.`);
 }
 
@@ -131,7 +138,7 @@ export async function confirmPayout(reference: string): Promise<Payout["status"]
   if (payout.status !== "processing" || payout.method !== "flutterwave" || !payout.providerId) return payout.status;
   const transfer = await getTransfer(payout.providerId);
   if (transfer.status === "SUCCESSFUL" && Math.round(transfer.amount * 100) === payout.amount) {
-    await completePayout(payout.id, payout.initiatedById);
+    await completePayout(payout.id, payout.initiatedById, Math.round((transfer.fee ?? 0) * 100));
     await logAudit({ actorId: null, action: "payout.successful", summary: `Flutterwave confirmed transfer ${payout.reference}`, target: { type: "loan", id: payout.loanId } });
     return "successful";
   }

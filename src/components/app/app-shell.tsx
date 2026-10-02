@@ -5,7 +5,8 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { signOut } from "@/app/actions/auth";
 import { Logo, LogoMark } from "@/components/logo";
-import { BellIcon, LogoutIcon, MenuIcon, SearchIcon, XIcon } from "@/components/icons";
+import { LogoutIcon, MenuIcon, SearchIcon, XIcon } from "@/components/icons";
+import { NotificationBell } from "./notification-bell";
 import { Avatar } from "@/components/ui";
 
 export type NavItem = { href: string; label: string; icon: React.ReactNode; badge?: string };
@@ -16,6 +17,7 @@ type Props = {
   sections: NavSection[];
   user: { name: string; email: string; roleLabel: string };
   switchLink?: { href: string; label: string };
+  unread: number;
   children: React.ReactNode;
 };
 
@@ -25,7 +27,7 @@ function isActive(pathname: string, href: string) {
 }
 
 /** Sidebar + top bar. The customer app is light; the staff/admin console uses a dark sidebar. */
-export function AppShell({ variant, sections, user, switchLink, children }: Props) {
+export function AppShell({ variant, sections, user, switchLink, unread, children }: Props) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const dark = variant === "console";
@@ -102,10 +104,7 @@ export function AppShell({ variant, sections, user, switchLink, children }: Prop
             <input type="search" placeholder={dark ? "Search customers, references, loans…" : "Search transactions…"} className="w-full rounded-xl border border-line bg-canvas py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-brand focus:bg-white focus:ring-4 focus:ring-brand-100" />
           </label>
           <div className="ml-auto flex items-center gap-2">
-            <button type="button" className="relative rounded-xl p-2.5 text-body transition hover:bg-canvas" aria-label="Notifications">
-              <BellIcon />
-              <span className="absolute right-2 top-2 size-2 rounded-full bg-danger ring-2 ring-white" />
-            </button>
+<NotificationBell initialUnread={unread} allHref={dark ? "/console/notifications" : "/dashboard/notifications"} />
             <Avatar name={user.name} className="size-9 text-xs" />
           </div>
         </header>

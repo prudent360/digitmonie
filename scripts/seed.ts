@@ -18,7 +18,7 @@ async function main() {
   await db.insert(roles).values([
     { key: CUSTOMER_ROLE, name: "Customer", description: "Uses the DigitMonie app.", kind: "customer", permissions: [], system: true },
     { key: ADMIN_ROLE, name: "Administrator", description: "Full access, including team, roles and settings.", kind: "staff", permissions: [...PERMISSIONS], system: true },
-    { key: DEFAULT_STAFF_ROLE, name: "Staff", description: "Day-to-day operations: customers, KYC and loan reviews.", kind: "staff", permissions: ["console.access", "users.view", "kyc.review", "loans.review", "transactions.view"], system: true },
+    { key: DEFAULT_STAFF_ROLE, name: "Staff", description: "Day-to-day operations: customers, KYC and loan reviews.", kind: "staff", permissions: ["console.access", "users.view", "kyc.review", "loans.review", "transactions.view", "reports.view"], system: true },
   ]).onConflictDoNothing();
   await db.update(roles).set({ permissions: [...PERMISSIONS] }).where(eq(roles.key, ADMIN_ROLE));
 

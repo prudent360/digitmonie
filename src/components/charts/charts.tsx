@@ -17,6 +17,7 @@ const W = 640;
 const PAD = { top: 16, right: 12, bottom: 28, left: 56 };
 
 function niceMax(max: number) {
+  if (!(max > 0)) return 1;
   const exp = Math.pow(10, Math.floor(Math.log10(max)));
   return Math.ceil(max / exp) * exp;
 }

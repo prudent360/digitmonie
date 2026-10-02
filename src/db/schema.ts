@@ -44,6 +44,9 @@ export const users = pgTable("users", {
   sessionVersion: integer("session_version").notNull().default(1),
   lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
   invitedById: integer("invited_by_id"),
+  /** Why staff restricted, froze or closed the account (shown in the console). */
+  statusReason: text("status_reason"),
+  statusChangedAt: timestamp("status_changed_at", { withTimezone: true }),
   createdAt: createdAt(),
 }, (t) => [index("users_role_idx").on(t.roleKey)]);
 
@@ -262,6 +265,8 @@ export const loans = pgTable("loans", {
   disbursedAt: timestamp("disbursed_at", { withTimezone: true }),
   disbursementReference: text("disbursement_reference"),
   closedAt: timestamp("closed_at", { withTimezone: true }),
+  /** Staff member chasing this loan when it's overdue. */
+  collectorId: integer("collector_id").references(() => users.id, { onDelete: "set null" }),
   createdAt: createdAt(),
 }, (t) => [index("loans_user_idx").on(t.userId), index("loans_status_idx").on(t.status, t.createdAt)]);
 
@@ -345,6 +350,8 @@ export const payouts = pgTable("payouts", {
   providerId: text("provider_id"),
   status: text("status").$type<PayoutStatus>().notNull(),
   failureReason: text("failure_reason"),
+  /** Provider's transfer fee, posted to the ledger as an expense. */
+  fee: kobo("fee").notNull().default(0),
   initiatedById: integer("initiated_by_id").references(() => users.id, { onDelete: "set null" }),
   completedAt: timestamp("completed_at", { withTimezone: true }),
   createdAt: createdAt(),
@@ -352,7 +359,7 @@ export const payouts = pgTable("payouts", {
 
 /* ---------- Ledger (double entry) ---------- */
 
-export type LedgerAccountType = "asset" | "liability" | "income" | "expense";
+export type LedgerAccountType = "asset" | "liability" | "equity" | "income" | "expense";
 export const ledgerAccounts = pgTable("ledger_accounts", {
   code: text("code").primaryKey(),
   name: text("name").notNull(),
@@ -379,3 +386,82 @@ export const ledgerLines = pgTable("ledger_lines", {
 }, (t) => [index("ledger_lines_account_idx").on(t.accountCode), index("ledger_lines_entry_idx").on(t.entryId)]);
 
 export type Payout = typeof payouts.$inferSelect;
+
+/* ---------- Notifications ---------- */
+
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  category: text("category").notNull(),
+  title: text("title").notNull(),
+  body: text("body").notNull().default(""),
+  href: text("href"),
+  readAt: timestamp("read_at", { withTimezone: true }),
+  createdAt: createdAt(),
+}, (t) => [index("notifications_user_idx").on(t.userId, t.createdAt)]);
+
+/* ---------- Customer contact log and collections ---------- */
+
+export type ContactChannel = "call" | "sms" | "email" | "whatsapp" | "visit" | "note";
+export type ContactOutcome = "reached" | "no_answer" | "promised" | "disputed" | "wrong_number" | "other";
+
+/** Every conversation or note about a customer, newest first on their profile. */
+export const customerContacts = pgTable("customer_contacts", {
+  id: serial("id").primaryKey(),
+  customerId: integer("customer_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  loanId: integer("loan_id").references(() => loans.id, { onDelete: "set null" }),
+  authorId: integer("author_id").references(() => users.id, { onDelete: "set null" }),
+  channel: text("channel").$type<ContactChannel>().notNull(),
+  outcome: text("outcome").$type<ContactOutcome>(),
+  note: text("note").notNull(),
+  createdAt: createdAt(),
+}, (t) => [index("customer_contacts_customer_idx").on(t.customerId, t.createdAt)]);
+
+export type PromiseStatus = "open" | "kept" | "broken" | "cancelled";
+export const paymentPromises = pgTable("payment_promises", {
+  id: serial("id").primaryKey(),
+  loanId: integer("loan_id").notNull().references(() => loans.id, { onDelete: "cascade" }),
+  amount: kobo("amount").notNull(),
+  /** YYYY-MM-DD */
+  dueDate: text("due_date").notNull(),
+  status: text("status").$type<PromiseStatus>().notNull().default("open"),
+  createdById: integer("created_by_id").references(() => users.id, { onDelete: "set null" }),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  createdAt: createdAt(),
+}, (t) => [index("payment_promises_loan_idx").on(t.loanId)]);
+
+/* ---------- Reconciliation ---------- */
+
+export type ReconStatus = "matched" | "issues" | "skipped" | "failed";
+export type ReconSummary = { payoutsTheirs: number; payoutsOurs: number; collectionsTheirs: number; collectionsOurs: number; issues: number; note?: string };
+
+/** One run per calendar day (Lagos time): Flutterwave's records against ours. */
+export const reconciliationRuns = pgTable("reconciliation_runs", {
+  id: serial("id").primaryKey(),
+  /** YYYY-MM-DD */
+  date: text("date").notNull().unique(),
+  status: text("status").$type<ReconStatus>().notNull(),
+  summary: jsonb("summary").$type<ReconSummary>().notNull(),
+  /** Flutterwave available balance vs our ledger's Flutterwave cash account, at run time. */
+  balanceTheirs: kobo("balance_theirs"),
+  balanceOurs: kobo("balance_ours"),
+  runById: integer("run_by_id").references(() => users.id, { onDelete: "set null" }),
+  createdAt: createdAt(),
+});
+
+export type ReconIssue = "missing_ours" | "missing_theirs" | "amount_mismatch" | "status_mismatch";
+export const reconciliationItems = pgTable("reconciliation_items", {
+  id: serial("id").primaryKey(),
+  runId: integer("run_id").notNull().references(() => reconciliationRuns.id, { onDelete: "cascade" }),
+  kind: text("kind").$type<"payout" | "collection">().notNull(),
+  reference: text("reference").notNull(),
+  issue: text("issue").$type<ReconIssue>().notNull(),
+  ourAmount: kobo("our_amount"),
+  theirAmount: kobo("their_amount"),
+  details: jsonb("details").$type<Record<string, unknown>>(),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  resolvedById: integer("resolved_by_id").references(() => users.id, { onDelete: "set null" }),
+  resolutionNote: text("resolution_note"),
+}, (t) => [index("reconciliation_items_run_idx").on(t.runId)]);
+
+export type Notification = typeof notifications.$inferSelect;

@@ -23,8 +23,9 @@ export default async function LoansPage({ searchParams }: { searchParams: Promis
   const { limit, products, openLoan, blocked, history } = await loanEligibility(user);
   const all = await customerLoans(user.id);
   const open = openLoan ? all.find((l) => l.loan.id === openLoan.id) ?? null : null;
-  const balance = open?.loan.status === "active" ? await loanBalance(open.loan.id) : null;
-  const payments = open?.loan.status === "active" ? await loanPaymentsFor(open.loan.id) : [];
+  const repayable = open && ["active", "defaulted"].includes(open.loan.status);
+  const balance = repayable ? await loanBalance(open.loan.id) : null;
+  const payments = repayable ? await loanPaymentsFor(open.loan.id) : [];
   const past = all.filter((l) => l.loan.id !== open?.loan.id);
   const sending = open?.loan.status === "approved" && (await loanPayouts(open.loan.id)).some((p) => p.status === "processing");
 

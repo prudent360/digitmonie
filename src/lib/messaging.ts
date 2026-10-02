@@ -27,7 +27,7 @@ export async function sendSms(to: string, message: string): Promise<void> {
   if (!res.ok) throw new Error(`Termii responded ${res.status}`);
 }
 
-export async function sendEmail({ to, subject, text }: { to: string; subject: string; text: string }): Promise<void> {
+export async function sendEmail({ to, subject, text, html }: { to: string; subject: string; text: string; html?: string }): Promise<void> {
   const apiKey = await getSetting("resendApiKey");
   if (!apiKey) {
     console.info(`[email → ${to}] ${subject}\n${text}`);
@@ -36,7 +36,7 @@ export async function sendEmail({ to, subject, text }: { to: string; subject: st
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({ from: await getSetting("emailFrom"), to, subject, text }),
+    body: JSON.stringify({ from: await getSetting("emailFrom"), to, subject, text, html }),
   });
   if (!res.ok) throw new Error(`Resend responded ${res.status}`);
 }

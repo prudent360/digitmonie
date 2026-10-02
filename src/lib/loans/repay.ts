@@ -32,7 +32,7 @@ export type StartResult = { ok: true; redirectTo: string } | { ok: false; error:
 /** Starts a repayment with the chosen provider; in development without keys, settles an instant test payment. */
 export async function startRepayment(user: CurrentUser, loanId: number, amountKobo: number): Promise<StartResult> {
   const [loan] = await (await getDb()).select().from(loans).where(eq(loans.id, loanId));
-  if (!loan || loan.userId !== user.id || loan.status !== "active") return { ok: false, error: "This loan can't take repayments." };
+  if (!loan || loan.userId !== user.id || !["active", "defaulted"].includes(loan.status)) return { ok: false, error: "This loan can't take repayments." };
   const { outstanding } = await loanBalance(loan.id);
   if (amountKobo < 10_000 && amountKobo !== outstanding) return { ok: false, error: "The smallest repayment is ₦100." };
   if (amountKobo > outstanding) return { ok: false, error: "That's more than you owe." };

@@ -2,7 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { approveLoanAction, checkPayoutAction, manualPayoutAction, markDefaultedAction, recordPaymentAction, reviewLoanAction, sendPayoutAction, setLimitOverride } from "@/app/actions/loans";
-import { ActionButton, DecisionForm, SimpleActionForm } from "@/components/app/loan-staff";
+import { ActionButton, DecisionForm, RescheduleForm, SelectForm, SimpleActionForm } from "@/components/app/loan-staff";
+import { ContactForm } from "@/components/app/customer-forms";
+import { assignCollectorAction, promiseAction, reminderSmsAction, rescheduleAction, writeOffAction } from "@/app/actions/collections";
+import { logContactAction } from "@/app/actions/customers";
+import { collectors as listCollectors, loanContacts, loanPromises } from "@/lib/collections";
+import { CHANNELS, OUTCOMES } from "@/lib/customers";
 import { AlertIcon } from "@/components/icons";
 import { Avatar, Badge, Card, CardHeader, StatusBadge, Table } from "@/components/ui";
 import { listAudit } from "@/lib/audit-queries";
@@ -42,6 +47,9 @@ export default async function ConsoleLoanPage({ params }: { params: Promise<{ id
   const payoutList = await loanPayouts(loan.id);
   const inFlight = payoutList.find((p) => p.status === "processing");
   const payoutMode = await getSetting("payoutMode");
+  const inCollections = ["active", "defaulted", "written_off"].includes(loan.status) && (can(staff, "loans.collect") || can(staff, "loans.approve"));
+  const [contacts, promises, collectorList] = inCollections ? await Promise.all([loanContacts(loan.id), loanPromises(loan.id), listCollectors()]) : [[], [], []];
+  const openPromise = promises.find((p) => p.status === "open");
   const timeline = (await listAudit({ limit: 30, query: loan.reference })).rows;
   const s = loan.score;
   const b = loan.bureau;
@@ -53,7 +61,7 @@ export default async function ConsoleLoanPage({ params }: { params: Promise<{ id
       <div className="flex flex-wrap items-center gap-4">
         <Avatar name={fullName(customer)} className="size-14 text-base" />
         <div className="flex-1">
-          <h1 className="font-display text-2xl font-bold text-ink">{ngn(loan.principal)} {product.name} · {fullName(customer)}</h1>
+          <h1 className="font-display text-2xl font-bold text-ink">{ngn(loan.principal)} {product.name} · <Link href={`/console/customers/${customer.id}`} className="hover:text-brand">{fullName(customer)}</Link></h1>
           <p className="text-sm text-muted"><span className="font-mono">{loan.reference}</span> · {customer.email} · {formatNgPhone(customer.phone)} · KYC Tier {customer.kycTier} · customer since {formatDate(customer.createdAt.toISOString())}</p>
         </div>
         <Badge tone={LOAN_STATUS_TONE[loan.status]} dot>{LOAN_STATUS_LABEL[loan.status]}</Badge>
@@ -124,6 +132,57 @@ export default async function ConsoleLoanPage({ params }: { params: Promise<{ id
               )}
             </div>
           </Card>
+
+          {inCollections && (
+            <Card className="p-5">
+              <div className="flex items-center justify-between">
+                <h2 className="text-[15px] font-bold text-ink">Collections</h2>
+                {balance && balance.overdueCount > 0 ? <Badge tone="danger">{ngn(balance.overdueAmount)} overdue</Badge> : <Badge tone="success">Up to date</Badge>}
+              </div>
+              <div className="mt-4 space-y-5">
+                {can(staff, "loans.collect") && (
+                  <>
+                    <SelectForm action={assignCollectorAction.bind(null, loan.id)} name="collectorId" label="Collector" value={String(loan.collectorId ?? "")} submit="Assign"
+                      options={[{ value: "", label: "Unassigned" }, ...collectorList.map((c) => ({ value: String(c.id), label: c.name }))]} />
+                    {loan.status !== "written_off" && <ActionButton action={reminderSmsAction.bind(null, loan.id)} label="Send overdue reminder SMS" tone="secondary" confirm="Send the standard overdue reminder by SMS? (Once a day, 8am–6pm.)" />}
+                    <details className="rounded-[5px] border border-line p-4" open={!openPromise && (balance?.overdueCount ?? 0) > 0}>
+                      <summary className="cursor-pointer text-sm font-bold text-ink">{openPromise ? `Open promise: ${ngn(openPromise.amount)} by ${formatDate(openPromise.dueDate)}` : "Record a promise to pay"}</summary>
+                      <div className="mt-3"><SimpleActionForm action={promiseAction.bind(null, loan.id)} submit={openPromise ? "Replace promise" : "Save promise"} fields={[{ name: "amount", label: "Amount (₦)", inputMode: "decimal" }, { name: "dueDate", label: "By", type: "date" }]} /></div>
+                    </details>
+                    <details className="rounded-[5px] border border-line p-4">
+                      <summary className="cursor-pointer text-sm font-bold text-ink">Log a call, message or visit</summary>
+                      <div className="mt-3"><ContactForm action={logContactAction.bind(null, customer.id)} channels={CHANNELS} outcomes={OUTCOMES} defaultLoanId={loan.id} /></div>
+                    </details>
+                    {loan.status !== "active" && <div><p className="mb-2 text-sm font-bold text-ink">Record a repayment received by bank transfer</p><SimpleActionForm action={recordPaymentAction.bind(null, loan.id)} submit="Record repayment" fields={[{ name: "amount", label: "Amount (₦)", inputMode: "decimal" }, { name: "note", label: "Transfer reference or note" }]} /></div>}
+                  </>
+                )}
+                {can(staff, "loans.approve") && loan.status !== "written_off" && (
+                  <>
+                    <details className="rounded-[5px] border border-line p-4">
+                      <summary className="cursor-pointer text-sm font-bold text-ink">Reschedule</summary>
+                      <div className="mt-3"><RescheduleForm action={rescheduleAction.bind(null, loan.id)} /></div>
+                    </details>
+                    <details className="rounded-[5px] border border-danger/30 p-4">
+                      <summary className="cursor-pointer text-sm font-bold text-danger">Write off</summary>
+                      <p className="mt-2 text-xs text-muted">Moves the unpaid principal to loan losses. The customer still owes it, and anything they pay later is recorded as a recovery.</p>
+                      <div className="mt-3"><SimpleActionForm action={writeOffAction.bind(null, loan.id)} submit="Write off loan" tone="danger" confirm="Write this loan off? This is reported to the credit bureau." fields={[{ name: "note", label: "Reason", textarea: true }]} /></div>
+                    </details>
+                  </>
+                )}
+              </div>
+              {contacts.length > 0 && (
+                <ol className="mt-5 divide-y divide-line border-t border-line">
+                  {contacts.map(({ c, authorFirst, authorLast }) => (
+                    <li key={c.id} className="py-3 text-sm">
+                      <p className="text-xs font-semibold text-brand">{CHANNELS.find((x) => x.value === c.channel)?.label}{c.outcome ? ` · ${OUTCOMES.find((o) => o.value === c.outcome)?.label}` : ""}</p>
+                      <p className="mt-1 whitespace-pre-line text-ink">{c.note}</p>
+                      <p className="mt-1 text-xs text-muted">{authorFirst ? `${authorFirst} ${authorLast}` : "Staff"} · {formatDate(c.createdAt.toISOString(), { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</p>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </Card>
+          )}
 
           {/* ---------- Assessment ---------- */}
           {s && (

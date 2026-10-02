@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AreaChart, GroupedBars } from "@/components/charts/charts";
-import { AlertIcon, ChartIcon, IdCardIcon, LandmarkIcon, TrendUpIcon, UsersIcon } from "@/components/icons";
+import { AlertIcon, ChartIcon, LandmarkIcon, TrendUpIcon, UsersIcon } from "@/components/icons";
 import { Avatar, Badge, Card, CardHeader, PageHeader, StatTile, StatusBadge } from "@/components/ui";
 import { formatCompactNaira, formatDate, formatNaira, formatNumber } from "@/lib/format";
-import { consoleKpis, disbursements, signups } from "@/lib/mock-data";
+import { customerStats, monthlySeries, portfolio } from "@/lib/reports";
 import { payoutsNeedingAttention, recentPayouts, recentRepayments } from "@/lib/money";
 import { staffLoanQueue } from "@/lib/loans/queries";
 import { listAudit } from "@/lib/audit-queries";
@@ -27,6 +27,10 @@ export default async function ConsoleOverview({ searchParams }: { searchParams: 
         .sort((a, b) => b.at.getTime() - a.at.getTime()).slice(0, 6)
     : [];
   const pendingLoans = can(user, "loans.review") ? (await staffLoanQueue("review")).rows.slice(0, 5) : null;
+  const [book, series, people] = await Promise.all([portfolio(), monthlySeries(12), customerStats(30)]);
+  const thisMonth = series.at(-1)!;
+  const lastMonth = series.at(-2)!;
+  const change = (now: number, before: number) => (before ? (now - before) / before : undefined);
 
   return (
     <div className="space-y-6">
@@ -39,10 +43,10 @@ export default async function ConsoleOverview({ searchParams }: { searchParams: 
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatTile label="Assets under management" value={formatCompactNaira(consoleKpis.aum)} change={consoleKpis.aumChange} icon={<TrendUpIcon className="size-5" />} />
-        <StatTile label="Loan book" value={formatCompactNaira(consoleKpis.loanBook)} change={consoleKpis.loanBookChange} icon={<LandmarkIcon className="size-5" />} />
-        <StatTile label="Active customers" value={formatNumber(consoleKpis.activeUsers)} change={consoleKpis.usersChange} icon={<UsersIcon className="size-5" />} />
-        <StatTile label="NPL ratio" value={`${(consoleKpis.nplRatio * 100).toFixed(1)}%`} hint="▼ 0.4pt vs last month · target < 5%" icon={<ChartIcon className="size-5" />} />
+        <StatTile label="Loan book (principal owed)" value={formatCompactNaira(book.principal / 100)} hint={`${formatNumber(book.activeLoans)} active loan${book.activeLoans === 1 ? "" : "s"}`} icon={<LandmarkIcon className="size-5" />} />
+        <StatTile label="Collected this month" value={formatCompactNaira(thisMonth.collected / 100)} change={change(thisMonth.collected, lastMonth.collected)} icon={<TrendUpIcon className="size-5" />} />
+        <StatTile label="Customers" value={formatNumber(people.total)} hint={`${formatNumber(people.fresh)} joined in the last 30 days · ${people.total ? Math.round((people.verified / people.total) * 100) : 0}% BVN verified`} icon={<UsersIcon className="size-5" />} />
+        <StatTile label="Portfolio at risk (30+ days)" value={`${(book.par30Ratio * 100).toFixed(1)}%`} hint={`${formatCompactNaira(book.par30 / 100)} of principal is over 30 days late`} icon={<ChartIcon className="size-5" />} />
       </div>
 
       {attention.length > 0 && (
@@ -58,12 +62,12 @@ export default async function ConsoleOverview({ searchParams }: { searchParams: 
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
-          <CardHeader title="Repayments vs disbursements" subtitle="Last 6 months" />
-          <div className="px-3 pb-3 pt-4"><GroupedBars data={disbursements} labels={["Repayments", "Disbursed"]} /></div>
+          <CardHeader title="Collected vs disbursed" subtitle="Last 12 months" action={can(user, "reports.view") ? <Link href="/console/reports" className="text-sm font-semibold text-brand">Reports</Link> : undefined} />
+          <div className="px-3 pb-3 pt-4"><GroupedBars data={series.map((m) => ({ label: m.label, inflow: m.collected / 100, outflow: m.disbursed / 100 }))} labels={["Collected", "Disbursed"]} /></div>
         </Card>
         <Card>
-          <CardHeader title="New sign-ups" subtitle="Verified accounts per month" />
-          <div className="px-3 pb-3 pt-4"><AreaChart data={signups} valueFormat="count" /></div>
+          <CardHeader title="New customers" subtitle="Sign-ups per month" />
+          <div className="px-3 pb-3 pt-4"><AreaChart data={series.map((m) => ({ label: m.label, value: m.newCustomers }))} valueFormat="count" /></div>
         </Card>
       </div>
 
@@ -136,7 +140,6 @@ export default async function ConsoleOverview({ searchParams }: { searchParams: 
           </ul>
         </Card>
       )}
-      <p className="flex items-center gap-2 text-xs text-muted"><IdCardIcon className="size-4" /> The top figures and charts are still sample data until enough real activity exists.</p>
     </div>
   );
 }

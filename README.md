@@ -67,6 +67,14 @@ Customers verify in three CBN tiers at **Verify identity** (`/dashboard/verify`)
 - **Overdue:** a daily job (`/api/cron/loans`, `CRON_SECRET`, scheduled in `vercel.json`) marks instalments overdue, adds the one-off late fee, and sends reminders 3 days before due dates. Pages also run it when opened.
 - **Credit bureau:** `src/lib/credit/bureau.ts` defines the adapter; a test bureau runs in development (BVN ending 9 → delinquent, 8 → many loans, else clean). Add the CRC/FirstCentral adapter once subscribed.
 
+## Operations
+
+- **Notifications:** customers and staff get in-app notifications (the bell), plus SMS/email for important customer events using a branded email template. Staff are alerted to work waiting for their role (new applications, approvals, payouts, failed transfers, KYC reviews, broken promises, reconciliation issues).
+- **Customers** (Console → Customers → a customer): profile, identity, credit, loans, a contact log, activity, and (with `users.manage`) restrict/freeze/close, unlock PIN, sign out everywhere.
+- **Collections** (Console → Collections, `loans.collect`): overdue worklist by days overdue, collector assignment, contact log, promises to pay (marked kept/broken automatically), reminder SMS (once a day, 8am–6pm), and for `loans.approve` rescheduling and write-offs (loss posted to the ledger; later payments booked as recoveries).
+- **Reports** (Console → Reports, `reports.view`): applications funnel, collected vs disbursed, portfolio quality and PAR30, revenue/losses by month from the ledger, product performance, collections results, and CSV exports.
+- **Reconciliation** (Console → Reconciliation): every morning the cron compares yesterday's Flutterwave transfers and collections with ours and snapshots Flutterwave's balance against the ledger. Staff with `finance.manage` can re-run a day, re-check/resolve issues and record funding or withdrawals. Flutterwave transfer fees are posted to the ledger automatically.
+
 ## Money and ledger
 
 Every payout and repayment posts a balanced double-entry journal (`src/lib/ledger.ts`): cash accounts per provider, loans receivable, interest, fee and late-fee income. Console → Money shows the Flutterwave balance, payouts, repayments, payouts needing attention and the trial balance.

@@ -5,7 +5,7 @@ import { getDb } from "@/db";
 import { kycDocuments, kycProfiles, kycSubmissions, users, type KycChecks, type KycDocumentKind, type KycProfile, type KycStatus, type KycSubmission } from "@/db/schema";
 import { logAudit } from "@/lib/audit";
 import type { CurrentUser } from "@/lib/auth";
-import { sendSms } from "@/lib/messaging";
+import { notifyCustomer, notifyStaff } from "@/lib/notifications";
 import { blockedFor, recordFailure } from "@/lib/rate-limit";
 import { encryptSecret } from "@/lib/secrets";
 import { identityProvider, kycThresholds } from ".";
@@ -49,6 +49,7 @@ async function record(userId: number, tier: number, status: KycStatus, checks: K
     await db.insert(kycDocuments).values({ submissionId: sub.id, kind: d.kind, mimeType: d.mimeType, data: d.data, size: Math.round((d.data.length * 3) / 4) });
   }
   if (status === "approved") await db.update(users).set({ kycTier: tier }).where(eq(users.id, userId));
+  if (status === "pending_review") await notifyStaff("kyc.review", { category: "kyc", title: `Tier ${tier} verification to review`, body: reason ?? "A customer's details need a manual check.", href: `/console/kyc/${sub.id}` });
   return sub;
 }
 
@@ -244,11 +245,9 @@ export async function decideSubmission(staff: CurrentUser, submissionId: number,
     summary: `${status === "approved" ? "approved" : "rejected"} Tier ${sub.tier} for ${customer.firstName} ${customer.lastName}${status === "rejected" ? `: ${reason.trim()}` : ""}`,
     target: { type: "kyc_submission", id: sub.id },
   });
-  if (customer.phone) {
-    await sendSms(customer.phone, status === "approved"
-      ? `DigitMonie: your Tier ${sub.tier} verification is approved. Your new limits are active now.`
-      : `DigitMonie: we couldn't approve your Tier ${sub.tier} verification. Open the app to see why and try again.`).catch(() => {});
-  }
+  await notifyCustomer(customer.id, status === "approved"
+    ? { category: "kyc", title: `Tier ${sub.tier} verification approved`, body: `Your new limits are active now.`, href: "/dashboard/verify", sms: `your Tier ${sub.tier} verification is approved. Your new limits are active now.`, email: true }
+    : { category: "kyc", title: `We couldn't approve your Tier ${sub.tier} verification`, body: reason.trim(), href: "/dashboard/verify", sms: `we couldn't approve your Tier ${sub.tier} verification. Open the app to see why and try again.`, email: true });
   return { ok: true };
 }
 

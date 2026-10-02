@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { and, count, desc, eq, gte, ilike, or, type SQL } from "drizzle-orm";
 import { SearchIcon } from "@/components/icons";
 import { Avatar, Badge, Card, PageHeader, StatTile, StatusBadge, Table, buttonSecondary } from "@/components/ui";
@@ -53,7 +54,7 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
           <Table head={["Customer", "Phone", "KYC", "Status", "Joined", "Last sign-in"]}>
             {rows.map((c) => (
               <tr key={c.id} className="hover:bg-canvas/60">
-                <td className="px-5 py-3.5"><div className="flex items-center gap-3"><Avatar name={fullName(c)} /><div><p className="font-semibold text-ink">{fullName(c)}</p><p className="text-xs text-muted">{c.email}</p></div></div></td>
+                <td className="px-5 py-3.5"><div className="flex items-center gap-3"><Avatar name={fullName(c)} /><div><Link href={`/console/customers/${c.id}`} className="font-semibold text-ink hover:text-brand">{fullName(c)}</Link><p className="text-xs text-muted">{c.email}</p></div></div></td>
                 <td className="whitespace-nowrap px-5 py-3.5 text-body">{formatNgPhone(c.phone)}{!c.phoneVerifiedAt && <span className="ml-2"><Badge tone="warning">unverified</Badge></span>}</td>
                 <td className="px-5 py-3.5">{c.kycTier ? <Badge tone="brand">Tier {c.kycTier}</Badge> : <Badge>Not verified</Badge>}</td>
                 <td className="px-5 py-3.5"><StatusBadge status={c.status} /></td>

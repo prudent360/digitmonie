@@ -29,7 +29,7 @@ export default async function MoneyPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Money" subtitle="Every naira paid out and received, and the ledger behind it." />
+      <PageHeader title="Money" subtitle="Every naira paid out and received, and the ledger behind it." actions={<Link href="/console/reconciliation" className="text-sm font-semibold text-brand">Reconciliation →</Link>} />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatTile label="Flutterwave balance" value={balance ? ngn(balance.available) : "—"} hint={balance ? `Ledger balance ${ngn(balance.ledger)}` : balanceError ?? "Not connected (Settings → Flutterwave)"} />
