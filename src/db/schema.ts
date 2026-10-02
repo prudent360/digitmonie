@@ -94,3 +94,74 @@ export const auditLogs = pgTable("audit_logs", {
 export type Role = typeof roles.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type AuditLog = typeof auditLogs.$inferSelect;
+
+/* ---------- KYC ---------- */
+
+/** Identity details confirmed through KYC (one row per customer). BVN and NIN are encrypted. */
+export const kycProfiles = pgTable("kyc_profiles", {
+  userId: integer("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
+  bvnEncrypted: text("bvn_encrypted"),
+  /** Keyed hash, so one BVN can't be linked to two accounts without storing it in the clear. */
+  bvnHash: text("bvn_hash").unique(),
+  bvnLast4: text("bvn_last4"),
+  ninEncrypted: text("nin_encrypted"),
+  ninHash: text("nin_hash").unique(),
+  ninLast4: text("nin_last4"),
+  /** Names and birth date as held by NIBSS/NIMC. */
+  legalFirstName: text("legal_first_name"),
+  legalMiddleName: text("legal_middle_name"),
+  legalLastName: text("legal_last_name"),
+  dateOfBirth: text("date_of_birth"),
+  gender: text("gender"),
+  addressLine: text("address_line"),
+  city: text("city"),
+  state: text("state"),
+  /** When the customer agreed to identity checks (NDPA consent). */
+  consentAt: timestamp("consent_at", { withTimezone: true }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type KycStatus = "approved" | "pending_review" | "rejected";
+export type KycChecks = {
+  provider?: string;
+  nameScore?: number;
+  dobMatch?: boolean;
+  faceScore?: number;
+  watchlisted?: boolean;
+  duplicate?: boolean;
+  notes?: string[];
+};
+
+/** Each attempt at a tier: approved automatically, waiting for staff, or rejected. */
+export const kycSubmissions = pgTable("kyc_submissions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  tier: integer("tier").notNull(),
+  status: text("status").$type<KycStatus>().notNull(),
+  /** "auto" when the provider checks decided it; "manual" once staff decide. */
+  decidedBy: text("decided_by").$type<"auto" | "manual">(),
+  checks: jsonb("checks").$type<KycChecks>().notNull().default({}),
+  /** Shown to the customer when rejected; for staff when flagged. */
+  reason: text("reason"),
+  reviewedById: integer("reviewed_by_id").references(() => users.id, { onDelete: "set null" }),
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  createdAt: createdAt(),
+}, (t) => [index("kyc_submissions_status_idx").on(t.status, t.createdAt), index("kyc_submissions_user_idx").on(t.userId)]);
+
+/**
+ * Selfies, BVN photos and proof-of-address files. Kept in the database (base64) so they're
+ * never publicly reachable; only served through a permission-checked route.
+ */
+export type KycDocumentKind = "selfie" | "id_photo" | "proof_of_address";
+export const kycDocuments = pgTable("kyc_documents", {
+  id: serial("id").primaryKey(),
+  submissionId: integer("submission_id").notNull().references(() => kycSubmissions.id, { onDelete: "cascade" }),
+  kind: text("kind").$type<KycDocumentKind>().notNull(),
+  mimeType: text("mime_type").notNull(),
+  data: text("data").notNull(),
+  size: integer("size").notNull(),
+  createdAt: createdAt(),
+}, (t) => [index("kyc_documents_submission_idx").on(t.submissionId)]);
+
+export type KycProfile = typeof kycProfiles.$inferSelect;
+export type KycSubmission = typeof kycSubmissions.$inferSelect;

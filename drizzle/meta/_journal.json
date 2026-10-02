@@ -8,6 +8,13 @@
       "when": 1790926759209,
       "tag": "0000_init",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790929454683,
+      "tag": "0001_kyc",
+      "breakpoints": true
     }
   ]
 }

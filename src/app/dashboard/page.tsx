@@ -41,12 +41,12 @@ export default async function DashboardHome() {
         <Badge tone="gold">⭐ {account.points.toLocaleString()} DigitPoints</Badge>
       </div>
 
-      {account.kycProgress < account.kycSteps && (
-        <Link href="/dashboard/settings#kyc" className="flex items-center gap-4 rounded-2xl border border-gold/40 bg-gold-50 p-4 transition hover:border-gold">
+      {user.kycTier < 3 && (
+        <Link href="/dashboard/verify" className="flex items-center gap-4 rounded-[5px] border border-gold/40 bg-gold-50 p-4 transition hover:border-gold">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gold text-ink"><IdCardIcon /></span>
           <div className="flex-1">
-            <p className="text-sm font-bold text-ink">Upgrade to Tier 3 to unlock ₦50m daily limits</p>
-            <p className="text-xs text-body">Add a proof of address to finish verification. {account.kycProgress} of {account.kycSteps} steps done.</p>
+            <p className="text-sm font-bold text-ink">{user.kycTier === 0 ? "Verify your BVN to start using your account" : `Upgrade to Tier ${user.kycTier + 1} for higher limits`}</p>
+            <p className="text-xs text-body">{["It takes a minute with your BVN and date of birth.", "Add your NIN and a selfie.", "Add your address and a recent utility bill."][user.kycTier]} {user.kycTier} of 3 tiers done.</p>
           </div>
           <ArrowRightIcon className="size-4 text-ink" />
         </Link>

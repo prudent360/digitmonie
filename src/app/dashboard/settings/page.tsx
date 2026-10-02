@@ -1,26 +1,24 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { changePassword, changePin, signOutEverywhere, updateProfile } from "@/app/actions/account";
 import { ChangePinForm, PasswordForm, ProfileForm } from "@/components/app/account-forms";
 import { Toggle } from "@/components/app/toggle";
 import { CheckIcon, ClockIcon, LogoutIcon } from "@/components/icons";
 import { Avatar, Badge, Card, CardHeader, PageHeader, buttonPrimary, buttonSecondary } from "@/components/ui";
 import { fullName, requireCustomer } from "@/lib/auth";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatNairaWhole } from "@/lib/format";
+import { KYC_TIERS } from "@/lib/kyc/tiers";
 import { formatNgPhone } from "@/lib/phone";
 
 export const metadata: Metadata = { title: "Settings & KYC" };
 
-const TIERS = [
-  { tier: 1, limit: "₦50,000 daily", needs: "Phone number & BVN" },
-  { tier: 2, limit: "₦500,000 daily", needs: "NIN & selfie" },
-  { tier: 3, limit: "₦50,000,000 daily", needs: "Proof of address" },
-];
+const TIERS = KYC_TIERS.map((t) => ({ tier: t.tier, limit: `${formatNairaWhole(t.dailyLimit)} daily`, needs: t.needs }));
 
 export default async function SettingsPage() {
   const user = await requireCustomer();
   return (
     <div className="space-y-6">
-      <PageHeader title="Settings & KYC" subtitle="Manage your profile, verification and security." />
+      <PageHeader title="Settings" subtitle="Manage your profile, verification and security." />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
         <Card>
@@ -54,7 +52,7 @@ export default async function SettingsPage() {
                     <p className="font-bold text-ink">Tier {t.tier} <span className="font-normal text-muted">· {t.limit}</span></p>
                     <p className="text-xs text-muted">{t.needs}</p>
                   </div>
-                  {done ? <Badge tone="success" dot>Verified</Badge> : next ? <button type="button" className={buttonPrimary} disabled title="Identity checks arrive in the next phase">Start</button> : null}
+                  {done ? <Badge tone="success" dot>Verified</Badge> : next ? <Link href="/dashboard/verify" className={buttonPrimary}>Start</Link> : null}
                 </li>
               );
             })}

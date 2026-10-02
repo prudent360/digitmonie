@@ -1,5 +1,5 @@
 import { AppShell, type NavSection } from "@/components/app/app-shell";
-import { CardIcon, HomeIcon, LandmarkIcon, PiggyIcon, ReceiptIcon, SettingsIcon, TrendUpIcon, WalletIcon } from "@/components/icons";
+import { CardIcon, HomeIcon, IdCardIcon, LandmarkIcon, PiggyIcon, ReceiptIcon, SettingsIcon, TrendUpIcon, WalletIcon } from "@/components/icons";
 import { fullName, requireCustomer } from "@/lib/auth";
 
 const SECTIONS: NavSection[] = [
@@ -14,7 +14,8 @@ const SECTIONS: NavSection[] = [
     { href: "/dashboard/loans", label: "Loans", icon: <LandmarkIcon /> },
   ] },
   { title: "Account", items: [
-    { href: "/dashboard/settings", label: "Settings & KYC", icon: <SettingsIcon /> },
+    { href: "/dashboard/verify", label: "Verify identity", icon: <IdCardIcon /> },
+    { href: "/dashboard/settings", label: "Settings", icon: <SettingsIcon /> },
     { href: "/dashboard/wallet#cards", label: "Cards", icon: <CardIcon /> },
   ] },
 ];

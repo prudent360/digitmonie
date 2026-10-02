@@ -38,6 +38,22 @@ Without `TERMII_API_KEY` / `RESEND_API_KEY`, codes and invitation emails are pri
 
 Staff accounts set up two-factor on their first sign-in.
 
+## Identity verification (KYC)
+
+Customers verify in three CBN tiers at **Verify identity** (`/dashboard/verify`):
+
+| Tier | Customer provides | Decided by |
+|---|---|---|
+| 1 | BVN + date of birth | Automatic: name and birth date must match the BVN record |
+| 2 | NIN + selfie | Automatic face match (≥ 90% passes, 70–89% goes to staff, < 70% fails) |
+| 3 | Address + proof of address | Staff, in Console → KYC reviews |
+
+- BVN and NIN are encrypted at rest; a keyed hash stops one BVN/NIN being used on two accounts. Consent is recorded.
+- Selfies, ID photos and documents are stored privately in the database and only served to staff with `kyc.review`; each view is written to the audit log.
+- Limits and thresholds live in `src/lib/kyc/tiers.ts`. Confirm the limits with your partner bank.
+- **Provider:** set `KYC_PROVIDER=dojah` with `DOJAH_APP_ID` / `DOJAH_SECRET_KEY` (`DOJAH_ENV=live` for production). Without it, a built-in test provider is used in development:
+  BVN/NIN ending `0000` → not found · starting `1` → someone else's · NIN ending `1` → face 78% (staff review) · NIN ending `2` → face 41% (rejected) · anything else → match.
+
 ## Roles & permissions
 
 Permissions are defined in `src/lib/permissions.ts`. Roles live in the database and are managed in

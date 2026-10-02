@@ -1,42 +1,68 @@
 import type { Metadata } from "next";
-import { DownloadIcon, FilterIcon } from "@/components/icons";
+import { and, count, desc, eq, gte, ilike, or, type SQL } from "drizzle-orm";
+import { SearchIcon } from "@/components/icons";
 import { Avatar, Badge, Card, PageHeader, StatTile, StatusBadge, Table, buttonSecondary } from "@/components/ui";
-import { formatDate, formatNaira, formatNumber } from "@/lib/format";
-import { consoleKpis, customers } from "@/lib/mock-data";
-import { can, requirePermission } from "@/lib/auth";
+import { getDb } from "@/db";
+import { users } from "@/db/schema";
+import { fullName, requirePermission } from "@/lib/auth";
+import { formatDate, formatNumber } from "@/lib/format";
+import { CUSTOMER_ROLE } from "@/lib/permissions";
+import { formatNgPhone, normalizeNgPhone } from "@/lib/phone";
 
 export const metadata: Metadata = { title: "Customers" };
 
-export default async function CustomersPage() {
-  const user = await requirePermission("users.view");
-  const canManage = can(user, "users.manage");
+const daysAgo = (days: number) => new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+export default async function CustomersPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+  await requirePermission("users.view");
+  const { q = "" } = await searchParams;
+  const query = q.trim().slice(0, 80);
+  const db = await getDb();
+
+  const isCustomer = eq(users.roleKey, CUSTOMER_ROLE);
+  const phone = normalizeNgPhone(query);
+  const search: SQL | undefined = query
+    ? or(ilike(users.firstName, `%${query}%`), ilike(users.lastName, `%${query}%`), ilike(users.email, `%${query}%`), phone ? eq(users.phone, phone) : undefined)
+    : undefined;
+  const rows = await db.select().from(users).where(and(isCustomer, search)).orderBy(desc(users.createdAt)).limit(100);
+
+  const [{ total }] = await db.select({ total: count() }).from(users).where(isCustomer);
+  const [{ verified }] = await db.select({ verified: count() }).from(users).where(and(isCustomer, gte(users.kycTier, 1)));
+  const [{ recent }] = await db.select({ recent: count() }).from(users).where(and(isCustomer, gte(users.createdAt, daysAgo(7))));
+  const [{ restricted }] = await db.select({ restricted: count() }).from(users).where(and(isCustomer, or(eq(users.status, "restricted"), eq(users.status, "frozen"))));
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Customers" subtitle="Search, review and manage customer accounts." actions={<><button type="button" className={buttonSecondary}><FilterIcon className="size-4" /> Filters</button><button type="button" className={buttonSecondary}><DownloadIcon className="size-4" /> Export CSV</button></>} />
+      <PageHeader title="Customers" subtitle="Everyone with a DigitMonie account." />
       <div className="grid gap-4 sm:grid-cols-4">
-        <StatTile label="Total customers" value={formatNumber(consoleKpis.activeUsers)} />
-        <StatTile label="KYC verified" value="81.4%" />
-        <StatTile label="New this week" value="6,912" />
-        <StatTile label="Restricted / frozen" value="214" />
+        <StatTile label="Total customers" value={formatNumber(total)} />
+        <StatTile label="BVN verified" value={total ? `${Math.round((verified / total) * 100)}%` : "—"} hint={`${formatNumber(verified)} of ${formatNumber(total)}`} />
+        <StatTile label="Joined this week" value={formatNumber(recent)} />
+        <StatTile label="Restricted / frozen" value={formatNumber(restricted)} />
       </div>
       <Card>
-        <Table head={["Customer", "Phone", "Tier", "KYC", "Balance", "Joined", "Status", ""]}>
-          {customers.map((c) => (
-            <tr key={c.id} className="hover:bg-canvas/60">
-              <td className="px-5 py-3.5"><div className="flex items-center gap-3"><Avatar name={c.name} /><div><p className="font-semibold text-ink">{c.name}</p><p className="text-xs text-muted">{c.email} · {c.state}</p></div></div></td>
-              <td className="whitespace-nowrap px-5 py-3.5 text-body">{c.phone}</td>
-              <td className="px-5 py-3.5"><Badge tone="brand">{c.tier}</Badge></td>
-              <td className="px-5 py-3.5"><StatusBadge status={c.kyc} /></td>
-              <td className="whitespace-nowrap px-5 py-3.5 font-semibold tabular-nums text-ink">{formatNaira(c.balance)}</td>
-              <td className="whitespace-nowrap px-5 py-3.5 text-body">{formatDate(c.joined)}</td>
-              <td className="px-5 py-3.5"><StatusBadge status={c.status} /></td>
-              <td className="px-5 py-3.5 text-right">
-                {canManage ? <button type="button" className="text-sm font-semibold text-brand">Manage</button> : <button type="button" className="text-sm font-semibold text-brand">View</button>}
-              </td>
-            </tr>
-          ))}
-        </Table>
+        <form className="flex flex-wrap items-center gap-3 border-b border-line p-4">
+          <label className="relative w-full sm:w-80">
+            <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
+            <input name="q" defaultValue={query} placeholder="Name, email or phone number" className="w-full rounded-[5px] border border-line py-2 pl-9 pr-3 text-sm outline-none focus:border-brand focus:ring-4 focus:ring-brand-100" />
+          </label>
+          <button className={buttonSecondary}>Search</button>
+          {query && <span className="text-sm text-muted">{rows.length} match{rows.length === 1 ? "" : "es"}</span>}
+        </form>
+        {rows.length ? (
+          <Table head={["Customer", "Phone", "KYC", "Status", "Joined", "Last sign-in"]}>
+            {rows.map((c) => (
+              <tr key={c.id} className="hover:bg-canvas/60">
+                <td className="px-5 py-3.5"><div className="flex items-center gap-3"><Avatar name={fullName(c)} /><div><p className="font-semibold text-ink">{fullName(c)}</p><p className="text-xs text-muted">{c.email}</p></div></div></td>
+                <td className="whitespace-nowrap px-5 py-3.5 text-body">{formatNgPhone(c.phone)}{!c.phoneVerifiedAt && <span className="ml-2"><Badge tone="warning">unverified</Badge></span>}</td>
+                <td className="px-5 py-3.5">{c.kycTier ? <Badge tone="brand">Tier {c.kycTier}</Badge> : <Badge>Not verified</Badge>}</td>
+                <td className="px-5 py-3.5"><StatusBadge status={c.status} /></td>
+                <td className="whitespace-nowrap px-5 py-3.5 text-body">{formatDate(c.createdAt.toISOString())}</td>
+                <td className="whitespace-nowrap px-5 py-3.5 text-body">{c.lastLoginAt ? formatDate(c.lastLoginAt.toISOString(), { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "Never"}</td>
+              </tr>
+            ))}
+          </Table>
+        ) : <p className="p-12 text-center text-sm text-muted">{query ? "No customers match that search." : "No customers yet."}</p>}
       </Card>
     </div>
   );

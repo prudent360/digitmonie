@@ -4,8 +4,9 @@ import { AreaChart, GroupedBars } from "@/components/charts/charts";
 import { AlertIcon, ChartIcon, IdCardIcon, LandmarkIcon, TrendUpIcon, UsersIcon } from "@/components/icons";
 import { Avatar, Badge, Card, CardHeader, PageHeader, StatTile, StatusBadge } from "@/components/ui";
 import { formatCompactNaira, formatDate, formatNaira, formatNumber } from "@/lib/format";
-import { consoleKpis, disbursements, kycQueue, loanApplications, platformTransactions, signups } from "@/lib/mock-data";
+import { consoleKpis, disbursements, loanApplications, platformTransactions, signups } from "@/lib/mock-data";
 import { listAudit } from "@/lib/audit-queries";
+import { listKycSubmissions } from "@/lib/kyc/queries";
 import { can, requirePermission } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Console" };
@@ -14,6 +15,7 @@ export default async function ConsoleOverview({ searchParams }: { searchParams: 
   const { denied } = await searchParams;
   const user = await requirePermission("console.access");
   const showAudit = can(user, "audit.view");
+  const kycPending = can(user, "kyc.review") ? await listKycSubmissions("pending_review", 4) : null;
   const audit = showAudit ? (await listAudit({ limit: 5 })).rows : [];
   const flagged = platformTransactions.filter((t) => t.flagged);
   const pendingLoans = loanApplications.filter((l) => l.status === "pending");
@@ -58,18 +60,23 @@ export default async function ConsoleOverview({ searchParams }: { searchParams: 
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <Card>
-          <CardHeader title="KYC queue" subtitle={`${kycQueue.length} awaiting review`} action={<Link href="/console/kyc" className="text-sm font-semibold text-brand">Open</Link>} />
-          <ul className="divide-y divide-line pb-2 pt-2">
-            {kycQueue.slice(0, 4).map((k) => (
-              <li key={k.id} className="flex items-center gap-3 px-5 py-3">
-                <Avatar name={k.name} />
-                <div className="flex-1"><p className="text-sm font-semibold text-ink">{k.name}</p><p className="text-xs text-muted">{k.requested} · {Math.round(k.match * 100)}% face match</p></div>
-                <Badge tone={k.risk === "low" ? "success" : k.risk === "medium" ? "warning" : "danger"} dot>{k.risk}</Badge>
-              </li>
-            ))}
-          </ul>
-        </Card>
+        {kycPending && (
+          <Card>
+            <CardHeader title="KYC queue" subtitle={`${kycPending.length ? "Oldest first" : "Nothing waiting"}`} action={<Link href="/console/kyc" className="text-sm font-semibold text-brand">Open</Link>} />
+            <ul className="divide-y divide-line pb-2 pt-2">
+              {kycPending.map(({ s: k, firstName, lastName }) => (
+                <li key={k.id}>
+                  <Link href={`/console/kyc/${k.id}`} className="flex items-center gap-3 px-5 py-3 hover:bg-canvas/60">
+                    <Avatar name={`${firstName} ${lastName}`} />
+                    <div className="flex-1"><p className="text-sm font-semibold text-ink">{firstName} {lastName}</p><p className="text-xs text-muted">Tier {k.tier}{k.checks.faceScore !== undefined ? ` · ${k.checks.faceScore}% face match` : ""}</p></div>
+                    <Badge tone="warning" dot>review</Badge>
+                  </Link>
+                </li>
+              ))}
+              {!kycPending.length && <li className="px-5 py-6 text-sm text-muted">No customers waiting for review.</li>}
+            </ul>
+          </Card>
+        )}
         <Card>
           <CardHeader title="Pending loans" subtitle={`${pendingLoans.length} need a decision`} action={<Link href="/console/loans" className="text-sm font-semibold text-brand">Open</Link>} />
           <ul className="divide-y divide-line pb-2 pt-2">
