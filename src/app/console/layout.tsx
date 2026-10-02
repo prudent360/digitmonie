@@ -1,4 +1,5 @@
 import { unreadCount } from "@/lib/notifications";
+import { getBranding } from "@/lib/branding";
 import { AppShell, type NavItem } from "@/components/app/app-shell";
 import { AlertIcon, ChartIcon, CheckIcon, ClockIcon, SettingsIcon, IdCardIcon, LandmarkIcon, ReceiptIcon, TrendUpIcon, UserCogIcon, UsersIcon } from "@/components/icons";
 import { can, fullName, requirePermission } from "@/lib/auth";
@@ -37,7 +38,7 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
     .filter((s) => s.items.length);
 
   return (
-    <AppShell unread={await unreadCount(user.id)} variant="console" sections={sections} user={{ name: fullName(user), email: user.email, roleLabel: user.role.name }}>
+    <AppShell logos={await getBranding().then((b) => ({ light: b.logoUrl, dark: b.logoDarkUrl }))} unread={await unreadCount(user.id)} variant="console" sections={sections} user={{ name: fullName(user), email: user.email, roleLabel: user.role.name }}>
       {children}
     </AppShell>
   );

@@ -3,6 +3,9 @@ import Link from "next/link";
 import { runIntegrationTest, saveSettings } from "@/app/actions/settings";
 import { SettingsForm } from "@/components/app/settings-form";
 import { EmailSettingsForm } from "@/components/app/email-settings-form";
+import { BrandingForm } from "@/components/app/branding-form";
+import { saveBranding } from "@/app/actions/branding";
+import { getBranding } from "@/lib/branding";
 import { ActionButton } from "@/components/app/loan-staff";
 import { sendTestEmailNow, setTemplateEnabled } from "@/app/actions/email";
 import { Badge, StatusBadge, Table } from "@/components/ui";
@@ -40,7 +43,8 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
           <h2 className="font-display text-lg font-bold text-ink">{section.title}</h2>
           <p className="mt-1 text-sm text-muted">{section.description}</p>
           <div className="mt-6">
-            {section.custom === "email" ? <EmailPanel state={state} />
+            {section.custom === "branding" ? <BrandingForm key="branding" action={saveBranding} {...(await getBranding())} />
+              : section.custom === "email" ? <EmailPanel state={state} />
               : section.custom === "templates" ? <TemplatesPanel />
               : /* key resets the form when switching sections */ <SettingsForm key={section.id} section={section} state={state} action={saveSettings.bind(null, section.id)} test={runIntegrationTest} />}
           </div>

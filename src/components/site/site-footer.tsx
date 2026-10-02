@@ -1,19 +1,19 @@
 import Link from "next/link";
-import { Logo } from "@/components/logo";
+import { Logo, type Logos } from "@/components/logo";
 
 const COLUMNS = [
   { title: "Products", links: [["Savings", "/#save"], ["Investments", "/#invest"], ["Loans", "/#borrow"], ["Transfers & bills", "/#products"]] },
-  { title: "Company", links: [["About us", "/#"], ["Careers", "/#"], ["Press", "/#"], ["Contact", "/#"]] },
-  { title: "Legal", links: [["Privacy policy", "/#"], ["Terms of use", "/#"], ["Loan terms", "/#"], ["Complaints", "/#"]] },
+  { title: "Company", links: [["How it works", "/#how-it-works"], ["Security", "/#security"], ["Help & FAQ", "/#faq"], ["Contact us", "mailto:hello@digitmonie.com"]] },
+  { title: "Legal", links: [["Terms of use", "/terms"], ["Privacy policy", "/privacy"], ["Loan terms", "/loan-terms"], ["Complaints", "/complaints"], ["Cookie policy", "/cookies"]] },
 ];
 
-export function SiteFooter() {
+export function SiteFooter({ logos }: { logos: Logos }) {
   return (
     <footer className="bg-brand-950 text-white/70">
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="grid gap-12 lg:grid-cols-[1.4fr_repeat(3,1fr)]">
           <div>
-            <Logo inverted />
+            <Logo inverted logos={logos} />
             <p className="mt-4 max-w-xs text-sm leading-relaxed">Simple Money. Bigger Possibilities.</p>
             <address className="mt-6 text-sm not-italic leading-relaxed">
               123 Innovation Drive<br />Victoria Island, Lagos, Nigeria<br />

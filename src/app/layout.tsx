@@ -9,6 +9,8 @@ const montserrat = Montserrat({ variable: "--font-montserrat", subsets: ["latin"
 export const metadata: Metadata = {
   title: { default: "DigitMonie — Simple Money. Bigger Possibilities.", template: "%s · DigitMonie" },
   description: "Save, invest, borrow and move money in Naira with DigitMonie.",
+  // Resolves to the favicon uploaded in Settings → Branding, or the built-in mark.
+  icons: { icon: "/brand-icon", apple: "/brand-icon" },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

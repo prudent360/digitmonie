@@ -17,11 +17,27 @@ export function LogoMark({ className = "size-9", inverted = false }: { className
   );
 }
 
-export function Logo({ href = "/", inverted = false, className = "" }: { href?: string; inverted?: boolean; className?: string }) {
+export type Logos = { light: string | null; dark: string | null };
+
+/**
+ * The logo lockup. Uses the logo uploaded in Settings → Branding for the background (light, or
+ * `inverted` for dark/blue), otherwise the built-in mark and wordmark. With only a light logo on a
+ * dark background, it's shown on a white tile.
+ */
+export function Logo({ href = "/", inverted = false, className = "", logos }: { href?: string; inverted?: boolean; className?: string; logos?: Logos }) {
+  const uploaded = inverted ? logos?.dark ?? logos?.light ?? null : logos?.light ?? null;
+  const onTile = inverted && !logos?.dark && Boolean(logos?.light);
   return (
     <Link href={href} className={`flex items-center gap-2.5 ${className}`} aria-label="DigitMonie home">
-      <LogoMark inverted={inverted} />
-      <span className={`font-display text-[1.35rem] font-extrabold tracking-tight ${inverted ? "text-white" : "text-brand"}`}>DigitMonie</span>
+      {uploaded ? (
+        // eslint-disable-next-line @next/next/no-img-element -- uploaded logo of unknown size
+        <img src={uploaded} alt="DigitMonie" className={`h-9 w-auto max-w-[200px] object-contain ${onTile ? "rounded-[5px] bg-white px-2 py-1" : ""}`} />
+      ) : (
+        <>
+          <LogoMark inverted={inverted} />
+          <span className={`font-display text-[1.35rem] font-extrabold tracking-tight ${inverted ? "text-white" : "text-brand"}`}>DigitMonie</span>
+        </>
+      )}
     </Link>
   );
 }

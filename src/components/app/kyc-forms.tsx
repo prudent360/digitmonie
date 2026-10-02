@@ -47,7 +47,7 @@ function Consent() {
   return (
     <label className="flex items-start gap-3 rounded-[5px] bg-canvas p-4 text-sm text-body">
       <input type="checkbox" name="consent" required className="mt-0.5 size-4 shrink-0 accent-brand" />
-      <span>I agree that DigitMonie may check my details with NIBSS and NIMC through its verification partner to confirm my identity, as described in the <a href="#" className="font-semibold text-brand">Privacy Policy</a>. My BVN doesn&apos;t give DigitMonie access to my bank accounts.</span>
+      <span>I agree that DigitMonie may check my details with NIBSS and NIMC through its verification partner to confirm my identity, as described in the <a href="/privacy" target="_blank" rel="noopener" className="font-semibold text-brand">Privacy Policy</a>. My BVN doesn&apos;t give DigitMonie access to my bank accounts.</span>
     </label>
   );
 }

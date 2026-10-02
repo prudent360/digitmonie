@@ -6,6 +6,7 @@ import { getDb } from "@/db";
 import { emailLog, emailTemplates } from "@/db/schema";
 import { COMMON_VARIABLES, EMAIL_TEMPLATES, REQUIRED_TEMPLATES, type TemplateKey } from "./email-templates";
 import { siteUrl } from "./messaging";
+import { getBranding } from "./branding";
 import { getSetting, getSettings } from "./settings";
 
 export type Vars = Record<string, string | number | null | undefined>;
@@ -73,6 +74,14 @@ export async function renderEmail(source: { subject: string; body: string }, var
   const text = fill(source.body, all, false).replace(/^\s*\[\[([^|\]]+)\|([^\]]+)\]\]\s*$/gm, "$1: $2").replace(/\*\*/g, "").replace(/^#\s*/gm, "");
 
   const home = siteUrl();
+  const brand = await getBranding();
+  const abs = (url: string) => (url.startsWith("/") ? `${home}${url}` : url);
+  // The dark-background logo sits on the blue header; a light-only logo goes on a white tile; otherwise the wordmark.
+  const headerLogo = brand.logoDarkUrl
+    ? `<img src="${escapeHtml(abs(brand.logoDarkUrl))}" alt="DigitMonie" height="36" style="display:block;height:36px;width:auto;max-width:220px;border:0">`
+    : brand.logoUrl
+      ? `<span style="display:inline-block;background:#ffffff;border-radius:5px;padding:7px 12px"><img src="${escapeHtml(abs(brand.logoUrl))}" alt="DigitMonie" height="28" style="display:block;height:28px;width:auto;max-width:200px;border:0"></span>`
+      : null;
   const contact = [
     s.supportEmail && `<a href="mailto:${escapeHtml(String(s.supportEmail))}" style="color:#ffffff;text-decoration:none">${escapeHtml(String(s.supportEmail))}</a>`,
     s.supportPhone && escapeHtml(String(s.supportPhone)),
@@ -86,10 +95,10 @@ export async function renderEmail(source: { subject: string; body: string }, var
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f7fc;padding:28px 0"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border:1px solid #e4e9f2">
 <tr><td class="email-pad" style="background:#0150c8;padding:28px 40px">
-<a href="${home}" style="text-decoration:none"><table role="presentation" cellpadding="0" cellspacing="0"><tr>
+<a href="${home}" style="text-decoration:none">${headerLogo ?? `<table role="presentation" cellpadding="0" cellspacing="0"><tr>
 <td style="vertical-align:middle;padding-right:10px"><table role="presentation" cellpadding="0" cellspacing="0" style="width:30px;height:30px;background:#ffffff;border-radius:7px"><tr><td align="center" style="font-size:16px;line-height:30px;color:#0150c8;font-weight:800">◆</td></tr></table></td>
 <td style="vertical-align:middle;font-size:24px;font-weight:800;letter-spacing:-0.5px;color:#ffffff">DigitMonie</td>
-</tr></table></a></td></tr>
+</tr></table>`}</a></td></tr>
 <tr><td height="5" style="height:5px;line-height:5px;font-size:0;background:#f0ca56">&nbsp;</td></tr>
 <tr><td class="email-body email-pad" style="padding:36px 44px 28px;font-size:16px;line-height:1.65;color:#3b4865">
 ${content}

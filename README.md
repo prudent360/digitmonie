@@ -105,6 +105,10 @@ Console → Team & roles: create a role (e.g. Customer support, Risk, Finance, C
 permissions and assign people to it. The Administrator role always has every permission, and the
 last active administrator can't be demoted or deactivated.
 
+## Legal pages
+
+`/terms`, `/privacy`, `/loan-terms`, `/complaints`, `/cookies` share one layout (`src/components/site/policy-page.tsx`). Company name, RC number, address, support and DPO emails and the FCCPC licence come from Console → Settings → General, and Loan Terms lists the active loan products live. **Have a Nigerian lawyer review the wording before launch.**
+
 ## Placeholders to replace
 
 - Dashboard and console figures (balances, loans, KYC queue, transactions) still come from `src/lib/mock-data.ts`. Calculator rates are in `src/lib/calculators.ts`.

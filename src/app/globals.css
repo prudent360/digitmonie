@@ -119,6 +119,19 @@ input[type="range"].range::-moz-range-thumb {
   border: 6px solid var(--color-brand); box-shadow: 0 4px 12px rgba(1,80,200,.35); cursor: pointer;
 }
 
+/* Legal pages */
+.policy-copy > * + * { margin-top: 1rem; }
+.policy-copy a { color: var(--color-brand); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.policy-copy ul, .policy-copy ol { padding-left: 1.25rem; }
+.policy-copy ul { list-style: disc; }
+.policy-copy ol { list-style: decimal; }
+.policy-copy li + li { margin-top: 0.45rem; }
+.policy-copy li::marker { color: var(--color-brand); }
+.policy-copy strong { color: var(--color-ink); }
+.policy-copy table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.policy-copy th { text-align: left; font-weight: 700; color: var(--color-ink); background: var(--color-canvas); }
+.policy-copy th, .policy-copy td { border: 1px solid var(--color-line); padding: 8px 12px; vertical-align: top; }
+
 details > summary { list-style: none; }
 details > summary::-webkit-details-marker { display: none; }
 details[open] .faq-icon { transform: rotate(45deg); }

@@ -234,12 +234,26 @@ export async function markDefaulted(staff: CurrentUser, loanId: number, note: st
 
 export const owedOn = (i: Pick<LoanInstalment, "principal" | "interest" | "lateFee" | "paid">) => Math.max(0, i.principal + i.interest + i.lateFee - i.paid);
 
+/**
+ * Paying the whole loan off early: all unpaid principal and late fees, plus interest only for periods
+ * that have started (anything due or overdue, and the current month). Interest for later months is waived.
+ * Returns the amount and the instalments whose interest would be waived.
+ */
+export function earlySettlement(instalments: LoanInstalment[], today = todayIso()) {
+  const unpaid = instalments.filter((i) => owedOn(i) > 0).sort((a, b) => a.n - b.n);
+  const firstFuture = unpaid.find((i) => i.dueDate > today);
+  const waived = unpaid.filter((i) => i.dueDate > today && i.id !== firstFuture?.id);
+  const amount = unpaid.reduce((s, i) => s + owedOn(i), 0) - waived.reduce((s, i) => s + (i.interest - i.paidInterest), 0);
+  return { amount, waived };
+}
+
 export async function loanBalance(loanId: number) {
   const instalments = await (await getDb()).select().from(loanInstalments).where(eq(loanInstalments.loanId, loanId)).orderBy(asc(loanInstalments.n));
   const outstanding = instalments.reduce((s, i) => s + owedOn(i), 0);
   const next = instalments.find((i) => i.status !== "paid") ?? null;
   const overdue = instalments.filter((i) => i.status === "overdue");
-  return { instalments, outstanding, next, overdueAmount: overdue.reduce((s, i) => s + owedOn(i), 0), overdueCount: overdue.length };
+  const settlement = earlySettlement(instalments).amount;
+  return { instalments, outstanding, settlement, next, overdueAmount: overdue.reduce((s, i) => s + owedOn(i), 0), overdueCount: overdue.length };
 }
 
 const CASH_ACCOUNT = { flutterwave: "flutterwave", paystack: "paystack", manual: "bank", test: "bank" } as const;
@@ -255,7 +269,13 @@ export async function settlePayment(reference: string): Promise<{ applied: boole
     const [payment] = await tx.update(loanPayments).set({ status: "success", paidAt: new Date() })
       .where(and(eq(loanPayments.reference, reference), eq(loanPayments.status, "pending"))).returning();
     if (!payment) return null;
-    const instalments = await tx.select().from(loanInstalments).where(eq(loanInstalments.loanId, payment.loanId)).orderBy(asc(loanInstalments.n));
+    let instalments = await tx.select().from(loanInstalments).where(eq(loanInstalments.loanId, payment.loanId)).orderBy(asc(loanInstalments.n));
+    // Paying the early-settlement amount clears the loan: future months' interest is waived first.
+    const settle = earlySettlement(instalments);
+    if (settle.waived.length && payment.amount >= settle.amount) {
+      for (const w of settle.waived) await tx.update(loanInstalments).set({ interest: w.paidInterest }).where(eq(loanInstalments.id, w.id));
+      instalments = await tx.select().from(loanInstalments).where(eq(loanInstalments.loanId, payment.loanId)).orderBy(asc(loanInstalments.n));
+    }
     let left = payment.amount;
     const split = { lateFee: 0, interest: 0, principal: 0 };
     for (const inst of instalments) {
@@ -308,9 +328,9 @@ export async function recordManualPayment(staff: CurrentUser, loanId: number, am
   if (!can(staff, "loans.collect")) return fail("You can't record repayments.");
   const loan = await loadLoan(loanId);
   if (!loan || !["active", "defaulted", "written_off"].includes(loan.status)) return fail("Repayments can only be recorded on unpaid loans.");
-  const { outstanding } = await loanBalance(loan.id);
+  const { settlement } = await loanBalance(loan.id);
   if (amountKobo <= 0) return fail("Enter the amount received.");
-  if (amountKobo > outstanding) return fail(`That's more than the ${naira(outstanding)} outstanding.`);
+  if (amountKobo > settlement) return fail(`That's more than the ${naira(settlement)} needed to settle the loan today.`);
   if (note.trim().length < 4) return fail("Add the bank transfer reference or a note.");
   const payment = await createPayment(loan, amountKobo, "manual", staff.id, note.trim());
   await settlePayment(payment.reference);

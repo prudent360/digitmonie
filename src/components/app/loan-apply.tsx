@@ -198,7 +198,7 @@ export function LoanApplyForm({ action, lookup, products, limit, kycTier, banks,
         <div className="space-y-4 rounded-[5px] border border-line bg-white p-5">
           <label className="flex items-start gap-3 text-sm text-body">
             <input type="checkbox" name="acceptTerms" required className="mt-0.5 size-4 shrink-0 accent-brand" />
-            <span>I&apos;ve read the key facts above and agree to the <a href="#" className="font-semibold text-brand">Loan Terms</a>. I understand DigitMonie will check my credit record and report this loan to licensed credit bureaus.</span>
+            <span>I&apos;ve read the key facts above and agree to the <a href="/loan-terms" target="_blank" rel="noopener" className="font-semibold text-brand">Loan Terms</a>. I understand DigitMonie will check my credit record and report this loan to licensed credit bureaus.</span>
           </label>
           <Field label="Transaction PIN"><input className={`${inputClass} font-display text-lg tracking-[.5em]`} type="password" name="pin" inputMode="numeric" maxLength={4} pattern="\d{4}" required /></Field>
           <SubmitButton>Submit application</SubmitButton>

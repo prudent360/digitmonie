@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { signOut } from "@/app/actions/auth";
-import { Logo, LogoMark } from "@/components/logo";
+import { Logo, LogoMark, type Logos } from "@/components/logo";
 import { LogoutIcon, MenuIcon, SearchIcon, XIcon } from "@/components/icons";
 import { NotificationBell } from "./notification-bell";
 import { Avatar } from "@/components/ui";
@@ -18,6 +18,7 @@ type Props = {
   user: { name: string; email: string; roleLabel: string };
   switchLink?: { href: string; label: string };
   unread: number;
+  logos: Logos;
   children: React.ReactNode;
 };
 
@@ -27,7 +28,7 @@ function isActive(pathname: string, href: string) {
 }
 
 /** Sidebar + top bar. The customer app is light; the staff/admin console uses a dark sidebar. */
-export function AppShell({ variant, sections, user, switchLink, unread, children }: Props) {
+export function AppShell({ variant, sections, user, switchLink, unread, logos, children }: Props) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const dark = variant === "console";
@@ -35,7 +36,7 @@ export function AppShell({ variant, sections, user, switchLink, unread, children
   const sidebar = (
     <div className={`flex h-full flex-col ${dark ? "bg-brand-950 text-white/70" : "bg-white text-body"}`}>
       <div className="flex h-16 items-center justify-between px-5">
-        <Logo href={dark ? "/console" : "/dashboard"} inverted={dark} />
+        <Logo href={dark ? "/console" : "/dashboard"} inverted={dark} logos={logos} />
         <button type="button" onClick={() => setOpen(false)} className="rounded-lg p-1.5 lg:hidden" aria-label="Close menu"><XIcon /></button>
       </div>
       {dark && <p className="mx-5 mb-2 w-fit rounded-md bg-gold px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-widest text-ink">Console</p>}
@@ -98,7 +99,10 @@ export function AppShell({ variant, sections, user, switchLink, unread, children
       <div className="lg:pl-64">
         <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-line bg-white/85 px-4 backdrop-blur sm:px-6">
           <button type="button" onClick={() => setOpen(true)} className="rounded-lg p-2 text-ink lg:hidden" aria-label="Open menu"><MenuIcon /></button>
-          <Link href={dark ? "/console" : "/dashboard"} className="lg:hidden" aria-label="Home"><LogoMark className="size-8" /></Link>
+          {logos.light
+            // eslint-disable-next-line @next/next/no-img-element -- uploaded logo
+            ? <Link href={dark ? "/console" : "/dashboard"} className="lg:hidden" aria-label="Home"><img src={logos.light} alt="DigitMonie" className="h-7 w-auto max-w-[140px] object-contain" /></Link>
+            : <Link href={dark ? "/console" : "/dashboard"} className="lg:hidden" aria-label="Home"><LogoMark className="size-8" /></Link>}
           <label className="relative hidden max-w-md flex-1 sm:block">
             <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" />
             <input type="search" placeholder={dark ? "Search customers, references, loans…" : "Search transactions…"} className="w-full rounded-xl border border-line bg-canvas py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-brand focus:bg-white focus:ring-4 focus:ring-brand-100" />

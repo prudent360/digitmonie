@@ -47,7 +47,7 @@ export function RegisterForm({ action }: { action: Action }) {
       <Field label="Referral code (optional)"><input className={inputClass} name="referral" defaultValue={f.referral} /></Field>
       <label className="flex items-start gap-3 text-sm text-body">
         <input type="checkbox" name="terms" required className="mt-0.5 size-4 accent-brand" />
-        <span>I agree to the <Link href="#" className="font-semibold text-brand">Terms</Link>, <Link href="#" className="font-semibold text-brand">Privacy Policy</Link> and <Link href="#" className="font-semibold text-brand">Loan Terms</Link>.</span>
+        <span>I agree to the <Link href="/terms" target="_blank" className="font-semibold text-brand">Terms</Link>, <Link href="/privacy" target="_blank" className="font-semibold text-brand">Privacy Policy</Link> and <Link href="/loan-terms" target="_blank" className="font-semibold text-brand">Loan Terms</Link>.</span>
       </label>
       <SubmitButton>Continue</SubmitButton>
     </form>

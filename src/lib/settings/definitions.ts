@@ -20,7 +20,7 @@ export type Integration = "flutterwave" | "paystack" | "dojah" | "termii" | "res
 export type Section = {
   id: string; title: string; description: string; fields: Field[]; tests?: Integration[];
   /** Rendered by its own component instead of the generic form (fields are still saved the generic way). */
-  custom?: "email" | "templates";
+  custom?: "email" | "templates" | "branding";
 };
 
 export const SECTIONS: Section[] = [
@@ -29,11 +29,26 @@ export const SECTIONS: Section[] = [
     title: "General",
     description: "Company details and switches that affect everyone.",
     fields: [
+      { key: "legalName", label: "Registered company name", type: "text", default: "DigitMonie Limited", help: "As registered with the CAC. Used in the Terms, Privacy Policy and Loan Terms." },
+      { key: "rcNumber", label: "CAC registration (RC) number", type: "text", default: "" },
+      { key: "companyAddress", label: "Registered address", type: "text", default: "123 Innovation Drive, Victoria Island, Lagos, Nigeria" },
+      { key: "dpoEmail", label: "Data protection officer email", type: "text", default: "privacy@digitmonie.com", help: "Shown in the Privacy Policy for data requests." },
       { key: "supportEmail", label: "Support email", type: "text", default: "hello@digitmonie.com" },
       { key: "supportPhone", label: "Support phone", type: "text", default: "" },
       { key: "fccpcLicence", label: "FCCPC licence / registration number", type: "text", default: "", help: "Shown to customers in loan terms." },
       { key: "pauseLoans", label: "Pause new loan applications", type: "boolean", default: false, help: "Existing loans and repayments carry on as normal." },
       { key: "pauseSignups", label: "Pause new sign-ups", type: "boolean", default: false },
+    ],
+  },
+  {
+    id: "branding",
+    title: "Branding",
+    description: "Your logos and browser icon. Leave any empty to keep the built-in DigitMonie mark.",
+    custom: "branding",
+    fields: [
+      { key: "logoUrl", label: "Logo for light backgrounds", type: "text", default: "" },
+      { key: "logoDarkUrl", label: "Logo for dark backgrounds", type: "text", default: "" },
+      { key: "faviconUrl", label: "Favicon", type: "text", default: "" },
     ],
   },
   {

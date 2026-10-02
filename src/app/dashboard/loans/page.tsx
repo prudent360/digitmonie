@@ -87,7 +87,7 @@ export default async function LoansPage({ searchParams }: { searchParams: Promis
             <div className="mt-4">
               <RepayForm action={repayLoan} loanId={open.loan.id} options={[
                 ...(balance.overdueAmount > 0 ? [{ label: "Overdue amount", amount: balance.overdueAmount }] : balance.next ? [{ label: "Next instalment", amount: owedOn(balance.next) }] : []),
-                { label: "Pay off the whole loan", amount: balance.outstanding },
+                { label: balance.settlement < balance.outstanding ? "Pay off the whole loan today (future interest waived)" : "Pay off the whole loan", amount: balance.settlement },
               ].filter((o, i, a) => a.findIndex((x) => x.amount === o.amount) === i)} />
             </div>
           </Card>
