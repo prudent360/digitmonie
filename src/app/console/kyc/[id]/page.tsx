@@ -51,7 +51,7 @@ export default async function KycReviewPage({ params }: { params: Promise<{ id: 
         <div className="space-y-6">
           <Card className="p-5">
             <h2 className="text-[15px] font-bold text-ink">Checks</h2>
-            {s.reason && <p className="mt-2 rounded-[5px] bg-warning-soft px-3 py-2 text-sm text-warning">{s.reason}</p>}
+            {s.reason && <p className="mt-2 rounded-[7px] bg-warning-soft px-3 py-2 text-sm text-warning">{s.reason}</p>}
             <div className="mt-3">
               {c.provider && <Check label="Verified with" ok={undefined} value={c.provider === "sandbox" ? "Test provider" : c.provider} />}
               {c.nameScore !== undefined && <Check label="Name match" ok={c.nameScore >= nameMatch} value={`${c.nameScore}%`} />}
@@ -97,7 +97,7 @@ export default async function KycReviewPage({ params }: { params: Promise<{ id: 
             {documents.length ? (
               <div className="grid gap-4 p-5 sm:grid-cols-2">
                 {documents.map((d) => (
-                  <figure key={d.id} className="overflow-hidden rounded-[5px] border border-line">
+                  <figure key={d.id} className="overflow-hidden rounded-[7px] border border-line">
                     {d.mimeType === "application/pdf" ? (
                       <a href={`/console/kyc/document/${d.id}`} target="_blank" rel="noreferrer" className="flex aspect-[3/4] items-center justify-center bg-canvas text-sm font-semibold text-brand">Open PDF ({Math.round(d.size / 1024)} KB)</a>
                     ) : (

@@ -46,8 +46,8 @@ export default async function DashboardHome() {
       </div>
 
       {user.kycTier < 3 && (
-        <Link href="/dashboard/verify" className="flex items-center gap-4 rounded-[5px] border border-gold/40 bg-gold-50 p-4 transition hover:border-gold">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gold text-ink"><IdCardIcon /></span>
+        <Link href="/dashboard/verify" className="flex items-center gap-4 rounded-[7px] border border-gold/40 bg-gold-50 p-4 transition hover:border-gold">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-[7px] bg-gold text-ink"><IdCardIcon /></span>
           <div className="flex-1">
             <p className="text-sm font-bold text-ink">{user.kycTier === 0 ? "Verify your BVN to start using your account" : `Upgrade to Tier ${user.kycTier + 1} for higher limits`}</p>
             <p className="text-xs text-body">{["It takes a minute with your BVN and date of birth.", "Add your NIN and a selfie.", "Add your address and a recent utility bill."][user.kycTier]} {user.kycTier} of 3 tiers done.</p>
@@ -62,8 +62,8 @@ export default async function DashboardHome() {
 
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
             {QUICK_ACTIONS.map((a) => (
-              <Link key={a.label} href={a.href} className="group flex flex-col items-center gap-2 rounded-2xl border border-line bg-white py-4 text-xs font-semibold text-body transition hover:-translate-y-0.5 hover:border-brand-200 hover:text-brand hover:shadow-[0_14px_30px_-18px_rgba(1,80,200,.6)]">
-                <span className="flex size-10 items-center justify-center rounded-xl bg-brand-50 text-brand transition group-hover:bg-brand group-hover:text-white">{a.icon}</span>
+              <Link key={a.label} href={a.href} className="group flex flex-col items-center gap-2 rounded-[7px] border border-line bg-white py-4 text-xs font-semibold text-body transition hover:-translate-y-0.5 hover:border-brand-200 hover:text-brand hover:shadow-[0_14px_30px_-18px_rgba(1,80,200,.6)]">
+                <span className="flex size-10 items-center justify-center rounded-[7px] bg-brand-50 text-brand transition group-hover:bg-brand group-hover:text-white">{a.icon}</span>
                 {a.label}
               </Link>
             ))}
@@ -76,8 +76,8 @@ export default async function DashboardHome() {
             { label: "Investments", value: account.investmentBalance, note: "Avg. 19.6% p.a. across 4 assets", icon: <TrendUpIcon className="size-5" />, href: "/dashboard/investments" },
             { label: balance ? "Loan balance" : "Loan limit", value: balance ? balance.outstanding / 100 : limit / 100, note: balance ? (balance.overdueCount ? `${formatNairaWhole(balance.overdueAmount / 100)} overdue` : nextDue ? `Next: ${formatNairaWhole(owedOn(nextDue) / 100)} on ${formatDate(nextDue.dueDate, { day: "numeric", month: "short" })}` : "") : openLoan ? "Application in progress" : "Available to borrow", icon: <LandmarkIcon className="size-5" />, href: "/dashboard/loans" },
           ].map((s) => (
-            <Link key={s.label} href={s.href} className="group flex items-center gap-4 rounded-2xl border border-line bg-white p-4 transition hover:border-brand-200">
-              <span className="flex size-11 items-center justify-center rounded-xl bg-brand-50 text-brand">{s.icon}</span>
+            <Link key={s.label} href={s.href} className="group flex items-center gap-4 rounded-[7px] border border-line bg-white p-4 transition hover:border-brand-200">
+              <span className="flex size-11 items-center justify-center rounded-[7px] bg-brand-50 text-brand">{s.icon}</span>
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-medium text-muted">{s.label}</p>
                 <p className="font-display text-lg font-bold tabular-nums text-ink">{formatNaira(s.value)}</p>
@@ -113,8 +113,8 @@ export default async function DashboardHome() {
             <CardHeader title="Coming up" />
             <ul className="space-y-3 p-5">
               {nextDue && (
-                <li className="flex gap-3 rounded-[5px] bg-canvas p-3.5">
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-[5px] bg-warning-soft text-warning"><ClockIcon className="size-4" /></span>
+                <li className="flex gap-3 rounded-[7px] bg-canvas p-3.5">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-[7px] bg-warning-soft text-warning"><ClockIcon className="size-4" /></span>
                   <div className="flex-1">
                     <p className="text-sm font-semibold text-ink">Loan repayment</p>
                     <p className="text-xs text-muted">{formatNaira(owedOn(nextDue) / 100)} · {formatDate(nextDue.dueDate)}</p>
@@ -122,28 +122,28 @@ export default async function DashboardHome() {
                 </li>
               )}
               {maturing && (
-                <li className="flex gap-3 rounded-xl bg-canvas p-3.5">
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-gold-100 text-gold-700"><TrendUpIcon className="size-4" /></span>
+                <li className="flex gap-3 rounded-[7px] bg-canvas p-3.5">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-[7px] bg-gold-100 text-gold-700"><TrendUpIcon className="size-4" /></span>
                   <div className="flex-1">
                     <p className="text-sm font-semibold text-ink">{maturing.name} matures</p>
                     <p className="text-xs text-muted">{formatNaira(maturing.current)} · {formatDate(maturing.maturity!)}</p>
                   </div>
                 </li>
               )}
-              <li className="space-y-2 rounded-xl bg-canvas p-3.5">
+              <li className="space-y-2 rounded-[7px] bg-canvas p-3.5">
                 <div className="flex justify-between text-sm"><span className="font-semibold text-ink">{savingsPlans[0].name}</span><span className="text-xs text-muted">{Math.round((savingsPlans[0].saved / savingsPlans[0].goal) * 100)}%</span></div>
                 <Progress value={savingsPlans[0].saved / savingsPlans[0].goal} />
               </li>
             </ul>
           </Card>
 
-          <div className="relative overflow-hidden rounded-2xl bg-brand-950 p-5 text-white">
+          <div className="relative overflow-hidden rounded-[7px] bg-brand-950 p-5 text-white">
             <div className="diamond-pattern absolute inset-0 opacity-70" />
             <div className="relative">
-              <span className="flex size-10 items-center justify-center rounded-xl bg-gold text-ink"><GiftIcon /></span>
+              <span className="flex size-10 items-center justify-center rounded-[7px] bg-gold text-ink"><GiftIcon /></span>
               <p className="mt-4 font-display text-lg font-bold">Invite friends, earn ₦2,000</p>
               <p className="mt-1 text-sm text-white/70">For every friend who saves their first ₦10,000.</p>
-              <button type="button" className="mt-4 rounded-xl bg-white px-4 py-2 text-sm font-bold text-brand">Share invite link</button>
+              <button type="button" className="mt-4 rounded-[7px] bg-white px-4 py-2 text-sm font-bold text-brand">Share invite link</button>
             </div>
           </div>
         </div>
@@ -167,12 +167,12 @@ export default async function DashboardHome() {
               </div>
             ))}
           </dl>
-          <div className="mt-5 rounded-xl bg-brand-50 p-4">
+          <div className="mt-5 rounded-[7px] bg-brand-50 p-4">
             <p className="text-xs font-semibold text-brand">You kept</p>
             <p className="font-display text-2xl font-extrabold tabular-nums text-brand">{formatNairaWhole(cashflow.at(-1)!.inflow - cashflow.at(-1)!.outflow)}</p>
             <p className="mt-1 text-xs text-body">{Math.round((1 - cashflow.at(-1)!.outflow / cashflow.at(-1)!.inflow) * 100)}% of your income. Move it to savings to earn 14% p.a.</p>
           </div>
-          <Link href="/dashboard/savings" className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-brand py-2.5 text-sm font-bold text-white hover:bg-brand-600">Save the difference <ArrowRightIcon className="size-4" /></Link>
+          <Link href="/dashboard/savings" className="mt-4 flex items-center justify-center gap-2 rounded-[7px] bg-brand py-2.5 text-sm font-bold text-white hover:bg-brand-600">Save the difference <ArrowRightIcon className="size-4" /></Link>
         </Card>
       </div>
     </div>

@@ -34,7 +34,7 @@ export function PolicyNav({ title, sections }: { title: string; sections: { id: 
 
   return (
     <>
-      <details className="rounded-[5px] border border-line bg-white lg:hidden">
+      <details className="rounded-[7px] border border-line bg-white lg:hidden">
         <summary className="flex cursor-pointer items-center justify-between px-4 py-3 text-sm font-bold text-ink">
           On this page <span className="text-xs font-semibold text-muted">{sections.length} sections</span>
         </summary>

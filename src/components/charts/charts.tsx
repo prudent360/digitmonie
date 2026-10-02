@@ -26,7 +26,7 @@ function niceMax(max: number) {
 function Tooltip({ x, yPct, children, width }: { x: number; yPct: number; width: number; children: React.ReactNode }) {
   const left = Math.min(Math.max(x, 70), width - 70);
   return (
-    <div className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-xl bg-ink px-3 py-2 text-xs text-white shadow-lg" style={{ left: `${(left / W) * 100}%`, top: `calc(${yPct}% - 10px)` }}>
+    <div className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-[7px] bg-ink px-3 py-2 text-xs text-white shadow-lg" style={{ left: `${(left / W) * 100}%`, top: `calc(${yPct}% - 10px)` }}>
       {children}
     </div>
   );
@@ -181,7 +181,7 @@ export function Donut({ data, centerLabel, valueFormat = "naira" }: { data: Poin
       </div>
       <ul className="w-full space-y-2.5">
         {data.map((d, i) => (
-          <li key={d.label} className={`flex items-center justify-between gap-3 rounded-lg px-2 py-1 text-sm transition-colors ${hover === i ? "bg-canvas" : ""}`} onPointerEnter={() => setHover(i)} onPointerLeave={() => setHover(null)}>
+          <li key={d.label} className={`flex items-center justify-between gap-3 rounded-[7px] px-2 py-1 text-sm transition-colors ${hover === i ? "bg-canvas" : ""}`} onPointerEnter={() => setHover(i)} onPointerLeave={() => setHover(null)}>
             <span className="flex items-center gap-2 text-body"><span className="size-2.5 rounded-sm" style={{ background: DONUT_COLORS[i] }} />{d.label}</span>
             <span className="font-semibold tabular-nums text-ink">{((d.value / total) * 100).toFixed(0)}%</span>
           </li>

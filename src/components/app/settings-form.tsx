@@ -23,7 +23,7 @@ function TestButton({ kind, test }: { kind: Integration; test: (k: Integration) 
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <button type="button" disabled={pending} onClick={() => start(async () => setResult(await test(kind)))} className="rounded-[5px] border border-line bg-white px-4 py-2 text-sm font-semibold text-ink hover:border-brand-200 disabled:opacity-60">
+      <button type="button" disabled={pending} onClick={() => start(async () => setResult(await test(kind)))} className="rounded-[7px] border border-line bg-white px-4 py-2 text-sm font-semibold text-ink hover:border-brand-200 disabled:opacity-60">
         {pending ? "Testing…" : `Test ${LABEL[kind]} connection`}
       </button>
       {result && (
@@ -54,7 +54,7 @@ export function SettingsForm({ section, state: fields, action, test }: {
 
         if (f.type === "boolean") {
           return (
-            <label key={f.key} className="flex cursor-pointer items-start justify-between gap-6 rounded-[5px] border border-line p-4">
+            <label key={f.key} className="flex cursor-pointer items-start justify-between gap-6 rounded-[7px] border border-line p-4">
               <span><span className="block text-sm font-semibold text-ink">{f.label}</span>{help}</span>
               <input type="checkbox" name={f.key} defaultChecked={Boolean(s.value)} className="peer sr-only" />
               <span className="relative mt-0.5 h-6 w-11 shrink-0 rounded-full bg-line transition-colors after:absolute after:left-0.5 after:top-0.5 after:size-5 after:rounded-full after:bg-white after:shadow after:transition-all peer-checked:bg-brand peer-checked:after:left-[22px] peer-focus-visible:ring-4 peer-focus-visible:ring-brand-100" />

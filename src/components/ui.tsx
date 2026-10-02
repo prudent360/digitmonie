@@ -1,7 +1,7 @@
 import { initials } from "@/lib/format";
 
 export function Card({ className = "", children }: { className?: string; children: React.ReactNode }) {
-  return <section className={`min-w-0 rounded-2xl border border-line bg-white ${className}`}>{children}</section>;
+  return <section className={`min-w-0 rounded-[7px] border border-line bg-white ${className}`}>{children}</section>;
 }
 
 export function CardHeader({ title, subtitle, action }: { title: string; subtitle?: string; action?: React.ReactNode }) {
@@ -79,7 +79,7 @@ export function StatTile({ label, value, change, icon, hint }: { label: string; 
     <Card className="p-5">
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium text-muted">{label}</p>
-        {icon && <span className="flex size-9 items-center justify-center rounded-xl bg-brand-50 text-brand">{icon}</span>}
+        {icon && <span className="flex size-9 items-center justify-center rounded-[7px] bg-brand-50 text-brand">{icon}</span>}
       </div>
       <p className="mt-3 font-display text-2xl font-bold tabular-nums text-ink">{value}</p>
       {change !== undefined && (
@@ -92,8 +92,8 @@ export function StatTile({ label, value, change, icon, hint }: { label: string; 
   );
 }
 
-export const buttonPrimary = "inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-bold text-white transition hover:bg-brand-600 disabled:opacity-50";
-export const buttonSecondary = "inline-flex items-center justify-center gap-2 rounded-xl border border-line bg-white px-4 py-2.5 text-sm font-semibold text-ink transition hover:border-brand-200 hover:bg-brand-50";
+export const buttonPrimary = "inline-flex items-center justify-center gap-2 rounded-[7px] bg-brand px-4 py-2.5 text-sm font-bold text-white transition hover:bg-brand-600 disabled:opacity-50";
+export const buttonSecondary = "inline-flex items-center justify-center gap-2 rounded-[7px] border border-line bg-white px-4 py-2.5 text-sm font-semibold text-ink transition hover:border-brand-200 hover:bg-brand-50";
 
 export function Table({ head, children }: { head: React.ReactNode[]; children: React.ReactNode }) {
   return (

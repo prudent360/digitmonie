@@ -13,7 +13,7 @@ export default async function TwoFactorPage() {
   if (!user) redirect("/login");
   return (
     <div className="page-in">
-      <span className="flex size-12 items-center justify-center rounded-[5px] bg-brand-50 text-brand"><ShieldIcon /></span>
+      <span className="flex size-12 items-center justify-center rounded-[7px] bg-brand-50 text-brand"><ShieldIcon /></span>
       <h1 className="mt-4 font-display text-3xl font-extrabold text-ink">Enter your authenticator code</h1>
       <p className="mt-2 text-body">Open your authenticator app and enter the 6-digit code for <b className="text-ink">DigitMonie ({user.email})</b>.</p>
       <div className="mt-8"><CodeForm action={verifyTwoFactor} label="Authenticator code" submit="Sign in" /></div>

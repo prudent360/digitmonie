@@ -25,7 +25,7 @@ export default async function KycQueuePage({ searchParams }: { searchParams: Pro
       <PageHeader title="KYC reviews" subtitle="Tier 1 and 2 are checked automatically; anything borderline, and every Tier 3 address, comes here." />
       <div className="flex gap-2">
         {TABS.map((t) => (
-          <Link key={t.status} href={`/console/kyc?status=${t.status}`} className={`rounded-[5px] px-4 py-2 text-sm font-semibold ${t.status === status ? "bg-brand text-white" : "bg-white text-body ring-1 ring-line hover:text-brand"}`}>{t.label}</Link>
+          <Link key={t.status} href={`/console/kyc?status=${t.status}`} className={`rounded-[7px] px-4 py-2 text-sm font-semibold ${t.status === status ? "bg-brand text-white" : "bg-white text-body ring-1 ring-line hover:text-brand"}`}>{t.label}</Link>
         ))}
       </div>
       <Card>

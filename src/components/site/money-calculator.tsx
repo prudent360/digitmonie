@@ -32,7 +32,7 @@ function Chips({ options, value, onChange, suffix }: { options: number[]; value:
   return (
     <div className="grid grid-cols-4 gap-2">
       {options.map((o) => (
-        <button key={o} type="button" onClick={() => onChange(o)} className={`rounded-xl border py-2.5 text-sm font-semibold transition-all ${value === o ? "border-brand bg-brand text-white shadow-[0_8px_20px_-10px_rgba(1,80,200,.8)]" : "border-line bg-white text-body hover:border-brand-300"}`}>
+        <button key={o} type="button" onClick={() => onChange(o)} className={`rounded-[7px] border py-2.5 text-sm font-semibold transition-all ${value === o ? "border-brand bg-brand text-white shadow-[0_8px_20px_-10px_rgba(1,80,200,.8)]" : "border-line bg-white text-body hover:border-brand-300"}`}>
           {o} {suffix}
         </button>
       ))}
@@ -66,7 +66,7 @@ export function MoneyCalculator({ initialMode = "invest", ctaHref = "/register" 
   const headlineLabel = mode === "save" ? `You'll have after ${saveMonths} months` : mode === "invest" ? `Payout at maturity` : "Monthly repayment";
 
   return (
-    <div className="overflow-hidden rounded-[28px] bg-white shadow-[0_40px_80px_-40px_rgba(6,31,77,.45)] ring-1 ring-line">
+    <div className="overflow-hidden rounded-[7px] bg-white shadow-[0_40px_80px_-40px_rgba(6,31,77,.45)] ring-1 ring-line">
       <div className="grid lg:grid-cols-[1.15fr_1fr]">
         <div className="p-6 sm:p-8">
           <div role="tablist" aria-label="Calculator" className="inline-flex rounded-full bg-canvas p-1">

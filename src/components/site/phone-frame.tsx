@@ -19,7 +19,7 @@ export function ScreenHeader({ title, action }: { title: string; action?: React.
   return (
     <div className="flex items-center justify-between px-4 pb-3 pt-2">
       <span className="flex items-center gap-2">
-        <span className="flex size-7 items-center justify-center rounded-[5px] bg-white text-ink shadow-sm">‹</span>
+        <span className="flex size-7 items-center justify-center rounded-[7px] bg-white text-ink shadow-sm">‹</span>
         <span className="text-[13px] font-bold text-ink">{title}</span>
       </span>
       {action}
@@ -36,7 +36,7 @@ export function AppTabBar({ active }: { active: AppTab }) {
     <div className="absolute inset-x-0 bottom-0 flex justify-around border-t border-line bg-white px-2 pb-5 pt-2.5">
       {APP_TABS.map((tab) => (
         <span key={tab} className={`flex flex-col items-center gap-1 text-[9.5px] font-semibold ${tab === active ? "text-brand" : "text-muted"}`}>
-          <span className={`h-1 w-5 rounded-[5px] ${tab === active ? "bg-brand" : "bg-transparent"}`} />
+          <span className={`h-1 w-5 rounded-[7px] ${tab === active ? "bg-brand" : "bg-transparent"}`} />
           {tab}
         </span>
       ))}

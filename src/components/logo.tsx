@@ -33,7 +33,7 @@ export function Logo({ href = "/", inverted = false, className = "", logos }: { 
     <Link href={href} className={`flex items-center gap-2.5 ${className}`} aria-label="DigitMonie home">
       {uploaded ? (
         // eslint-disable-next-line @next/next/no-img-element -- uploaded logo of unknown size
-        <img src={uploaded} alt="DigitMonie" style={{ height, maxWidth: Math.min(240, height * 7) }} className={`w-auto object-contain ${onTile ? "rounded-[5px] bg-white px-2 py-1" : ""}`} />
+        <img src={uploaded} alt="DigitMonie" style={{ height, maxWidth: Math.min(240, height * 7) }} className={`w-auto object-contain ${onTile ? "rounded-[7px] bg-white px-2 py-1" : ""}`} />
       ) : (
         <>
           <LogoMark inverted={inverted} />

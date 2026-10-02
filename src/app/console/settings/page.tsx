@@ -34,7 +34,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
       <div className="grid gap-6 lg:grid-cols-[220px_1fr]">
         <nav className="flex gap-1 overflow-x-auto lg:flex-col" aria-label="Settings sections">
           {SECTIONS.map((s) => (
-            <Link key={s.id} href={`/console/settings?tab=${s.id}`} aria-current={s.id === section.id ? "page" : undefined} className={`shrink-0 rounded-[5px] px-4 py-2.5 text-sm font-semibold ${s.id === section.id ? "bg-brand text-white" : "text-body hover:bg-white hover:text-brand"}`}>
+            <Link key={s.id} href={`/console/settings?tab=${s.id}`} aria-current={s.id === section.id ? "page" : undefined} className={`shrink-0 rounded-[7px] px-4 py-2.5 text-sm font-semibold ${s.id === section.id ? "bg-brand text-white" : "text-body hover:bg-white hover:text-brand"}`}>
               {s.title}
             </Link>
           ))}
@@ -58,7 +58,7 @@ async function EmailPanel({ state }: { state: Awaited<ReturnType<typeof describe
   const [cfg, log] = await Promise.all([emailConfig(), (await getDb()).select().from(emailLog).orderBy(desc(emailLog.createdAt)).limit(15)]);
   return (
     <div className="space-y-8">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-[5px] border border-line bg-canvas p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-[7px] border border-line bg-canvas p-4">
         {cfg.ready
           ? <Badge tone="success" dot>Delivering with {cfg.driver === "smtp" ? "SMTP" : "Resend"}</Badge>
           : <span className="inline-flex items-center gap-1.5 rounded-full bg-warning-soft px-2.5 py-0.5 text-xs font-semibold text-warning ring-1 ring-inset ring-warning/15"><span className="size-1.5 rounded-full bg-current" />{cfg.driver === "log" ? "Log only: nothing is delivered" : cfg.driver === "smtp" ? "SMTP isn't fully set up, so emails are only logged" : "No Resend key yet, so emails are only logged"}</span>}
@@ -67,7 +67,7 @@ async function EmailPanel({ state }: { state: Awaited<ReturnType<typeof describe
       <EmailSettingsForm action={saveSettings.bind(null, "email")} state={state} from={cfg.from} />
       <section>
         <h3 className="mb-3 text-sm font-bold text-ink">Recent emails</h3>
-        <div className="overflow-hidden rounded-[5px] border border-line">
+        <div className="overflow-hidden rounded-[7px] border border-line">
           <Table head={["When", "To", "Subject", "Template", "Status"]}>
             {log.map((e) => (
               <tr key={e.id}>
@@ -91,7 +91,7 @@ async function TemplatesPanel() {
   const groups = ["Security", "Account", "Verification", "Loans"] as const;
   return (
     <div className="space-y-6">
-      <p className="rounded-[5px] bg-brand-50 px-4 py-3 text-sm text-body">Edit the wording of each automatic email. Insert values with placeholders like <code className="font-mono text-brand">{"{{name}}"}</code>; the DigitMonie layout, buttons and footer are added for you. Security emails can&apos;t be switched off.</p>
+      <p className="rounded-[7px] bg-brand-50 px-4 py-3 text-sm text-body">Edit the wording of each automatic email. Insert values with placeholders like <code className="font-mono text-brand">{"{{name}}"}</code>; the DigitMonie layout, buttons and footer are added for you. Security emails can&apos;t be switched off.</p>
       {groups.map((g) => (
         <section key={g}>
           <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-muted">{g}</h3>
@@ -102,7 +102,7 @@ async function TemplatesPanel() {
               const enabled = required || (row?.enabled ?? true);
               const customised = Boolean(row && (row.subject !== def.subject || row.body !== def.body));
               return (
-                <li key={key} className={`rounded-[5px] border p-4 ${enabled ? "border-line bg-white" : "border-dashed border-line bg-canvas"}`}>
+                <li key={key} className={`rounded-[7px] border p-4 ${enabled ? "border-line bg-white" : "border-dashed border-line bg-canvas"}`}>
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                     <div className="min-w-0 space-y-1">
                       <p className="flex flex-wrap items-center gap-2"><b className="text-ink">{def.name}</b>{required ? <Badge tone="brand">Required</Badge> : enabled ? <Badge tone="success">On</Badge> : <Badge>Off</Badge>}{customised && <Badge tone="gold">Edited</Badge>}</p>
@@ -111,7 +111,7 @@ async function TemplatesPanel() {
                       <p className="flex flex-wrap gap-1 pt-1">{Object.keys({ ...COMMON_VARIABLES, ...def.variables }).map((v) => <code key={v} className="rounded-[3px] bg-canvas px-1.5 py-0.5 text-[11px] text-muted">{`{{${v}}}`}</code>)}</p>
                     </div>
                     <div className="flex shrink-0 flex-wrap items-start gap-2">
-                      <Link href={`/console/settings/emails/${key}`} className="rounded-[5px] bg-brand px-4 py-2 text-sm font-bold text-white hover:bg-brand-600">Edit &amp; preview</Link>
+                      <Link href={`/console/settings/emails/${key}`} className="rounded-[7px] bg-brand px-4 py-2 text-sm font-bold text-white hover:bg-brand-600">Edit &amp; preview</Link>
                       {!required && <ActionButton action={setTemplateEnabled.bind(null, key, !enabled)} label={enabled ? "Turn off" : "Turn on"} tone="secondary" />}
                     </div>
                   </div>

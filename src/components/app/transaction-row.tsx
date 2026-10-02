@@ -17,7 +17,7 @@ export function TransactionRow({ tx, showStatus = true }: { tx: Transaction; sho
   const credit = tx.type === "credit";
   return (
     <li className="flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-canvas/70">
-      <span className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${credit ? "bg-success-soft text-success" : "bg-brand-50 text-brand"}`}>
+      <span className={`flex size-10 shrink-0 items-center justify-center rounded-[7px] ${credit ? "bg-success-soft text-success" : "bg-brand-50 text-brand"}`}>
         {tx.category === "transfer" && credit ? <ReceiveIcon className="size-4" /> : CATEGORY_ICON[tx.category]}
       </span>
       <div className="min-w-0 flex-1">

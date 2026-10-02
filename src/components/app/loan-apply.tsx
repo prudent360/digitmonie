@@ -22,7 +22,7 @@ function KeyFacts({ product, amount, tenor }: { product: ProductOption; amount: 
     <div className="flex items-center justify-between py-2"><span className={strong ? "font-semibold text-white" : "text-white/70"}>{label}</span><span className={`tabular-nums ${strong ? "font-display text-base font-bold text-gold" : "font-semibold text-white"}`}>{value}</span></div>
   );
   return (
-    <div className="gold-corner diamond-pattern relative rounded-[5px] bg-brand p-5 text-sm text-white">
+    <div className="gold-corner diamond-pattern relative rounded-[7px] bg-brand p-5 text-sm text-white">
       <p className="text-xs font-bold uppercase tracking-wider text-white/70">Key facts</p>
       <p className="mt-2 text-white/70">Monthly repayment</p>
       <p className="font-display text-3xl font-extrabold tabular-nums">{ngn(q.instalment)}<span className="text-base font-semibold text-white/70"> × {tenor}</span></p>
@@ -78,10 +78,10 @@ function PayoutAccount({ banks, lookup, initialBank, initialAccount }: { banks: 
       </Field>
       <Field label="Account number"><input className={`${inputClass} font-mono tracking-wider`} name="payoutAccount" inputMode="numeric" maxLength={10} pattern="\d{10}" value={account} onChange={(e) => { setAccount(e.target.value.replace(/\D/g, "")); setResult(null); }} required /></Field>
       <div className="sm:col-span-2" aria-live="polite">
-        {checking && <p className="rounded-[5px] bg-canvas px-4 py-3 text-sm text-muted">Checking with the bank…</p>}
+        {checking && <p className="rounded-[7px] bg-canvas px-4 py-3 text-sm text-muted">Checking with the bank…</p>}
         {!checking && ready && result && (result.ok
-          ? <p className="flex items-center gap-2 rounded-[5px] bg-success-soft px-4 py-3 text-sm font-bold text-success"><CheckIcon className="size-4" />{result.text}</p>
-          : <p className="rounded-[5px] bg-danger-soft px-4 py-3 text-sm font-medium text-danger">{result.text}</p>)}
+          ? <p className="flex items-center gap-2 rounded-[7px] bg-success-soft px-4 py-3 text-sm font-bold text-success"><CheckIcon className="size-4" />{result.text}</p>
+          : <p className="rounded-[7px] bg-danger-soft px-4 py-3 text-sm font-medium text-danger">{result.text}</p>)}
       </div>
     </div>
   );
@@ -102,7 +102,7 @@ export function LoanApplyForm({ action, lookup, products, limit, kycTier, banks,
   const [amount, setAmount] = useState(() => (f.amount ? toKobo(Number(f.amount)) : Math.min(maxAllowed, Math.max(product?.minAmount ?? 0, Math.round(maxAllowed / 2 / 100_000) * 100_000))));
   const [tenor, setTenor] = useState(Number(f.tenor) || product?.tenors[Math.min(1, (product?.tenors.length ?? 1) - 1)] || 1);
 
-  if (!product) return <p className="rounded-[5px] bg-canvas p-6 text-sm text-body">No loan is available for your current limit and KYC tier yet.</p>;
+  if (!product) return <p className="rounded-[7px] bg-canvas p-6 text-sm text-body">No loan is available for your current limit and KYC tier yet.</p>;
   const clamped = Math.min(maxAllowed, Math.max(product.minAmount, amount));
   const step = maxAllowed - product.minAmount >= 100_000_000 ? 5_000_000 : 1_000_000;
   const fill = maxAllowed > product.minAmount ? ((clamped - product.minAmount) / (maxAllowed - product.minAmount)) * 100 : 100;
@@ -130,7 +130,7 @@ export function LoanApplyForm({ action, lookup, products, limit, kycTier, banks,
               const locked = p.minKycTier > kycTier || p.minAmount > limit;
               const selected = p.id === product.id;
               return (
-                <button key={p.id} type="button" disabled={locked} onClick={() => choose(p)} className={`rounded-[5px] border p-4 text-left transition ${selected ? "border-brand bg-brand-50 ring-2 ring-brand-100" : "border-line bg-white hover:border-brand-200"} disabled:cursor-not-allowed disabled:opacity-50`}>
+                <button key={p.id} type="button" disabled={locked} onClick={() => choose(p)} className={`rounded-[7px] border p-4 text-left transition ${selected ? "border-brand bg-brand-50 ring-2 ring-brand-100" : "border-line bg-white hover:border-brand-200"} disabled:cursor-not-allowed disabled:opacity-50`}>
                   <span className="flex items-center justify-between"><span className="font-bold text-ink">{p.name}</span>{selected && <CheckIcon className="size-4 text-brand" />}{locked && <LockIcon className="size-4 text-muted" />}</span>
                   <span className="mt-1 block text-xs text-muted">{bpsToPercent(p.monthlyRateBps)} a month · {p.tenors[0]}–{p.tenors.at(-1)} mo</span>
                   {locked && <span className="mt-1 block text-xs font-semibold text-warning">{p.minKycTier > kycTier ? `Needs KYC Tier ${p.minKycTier}` : "Above your current limit"}</span>}
@@ -140,7 +140,7 @@ export function LoanApplyForm({ action, lookup, products, limit, kycTier, banks,
           </div>
         </section>
 
-        <section className="rounded-[5px] border border-line bg-white p-5">
+        <section className="rounded-[7px] border border-line bg-white p-5">
           <h2 className="text-sm font-bold text-ink">2. How much, and for how long?</h2>
           <div className="mt-4 flex items-end justify-between gap-4">
             <label className="flex-1">
@@ -153,12 +153,12 @@ export function LoanApplyForm({ action, lookup, products, limit, kycTier, banks,
           <p className="mb-2 mt-5 text-xs text-muted">Repay over</p>
           <div className="flex flex-wrap gap-2">
             {product.tenors.map((t) => (
-              <button key={t} type="button" onClick={() => setTenor(t)} className={`rounded-[5px] border px-4 py-2 text-sm font-bold ${t === tenor ? "border-brand bg-brand text-white" : "border-line bg-white text-body hover:border-brand-200"}`}>{t} month{t > 1 ? "s" : ""}</button>
+              <button key={t} type="button" onClick={() => setTenor(t)} className={`rounded-[7px] border px-4 py-2 text-sm font-bold ${t === tenor ? "border-brand bg-brand text-white" : "border-line bg-white text-body hover:border-brand-200"}`}>{t} month{t > 1 ? "s" : ""}</button>
             ))}
           </div>
         </section>
 
-        <section className="rounded-[5px] border border-line bg-white p-5">
+        <section className="rounded-[7px] border border-line bg-white p-5">
           <h2 className="text-sm font-bold text-ink">3. About you</h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
@@ -178,24 +178,24 @@ export function LoanApplyForm({ action, lookup, products, limit, kycTier, banks,
           </div>
         </section>
 
-        <section className="rounded-[5px] border border-line bg-white p-5">
+        <section className="rounded-[7px] border border-line bg-white p-5">
           <h2 className="text-sm font-bold text-ink">4. Where should we send the money?</h2>
           <p className="mt-1 text-xs text-muted">The account must be in your own name. We check it with your bank.</p>
           <PayoutAccount banks={banks} lookup={lookup} initialBank={f.payoutBankCode} initialAccount={f.payoutAccount} />
         </section>
 
         {needsStatement && (
-          <section className="rounded-[5px] border border-gold/50 bg-gold-50 p-5">
+          <section className="rounded-[7px] border border-gold/50 bg-gold-50 p-5">
             <h2 className="text-sm font-bold text-ink">5. Bank statement</h2>
             <p className="mt-1 text-xs text-body">For loans above {ngn(product.statementAbove!)} we need your last 6 months&apos; statement from your main bank (PDF, JPG or PNG, max 3 MB).</p>
-            <input type="file" name="statement" accept="application/pdf,image/jpeg,image/png" required className="mt-3 block w-full rounded-[5px] border border-dashed border-line bg-white p-3 text-sm file:mr-4 file:rounded-[5px] file:border-0 file:bg-brand file:px-4 file:py-2 file:text-sm file:font-bold file:text-white" />
+            <input type="file" name="statement" accept="application/pdf,image/jpeg,image/png" required className="mt-3 block w-full rounded-[7px] border border-dashed border-line bg-white p-3 text-sm file:mr-4 file:rounded-[7px] file:border-0 file:bg-brand file:px-4 file:py-2 file:text-sm file:font-bold file:text-white" />
           </section>
         )}
       </div>
 
       <div className="space-y-4 lg:sticky lg:top-24 lg:self-start">
         <KeyFacts product={product} amount={clamped} tenor={tenor} />
-        <div className="space-y-4 rounded-[5px] border border-line bg-white p-5">
+        <div className="space-y-4 rounded-[7px] border border-line bg-white p-5">
           <label className="flex items-start gap-3 text-sm text-body">
             <input type="checkbox" name="acceptTerms" required className="mt-0.5 size-4 shrink-0 accent-brand" />
             <span>I&apos;ve read the key facts above and agree to the <a href="/loan-terms" target="_blank" rel="noopener" className="font-semibold text-brand">Loan Terms</a>. I understand DigitMonie will check my credit record and report this loan to licensed credit bureaus.</span>

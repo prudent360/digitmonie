@@ -95,7 +95,7 @@ export default async function ConsoleLoanPage({ params }: { params: Promise<{ id
                   </p>
                   <p className="text-xs text-muted">Payout method in Settings: <b>{payoutMode === "automatic" ? "Automatic" : "Manual"}</b>{loan.autoApproved ? " · approved automatically" : ""}</p>
                   {inFlight ? (
-                    <div className="rounded-[5px] bg-warning-soft p-4 text-sm text-warning">
+                    <div className="rounded-[7px] bg-warning-soft p-4 text-sm text-warning">
                       <p><b>Transfer {inFlight.reference} is processing at the bank.</b> Wait for it to finish before trying anything else, so the customer isn&apos;t paid twice.</p>
                       <div className="mt-3"><ActionButton action={checkPayoutAction.bind(null, loan.id, inFlight.reference)} label="Check status now" tone="secondary" /></div>
                     </div>
@@ -109,7 +109,7 @@ export default async function ConsoleLoanPage({ params }: { params: Promise<{ id
                           <ActionButton action={sendPayoutAction.bind(null, loan.id)} label={`Send ${ngn(loan.principal - loan.processingFee)} now`} confirm={`Send ${ngn(loan.principal - loan.processingFee)} to ${loan.payoutName} (${loan.payoutBank} ${loan.payoutAccount})?`} />
                         </div>
                       )}
-                      <details className="rounded-[5px] border border-line p-4" open={!loan.payoutBankCode}>
+                      <details className="rounded-[7px] border border-line p-4" open={!loan.payoutBankCode}>
                         <summary className="cursor-pointer text-sm font-bold text-ink">Paid it yourself? Record a manual transfer</summary>
                         <div className="mt-3"><SimpleActionForm action={manualPayoutAction.bind(null, loan.id)} submit="Record manual payout" fields={[{ name: "reference", label: "Bank transfer reference", placeholder: "e.g. NIP 000013241002…" }]} /></div>
                       </details>
@@ -121,7 +121,7 @@ export default async function ConsoleLoanPage({ params }: { params: Promise<{ id
                 <div className="space-y-6">
                   <Facts rows={[["Outstanding", ngn(balance.outstanding)], ["Overdue", balance.overdueAmount ? <span className="text-danger">{ngn(balance.overdueAmount)}</span> : "Nothing"], ["Next due", balance.next ? `${ngn(balance.next.principal + balance.next.interest + balance.next.lateFee - balance.next.paid)} on ${formatDate(balance.next.dueDate)}` : "—"]]} />
                   {balance.overdueCount > 0 && (
-                    <p className="flex items-start gap-2 rounded-[5px] bg-warning-soft px-3 py-2 text-xs text-warning"><AlertIcon className="mt-0.5 size-4 shrink-0" />FCCPC rules: contact only the borrower (and their declared guarantor, if any), between 8am and 6pm, without threats. Never contact people in their phonebook.</p>
+                    <p className="flex items-start gap-2 rounded-[7px] bg-warning-soft px-3 py-2 text-xs text-warning"><AlertIcon className="mt-0.5 size-4 shrink-0" />FCCPC rules: contact only the borrower (and their declared guarantor, if any), between 8am and 6pm, without threats. Never contact people in their phonebook.</p>
                   )}
                   {can(staff, "loans.collect") && <div><p className="mb-2 text-sm font-bold text-ink">Record a repayment received by bank transfer</p><SimpleActionForm action={recordPaymentAction.bind(null, loan.id)} submit="Record repayment" fields={[{ name: "amount", label: "Amount (₦)", inputMode: "decimal" }, { name: "note", label: "Transfer reference or note" }]} /></div>}
                   {can(staff, "loans.approve") && balance.overdueCount > 0 && <div><p className="mb-2 text-sm font-bold text-ink">Mark as defaulted</p><SimpleActionForm action={markDefaultedAction.bind(null, loan.id)} submit="Mark as defaulted" tone="danger" confirm="Mark this loan as defaulted? It will be reported to the credit bureau." fields={[{ name: "note", label: "Reason", textarea: true }]} /></div>}
@@ -145,11 +145,11 @@ export default async function ConsoleLoanPage({ params }: { params: Promise<{ id
                     <SelectForm action={assignCollectorAction.bind(null, loan.id)} name="collectorId" label="Collector" value={String(loan.collectorId ?? "")} submit="Assign"
                       options={[{ value: "", label: "Unassigned" }, ...collectorList.map((c) => ({ value: String(c.id), label: c.name }))]} />
                     {loan.status !== "written_off" && <ActionButton action={reminderSmsAction.bind(null, loan.id)} label="Send overdue reminder SMS" tone="secondary" confirm="Send the standard overdue reminder by SMS? (Once a day, 8am–6pm.)" />}
-                    <details className="rounded-[5px] border border-line p-4" open={!openPromise && (balance?.overdueCount ?? 0) > 0}>
+                    <details className="rounded-[7px] border border-line p-4" open={!openPromise && (balance?.overdueCount ?? 0) > 0}>
                       <summary className="cursor-pointer text-sm font-bold text-ink">{openPromise ? `Open promise: ${ngn(openPromise.amount)} by ${formatDate(openPromise.dueDate)}` : "Record a promise to pay"}</summary>
                       <div className="mt-3"><SimpleActionForm action={promiseAction.bind(null, loan.id)} submit={openPromise ? "Replace promise" : "Save promise"} fields={[{ name: "amount", label: "Amount (₦)", inputMode: "decimal" }, { name: "dueDate", label: "By", type: "date" }]} /></div>
                     </details>
-                    <details className="rounded-[5px] border border-line p-4">
+                    <details className="rounded-[7px] border border-line p-4">
                       <summary className="cursor-pointer text-sm font-bold text-ink">Log a call, message or visit</summary>
                       <div className="mt-3"><ContactForm action={logContactAction.bind(null, customer.id)} channels={CHANNELS} outcomes={OUTCOMES} defaultLoanId={loan.id} /></div>
                     </details>
@@ -158,11 +158,11 @@ export default async function ConsoleLoanPage({ params }: { params: Promise<{ id
                 )}
                 {can(staff, "loans.approve") && loan.status !== "written_off" && (
                   <>
-                    <details className="rounded-[5px] border border-line p-4">
+                    <details className="rounded-[7px] border border-line p-4">
                       <summary className="cursor-pointer text-sm font-bold text-ink">Reschedule</summary>
                       <div className="mt-3"><RescheduleForm action={rescheduleAction.bind(null, loan.id)} /></div>
                     </details>
-                    <details className="rounded-[5px] border border-danger/30 p-4">
+                    <details className="rounded-[7px] border border-danger/30 p-4">
                       <summary className="cursor-pointer text-sm font-bold text-danger">Write off</summary>
                       <p className="mt-2 text-xs text-muted">Moves the unpaid principal to loan losses. The customer still owes it, and anything they pay later is recorded as a recovery.</p>
                       <div className="mt-3"><SimpleActionForm action={writeOffAction.bind(null, loan.id)} submit="Write off loan" tone="danger" confirm="Write this loan off? This is reported to the credit bureau." fields={[{ name: "note", label: "Reason", textarea: true }]} /></div>
@@ -191,7 +191,7 @@ export default async function ConsoleLoanPage({ params }: { params: Promise<{ id
                 <h2 className="text-[15px] font-bold text-ink">Credit score</h2>
                 <Badge tone={s.band === "A" ? "success" : s.band === "B" ? "brand" : s.band === "C" ? "warning" : "danger"}>{s.score}/100 · Band {s.band} · {s.recommendation}</Badge>
               </div>
-              {s.hardStops.length > 0 && <ul className="mt-3 space-y-1">{s.hardStops.map((h) => <li key={h} className="rounded-[5px] bg-danger-soft px-3 py-2 text-sm font-semibold text-danger">⛔ {h}</li>)}</ul>}
+              {s.hardStops.length > 0 && <ul className="mt-3 space-y-1">{s.hardStops.map((h) => <li key={h} className="rounded-[7px] bg-danger-soft px-3 py-2 text-sm font-semibold text-danger">⛔ {h}</li>)}</ul>}
               <ul className="mt-3 divide-y divide-line text-sm">
                 {s.reasons.map((r) => <li key={r.label} className="flex justify-between py-2"><span className="text-body">{r.label}</span><span className={`font-bold ${r.points > 0 ? "text-success" : r.points < 0 ? "text-danger" : "text-muted"}`}>{r.points > 0 ? "+" : ""}{r.points}</span></li>)}
               </ul>
@@ -226,9 +226,9 @@ export default async function ConsoleLoanPage({ params }: { params: Promise<{ id
               ["Repayment / income", dti != null ? <span key="d" className={dti > 33 ? "text-warning" : "text-success"}>{dti}%</span> : "—"], ["Employment", [credit?.employmentType, credit?.employer].filter(Boolean).join(" · ") || "—"],
               ["Loan limit", `${ngn(limit.limit)}${limit.overridden ? " (set by staff)" : ""}`], ["DigitMonie history", `${limit.history.repaidOnTime} on time · ${limit.history.repaidLate} late · ${limit.history.defaulted} defaulted`],
             ]} /></div>
-            {documents.map((d) => <a key={d.id} href={`/console/loans/document/${d.id}`} target="_blank" rel="noreferrer" className="mt-4 flex items-center justify-between rounded-[5px] border border-line px-4 py-3 text-sm font-semibold text-brand hover:bg-brand-50">📄 {d.fileName}<span className="text-xs text-muted">{Math.round(d.size / 1024)} KB · opens in new tab</span></a>)}
+            {documents.map((d) => <a key={d.id} href={`/console/loans/document/${d.id}`} target="_blank" rel="noreferrer" className="mt-4 flex items-center justify-between rounded-[7px] border border-line px-4 py-3 text-sm font-semibold text-brand hover:bg-brand-50">📄 {d.fileName}<span className="text-xs text-muted">{Math.round(d.size / 1024)} KB · opens in new tab</span></a>)}
             {can(staff, "loans.approve") && (
-              <details className="mt-4 rounded-[5px] border border-line p-4">
+              <details className="mt-4 rounded-[7px] border border-line p-4">
                 <summary className="cursor-pointer text-sm font-semibold text-brand">Change this customer&apos;s loan limit</summary>
                 <div className="mt-3"><SimpleActionForm action={setLimitOverride.bind(null, customer.id)} submit="Save limit" fields={[{ name: "limit", label: "Limit in ₦ (leave empty to use the calculated limit)", inputMode: "decimal", required: false, defaultValue: credit?.limitOverride != null ? String(credit.limitOverride / 100) : "" }]} /></div>
               </details>

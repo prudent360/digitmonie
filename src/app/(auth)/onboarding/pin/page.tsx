@@ -16,7 +16,7 @@ export default async function CreatePinPage() {
   return (
     <div className="page-in">
       <Steps current={3} />
-      <span className="mt-6 flex size-12 items-center justify-center rounded-[5px] bg-brand-50 text-brand"><LockIcon /></span>
+      <span className="mt-6 flex size-12 items-center justify-center rounded-[7px] bg-brand-50 text-brand"><LockIcon /></span>
       <h1 className="mt-4 font-display text-3xl font-extrabold text-ink">Create your transaction PIN</h1>
       <p className="mt-2 text-body">You&apos;ll use this 4-digit PIN to approve transfers, loans and withdrawals. Don&apos;t use your birthday or share it with anyone.</p>
       <div className="mt-8"><PinForm action={createPin} /></div>

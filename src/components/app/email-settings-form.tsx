@@ -54,7 +54,7 @@ export function EmailSettingsForm({ action, state: s, from }: { action: (st: For
         <input type="hidden" name="emailDriver" value={driver} />
         <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Send email with">
           {drivers.map((d) => (
-            <button key={d.id} type="button" role="radio" aria-checked={driver === d.id} onClick={() => setDriver(d.id)} className={`rounded-[5px] border p-3 text-left transition ${driver === d.id ? "border-brand bg-brand-50 ring-2 ring-brand-100" : "border-line hover:border-brand-200"}`}>
+            <button key={d.id} type="button" role="radio" aria-checked={driver === d.id} onClick={() => setDriver(d.id)} className={`rounded-[7px] border p-3 text-left transition ${driver === d.id ? "border-brand bg-brand-50 ring-2 ring-brand-100" : "border-line hover:border-brand-200"}`}>
               <span className="block text-sm font-bold text-ink">{d.label}</span>
               <span className="mt-0.5 block text-xs text-muted">{d.hint}</span>
             </button>
@@ -80,7 +80,7 @@ export function EmailSettingsForm({ action, state: s, from }: { action: (st: For
           </div>
           <p className="text-xs text-muted"><b className="text-body">Hostinger:</b> smtp.hostinger.com, 465, SSL, your full mailbox address and its password. <b className="text-body">Google Workspace:</b> smtp.gmail.com, 587, TLS, with an App Password.</p>
         </div>
-        {driver === "log" && <p className="rounded-[5px] bg-warning-soft px-4 py-3 text-sm text-warning">Emails are written to the log below and never delivered, including verification codes. Only use this while testing.</p>}
+        {driver === "log" && <p className="rounded-[7px] bg-warning-soft px-4 py-3 text-sm text-warning">Emails are written to the log below and never delivered, including verification codes. Only use this while testing.</p>}
 
         <div className="grid gap-4 md:grid-cols-3">
           <Field label="Sender name"><input name="emailFromName" defaultValue={v("emailFromName")} className={inputClass} /></Field>

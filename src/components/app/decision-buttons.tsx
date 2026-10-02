@@ -22,8 +22,8 @@ export function DecisionButtons({ initial, allowed = true, approveLabel = "Appro
   }
   return (
     <div className="flex gap-1.5">
-      <button type="button" onClick={() => setStatus(approvedStatus)} className="inline-flex items-center gap-1 rounded-lg bg-success px-2.5 py-1.5 text-xs font-bold text-white transition hover:brightness-110"><CheckIcon className="size-3.5" />{approveLabel}</button>
-      <button type="button" onClick={() => setStatus(declinedStatus)} className="inline-flex items-center gap-1 rounded-lg bg-danger-soft px-2.5 py-1.5 text-xs font-bold text-danger transition hover:bg-danger hover:text-white"><XIcon className="size-3.5" />{declineLabel}</button>
+      <button type="button" onClick={() => setStatus(approvedStatus)} className="inline-flex items-center gap-1 rounded-[7px] bg-success px-2.5 py-1.5 text-xs font-bold text-white transition hover:brightness-110"><CheckIcon className="size-3.5" />{approveLabel}</button>
+      <button type="button" onClick={() => setStatus(declinedStatus)} className="inline-flex items-center gap-1 rounded-[7px] bg-danger-soft px-2.5 py-1.5 text-xs font-bold text-danger transition hover:bg-danger hover:text-white"><XIcon className="size-3.5" />{declineLabel}</button>
     </div>
   );
 }

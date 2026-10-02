@@ -23,13 +23,13 @@ export function DecisionForm({ action, approveLabel }: { action: Action; approve
       <div className="flex flex-wrap gap-2">
         {declining ? (
           <>
-            <button name="decision" value="decline" disabled={pending} className="inline-flex items-center gap-2 rounded-[5px] bg-danger px-5 py-2.5 text-sm font-bold text-white disabled:opacity-60"><XIcon className="size-4" /> Confirm decline</button>
+            <button name="decision" value="decline" disabled={pending} className="inline-flex items-center gap-2 rounded-[7px] bg-danger px-5 py-2.5 text-sm font-bold text-white disabled:opacity-60"><XIcon className="size-4" /> Confirm decline</button>
             <button type="button" onClick={() => setDeclining(false)} className="px-3 text-sm font-semibold text-body">Cancel</button>
           </>
         ) : (
           <>
-            <button name="decision" value="approve" disabled={pending} className="inline-flex items-center gap-2 rounded-[5px] bg-success px-5 py-2.5 text-sm font-bold text-white hover:brightness-110 disabled:opacity-60"><CheckIcon className="size-4" /> {approveLabel}</button>
-            <button type="button" onClick={() => setDeclining(true)} className="inline-flex items-center gap-2 rounded-[5px] bg-danger-soft px-5 py-2.5 text-sm font-bold text-danger"><XIcon className="size-4" /> Decline</button>
+            <button name="decision" value="approve" disabled={pending} className="inline-flex items-center gap-2 rounded-[7px] bg-success px-5 py-2.5 text-sm font-bold text-white hover:brightness-110 disabled:opacity-60"><CheckIcon className="size-4" /> {approveLabel}</button>
+            <button type="button" onClick={() => setDeclining(true)} className="inline-flex items-center gap-2 rounded-[7px] bg-danger-soft px-5 py-2.5 text-sm font-bold text-danger"><XIcon className="size-4" /> Decline</button>
           </>
         )}
       </div>
@@ -63,7 +63,7 @@ export function ActionButton({ action, label, confirm, tone = "brand" }: { actio
   const [state, formAction, pending] = useActionState(action, undefined);
   return (
     <form action={formAction} onSubmit={(e) => { if (confirm && !window.confirm(confirm)) e.preventDefault(); }} className="space-y-2">
-      <button disabled={pending} className={`inline-flex items-center justify-center gap-2 rounded-[5px] px-5 py-2.5 text-sm font-bold disabled:opacity-60 ${tone === "brand" ? "bg-brand text-white hover:bg-brand-600" : "border border-line bg-white text-ink hover:border-brand-200"}`}>
+      <button disabled={pending} className={`inline-flex items-center justify-center gap-2 rounded-[7px] px-5 py-2.5 text-sm font-bold disabled:opacity-60 ${tone === "brand" ? "bg-brand text-white hover:bg-brand-600" : "border border-line bg-white text-ink hover:border-brand-200"}`}>
         {pending ? "Working…" : label}
       </button>
       <FormAlert state={state} />

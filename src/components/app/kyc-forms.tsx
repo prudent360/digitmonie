@@ -45,7 +45,7 @@ export function BvnForm({ action }: { action: Action }) {
 
 function Consent() {
   return (
-    <label className="flex items-start gap-3 rounded-[5px] bg-canvas p-4 text-sm text-body">
+    <label className="flex items-start gap-3 rounded-[7px] bg-canvas p-4 text-sm text-body">
       <input type="checkbox" name="consent" required className="mt-0.5 size-4 shrink-0 accent-brand" />
       <span>I agree that DigitMonie may check my details with NIBSS and NIMC through its verification partner to confirm my identity, as described in the <a href="/privacy" target="_blank" rel="noopener" className="font-semibold text-brand">Privacy Policy</a>. My BVN doesn&apos;t give DigitMonie access to my bank accounts.</span>
     </label>
@@ -100,7 +100,7 @@ function SelfieCapture({ value, onChange }: { value: string; onChange: (dataUrl:
   return (
     <div>
       <p className="mb-1.5 text-sm font-semibold text-ink">Selfie</p>
-      <div className="relative mx-auto flex aspect-[3/4] w-full max-w-[280px] items-center justify-center overflow-hidden rounded-[5px] bg-brand-950">
+      <div className="relative mx-auto flex aspect-[3/4] w-full max-w-[280px] items-center justify-center overflow-hidden rounded-[7px] bg-brand-950">
         {mode === "camera" ? (
           <>
             <video ref={video} playsInline muted className="size-full -scale-x-100 object-cover" />
@@ -116,15 +116,15 @@ function SelfieCapture({ value, onChange }: { value: string; onChange: (dataUrl:
             Face the camera in good light. Remove glasses and hats.
           </div>
         )}
-        {value && mode !== "camera" && <span className="absolute right-2 top-2 flex items-center gap-1 rounded-[5px] bg-success px-2 py-1 text-xs font-bold text-white"><CheckIcon className="size-3" /> Ready</span>}
+        {value && mode !== "camera" && <span className="absolute right-2 top-2 flex items-center gap-1 rounded-[7px] bg-success px-2 py-1 text-xs font-bold text-white"><CheckIcon className="size-3" /> Ready</span>}
       </div>
       <div className="mt-3 flex flex-wrap justify-center gap-2">
         {mode === "camera" ? (
-          <button type="button" onClick={snap} className="rounded-[5px] bg-brand px-5 py-2.5 text-sm font-bold text-white">Take photo</button>
+          <button type="button" onClick={snap} className="rounded-[7px] bg-brand px-5 py-2.5 text-sm font-bold text-white">Take photo</button>
         ) : (
-          <button type="button" onClick={start} className="rounded-[5px] bg-brand px-5 py-2.5 text-sm font-bold text-white">{value ? "Retake" : "Open camera"}</button>
+          <button type="button" onClick={start} className="rounded-[7px] bg-brand px-5 py-2.5 text-sm font-bold text-white">{value ? "Retake" : "Open camera"}</button>
         )}
-        <label className="cursor-pointer rounded-[5px] border border-line bg-white px-4 py-2.5 text-sm font-semibold text-ink hover:border-brand-200">
+        <label className="cursor-pointer rounded-[7px] border border-line bg-white px-4 py-2.5 text-sm font-semibold text-ink hover:border-brand-200">
           Upload a photo
           <input type="file" accept="image/jpeg,image/png" capture="user" className="sr-only" onChange={(e) => fromFile(e.target.files?.[0])} />
         </label>
@@ -145,7 +145,7 @@ export function NinSelfieForm({ action }: { action: Action }) {
       </Field>
       <SelfieCapture value={selfie} onChange={setSelfie} />
       <input type="hidden" name="selfie" value={selfie} />
-      {selfie ? <SubmitButton>Verify NIN and selfie</SubmitButton> : <p className="rounded-[5px] bg-canvas py-3.5 text-center text-sm font-semibold text-muted">Take your selfie to continue</p>}
+      {selfie ? <SubmitButton>Verify NIN and selfie</SubmitButton> : <p className="rounded-[7px] bg-canvas py-3.5 text-center text-sm font-semibold text-muted">Take your selfie to continue</p>}
     </form>
   );
 }
@@ -167,7 +167,7 @@ export function AddressForm({ action, states }: { action: Action; states: string
         </Field>
       </div>
       <Field label="Proof of address" hint={<span className="text-xs font-normal text-muted">JPG, PNG or PDF · max 3 MB</span>}>
-        <input type="file" name="document" accept="image/jpeg,image/png,application/pdf" required className="block w-full rounded-[5px] border border-dashed border-line bg-canvas p-4 text-sm text-body file:mr-4 file:rounded-[5px] file:border-0 file:bg-brand file:px-4 file:py-2 file:text-sm file:font-bold file:text-white" />
+        <input type="file" name="document" accept="image/jpeg,image/png,application/pdf" required className="block w-full rounded-[7px] border border-dashed border-line bg-canvas p-4 text-sm text-body file:mr-4 file:rounded-[7px] file:border-0 file:bg-brand file:px-4 file:py-2 file:text-sm file:font-bold file:text-white" />
       </Field>
       <p className="text-xs text-muted">A utility bill (electricity, water, waste) or bank statement from the last 3 months, showing your name and this address.</p>
       <SubmitButton>Submit for review</SubmitButton>

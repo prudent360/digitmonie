@@ -36,7 +36,7 @@ export function RegisterForm({ action }: { action: Action }) {
       </div>
       <Field label="Phone number">
         <div className="flex">
-          <span className="flex items-center rounded-l-[5px] border border-r-0 border-line bg-canvas px-3.5 text-sm font-semibold text-body">🇳🇬 +234</span>
+          <span className="flex items-center rounded-l-[7px] border border-r-0 border-line bg-canvas px-3.5 text-sm font-semibold text-body">🇳🇬 +234</span>
           <input className={`${inputClass} rounded-l-none`} name="phone" defaultValue={f.phone} inputMode="tel" placeholder="803 000 0000" autoComplete="tel-national" required />
         </div>
       </Field>

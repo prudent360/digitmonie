@@ -66,10 +66,10 @@ export default async function ReconciliationPage({ searchParams }: { searchParam
                     ["Collections (Flutterwave / ours)", `${selected.run.summary.collectionsTheirs} / ${selected.run.summary.collectionsOurs}`],
                     ["Flutterwave balance", ngn(selected.run.balanceTheirs)],
                     ["Ledger: Flutterwave cash", ngn(selected.run.balanceOurs)],
-                  ].map(([k, v]) => <div key={k} className="rounded-[5px] bg-canvas p-3"><dt className="text-xs text-muted">{k}</dt><dd className="mt-1 font-display text-lg font-bold text-ink">{v}</dd></div>)}
+                  ].map(([k, v]) => <div key={k} className="rounded-[7px] bg-canvas p-3"><dt className="text-xs text-muted">{k}</dt><dd className="mt-1 font-display text-lg font-bold text-ink">{v}</dd></div>)}
                 </dl>
                 {selected.run.balanceTheirs != null && selected.run.balanceOurs != null && selected.run.balanceTheirs !== selected.run.balanceOurs && (
-                  <p className="mt-3 rounded-[5px] bg-warning-soft px-4 py-3 text-sm text-warning">
+                  <p className="mt-3 rounded-[7px] bg-warning-soft px-4 py-3 text-sm text-warning">
                     Balances differ by <b>{ngn(selected.run.balanceTheirs - selected.run.balanceOurs)}</b>. Usually this is funding or withdrawals not yet recorded below, or activity outside DigitMonie. The balance is a snapshot taken when the run happened.
                   </p>
                 )}

@@ -44,7 +44,7 @@ export function PolicyPage({ title, summary, updated, intro, sections, current, 
         </aside>
 
         <article className="min-w-0">
-          <div className="flex gap-3 rounded-[5px] border border-brand-100 bg-brand-50/60 p-5 text-[15px] leading-7 text-body">
+          <div className="flex gap-3 rounded-[7px] border border-brand-100 bg-brand-50/60 p-5 text-[15px] leading-7 text-body">
             <ShieldIcon className="mt-1 size-5 shrink-0 text-brand" />
             <div>{intro}</div>
           </div>
@@ -58,14 +58,14 @@ export function PolicyPage({ title, summary, updated, intro, sections, current, 
             ))}
           </div>
 
-          <div className="relative mt-4 overflow-hidden rounded-[5px] bg-brand-950 p-6 text-white md:p-8">
+          <div className="relative mt-4 overflow-hidden rounded-[7px] bg-brand-950 p-6 text-white md:p-8">
             <div className="diamond-pattern absolute inset-0 opacity-60" aria-hidden="true" />
             <div className="relative">
               <p className="font-display text-xl font-bold">Questions about this document?</p>
               <p className="mt-2 max-w-xl text-[15px] leading-6 text-white/70">We&apos;re happy to explain how it applies to your account or loan.</p>
               <div className="mt-5 flex flex-wrap gap-3">
-                <a href={`mailto:${supportEmail}`} className="inline-flex items-center gap-2 rounded-[5px] bg-white px-5 py-3 text-sm font-bold text-brand hover:bg-gold hover:text-ink">Email {supportEmail} <ArrowRightIcon className="size-4" /></a>
-                <Link href="/complaints" className="inline-flex items-center rounded-[5px] px-5 py-3 text-sm font-semibold text-white ring-1 ring-white/30 hover:bg-white/10">Make a complaint</Link>
+                <a href={`mailto:${supportEmail}`} className="inline-flex items-center gap-2 rounded-[7px] bg-white px-5 py-3 text-sm font-bold text-brand hover:bg-gold hover:text-ink">Email {supportEmail} <ArrowRightIcon className="size-4" /></a>
+                <Link href="/complaints" className="inline-flex items-center rounded-[7px] px-5 py-3 text-sm font-semibold text-white ring-1 ring-white/30 hover:bg-white/10">Make a complaint</Link>
               </div>
             </div>
           </div>
@@ -73,7 +73,7 @@ export function PolicyPage({ title, summary, updated, intro, sections, current, 
           <nav aria-label="Other policies" className="mt-8 flex flex-wrap gap-2">
             {POLICIES.map((p) => (
               <Link key={p.href} href={p.href} aria-current={p.href === current ? "page" : undefined}
-                className={`rounded-[5px] px-3.5 py-2 text-sm font-semibold ${p.href === current ? "bg-brand text-white" : "bg-canvas text-body hover:text-brand"}`}>{p.label}</Link>
+                className={`rounded-[7px] px-3.5 py-2 text-sm font-semibold ${p.href === current ? "bg-brand text-white" : "bg-canvas text-body hover:text-brand"}`}>{p.label}</Link>
             ))}
           </nav>
         </article>

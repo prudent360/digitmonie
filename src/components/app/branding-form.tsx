@@ -18,7 +18,7 @@ function FileField({ name, label, hint, current, previewBg, square = false, fall
     <div className="space-y-3">
       <p className="text-sm font-semibold text-ink">{label}</p>
       {/* Preview at the real size, inside a header-height strip like the website's. */}
-      <div className={`flex items-center justify-center rounded-[5px] border border-line p-4 ${size ? "h-32" : "h-28"} ${previewBg === "dark" ? "diamond-pattern bg-brand" : "bg-canvas"}`}>
+      <div className={`flex items-center justify-center rounded-[7px] border border-line p-4 ${size ? "h-32" : "h-28"} ${previewBg === "dark" ? "diamond-pattern bg-brand" : "bg-canvas"}`}>
         {shown
           // eslint-disable-next-line @next/next/no-img-element -- local preview of an upload
           ? <img src={shown} alt="" style={size ? { height, maxWidth: Math.min(240, height * 7) } : undefined} className={square ? "size-16 object-contain" : "w-auto object-contain"} />
@@ -34,7 +34,7 @@ function FileField({ name, label, hint, current, previewBg, square = false, fall
       )}
       <input type="file" name={name} accept="image/png,image/webp,image/jpeg"
         onChange={(e) => { const f = e.target.files?.[0]; setPreview(f ? URL.createObjectURL(f) : null); setRemove(false); }}
-        className="block w-full rounded-[5px] border border-dashed border-line bg-white p-3 text-sm file:mr-3 file:rounded-[5px] file:border-0 file:bg-brand file:px-3 file:py-1.5 file:text-sm file:font-bold file:text-white" />
+        className="block w-full rounded-[7px] border border-dashed border-line bg-white p-3 text-sm file:mr-3 file:rounded-[7px] file:border-0 file:bg-brand file:px-3 file:py-1.5 file:text-sm file:font-bold file:text-white" />
       <p className="text-xs text-muted">{hint}</p>
       {current && (
         <label className="flex items-center gap-2 text-xs font-semibold text-danger">

@@ -37,7 +37,7 @@ export default async function ConsoleOverview({ searchParams }: { searchParams: 
       <PageHeader title="Operations overview" subtitle={`Signed in as ${user.role.name} · ${formatDate(new Date().toISOString(), { weekday: "long", day: "numeric", month: "long" })}`} actions={<Badge tone="success" dot>All systems operational</Badge>} />
 
       {denied && (
-        <p role="status" className="rounded-[5px] border border-warning/30 bg-warning-soft px-4 py-3 text-sm font-medium text-warning">
+        <p role="status" className="rounded-[7px] border border-warning/30 bg-warning-soft px-4 py-3 text-sm font-medium text-warning">
           Your role ({user.role.name}) doesn&apos;t have access to that page. Ask an administrator if you need it.
         </p>
       )}
@@ -50,13 +50,13 @@ export default async function ConsoleOverview({ searchParams }: { searchParams: 
       </div>
 
       {attention.length > 0 && (
-        <div className="flex flex-wrap items-center gap-4 rounded-[5px] border border-danger/20 bg-danger-soft p-4">
-          <span className="flex size-10 items-center justify-center rounded-[5px] bg-danger text-white"><AlertIcon /></span>
+        <div className="flex flex-wrap items-center gap-4 rounded-[7px] border border-danger/20 bg-danger-soft p-4">
+          <span className="flex size-10 items-center justify-center rounded-[7px] bg-danger text-white"><AlertIcon /></span>
           <div className="flex-1">
             <p className="text-sm font-bold text-ink">{attention.length} payout{attention.length > 1 ? "s" : ""} need attention</p>
             <p className="text-xs text-body">Transfers that failed or have been processing for over 15 minutes.</p>
           </div>
-          <Link href="/console/transactions" className="rounded-[5px] bg-white px-4 py-2 text-sm font-bold text-danger ring-1 ring-danger/20">Review now</Link>
+          <Link href="/console/transactions" className="rounded-[7px] bg-white px-4 py-2 text-sm font-bold text-danger ring-1 ring-danger/20">Review now</Link>
         </div>
       )}
 

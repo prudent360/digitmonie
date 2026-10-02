@@ -57,12 +57,12 @@ export function NotificationBell({ initialUnread, allHref }: { initialUnread: nu
 
   return (
     <div ref={box} className="relative">
-      <button type="button" onClick={toggle} className="relative rounded-[5px] p-2.5 text-body transition hover:bg-canvas" aria-label={`Notifications${unread ? `, ${unread} unread` : ""}`} aria-expanded={open}>
+      <button type="button" onClick={toggle} className="relative rounded-[7px] p-2.5 text-body transition hover:bg-canvas" aria-label={`Notifications${unread ? `, ${unread} unread` : ""}`} aria-expanded={open}>
         <BellIcon />
         {unread > 0 && <span className="absolute right-1 top-1 flex min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold leading-4 text-white ring-2 ring-white">{unread > 9 ? "9+" : unread}</span>}
       </button>
       {open && (
-        <div className="absolute right-0 top-12 z-50 w-[min(92vw,380px)] overflow-hidden rounded-[5px] border border-line bg-white shadow-[0_24px_50px_-20px_rgba(6,31,77,.45)]">
+        <div className="absolute right-0 top-12 z-50 w-[min(92vw,380px)] overflow-hidden rounded-[7px] border border-line bg-white shadow-[0_24px_50px_-20px_rgba(6,31,77,.45)]">
           <div className="flex items-center justify-between border-b border-line px-4 py-3">
             <p className="text-sm font-bold text-ink">Notifications</p>
             {unread > 0 && <button type="button" onClick={readAll} className="text-xs font-semibold text-brand">Mark all as read</button>}

@@ -56,7 +56,7 @@ function fill(template: string, vars: Record<string, string>, escape: boolean): 
 }
 
 function button(label: string, url: string): string {
-  return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0"><tr><td style="border-radius:5px;background:#0150c8"><a href="${url}" style="display:inline-block;padding:13px 24px;font-weight:700;font-size:15px;color:#ffffff;text-decoration:none;border-radius:5px">${label}</a></td></tr></table>`;
+  return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0"><tr><td style="border-radius:7px;background:#0150c8"><a href="${url}" style="display:inline-block;padding:13px 24px;font-weight:700;font-size:15px;color:#ffffff;text-decoration:none;border-radius:7px">${label}</a></td></tr></table>`;
 }
 
 /** Subject, branded HTML and plain text for a template with values filled in. */
@@ -80,7 +80,7 @@ export async function renderEmail(source: { subject: string; body: string }, var
   const headerLogo = brand.logoDarkUrl
     ? `<img src="${escapeHtml(abs(brand.logoDarkUrl))}" alt="DigitMonie" height="${brand.logoSizeDark}" style="display:block;height:${brand.logoSizeDark}px;width:auto;max-width:240px;border:0">`
     : brand.logoUrl
-      ? `<span style="display:inline-block;background:#ffffff;border-radius:5px;padding:7px 12px"><img src="${escapeHtml(abs(brand.logoUrl))}" alt="DigitMonie" height="28" style="display:block;height:28px;width:auto;max-width:200px;border:0"></span>`
+      ? `<span style="display:inline-block;background:#ffffff;border-radius:7px;padding:7px 12px"><img src="${escapeHtml(abs(brand.logoUrl))}" alt="DigitMonie" height="28" style="display:block;height:28px;width:auto;max-width:200px;border:0"></span>`
       : null;
   const contact = [
     s.supportEmail && `<a href="mailto:${escapeHtml(String(s.supportEmail))}" style="color:#ffffff;text-decoration:none">${escapeHtml(String(s.supportEmail))}</a>`,

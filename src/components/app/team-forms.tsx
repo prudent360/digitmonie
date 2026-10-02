@@ -13,11 +13,11 @@ type RoleOption = { key: string; name: string };
 function CopyLink({ url }: { url: string }) {
   const [copied, setCopied] = useState(false);
   return (
-    <div className="mt-3 rounded-[5px] border border-dashed border-brand-200 bg-brand-50/60 p-3">
+    <div className="mt-3 rounded-[7px] border border-dashed border-brand-200 bg-brand-50/60 p-3">
       <p className="text-xs font-semibold text-brand">Invitation link (also emailed). Share it securely; it works once and expires in 7 days.</p>
       <div className="mt-2 flex gap-2">
-        <input readOnly value={url} className="min-w-0 flex-1 rounded-[5px] border border-line bg-white px-3 py-2 font-mono text-xs text-ink" onFocus={(e) => e.currentTarget.select()} />
-        <button type="button" onClick={async () => { try { await navigator.clipboard.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch {} }} className="flex items-center gap-1.5 rounded-[5px] bg-brand px-3 text-xs font-bold text-white">
+        <input readOnly value={url} className="min-w-0 flex-1 rounded-[7px] border border-line bg-white px-3 py-2 font-mono text-xs text-ink" onFocus={(e) => e.currentTarget.select()} />
+        <button type="button" onClick={async () => { try { await navigator.clipboard.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch {} }} className="flex items-center gap-1.5 rounded-[7px] bg-brand px-3 text-xs font-bold text-white">
           {copied ? <CheckIcon className="size-3.5" /> : <CopyIcon className="size-3.5" />}{copied ? "Copied" : "Copy"}
         </button>
       </div>
@@ -67,7 +67,7 @@ export function RoleSelect({ action, userId, current, roles }: { action: Action;
   return (
     <form action={formAction}>
       <input type="hidden" name="userId" value={userId} />
-      <select name="roleKey" defaultValue={current} disabled={pending} onChange={(e) => e.currentTarget.form?.requestSubmit()} className="rounded-[5px] border border-line bg-white px-2.5 py-1.5 text-sm font-semibold text-ink outline-none focus:border-brand">
+      <select name="roleKey" defaultValue={current} disabled={pending} onChange={(e) => e.currentTarget.form?.requestSubmit()} className="rounded-[7px] border border-line bg-white px-2.5 py-1.5 text-sm font-semibold text-ink outline-none focus:border-brand">
         {roles.map((r) => <option key={r.key} value={r.key}>{r.name}</option>)}
       </select>
       {state?.error && <p className="mt-1 max-w-56 text-xs text-danger">{state.error}</p>}

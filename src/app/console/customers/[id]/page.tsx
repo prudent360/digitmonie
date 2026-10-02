@@ -51,7 +51,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
       </div>
 
       {user.status !== "active" && user.statusReason && (
-        <p className="flex items-start gap-2 rounded-[5px] border border-warning/30 bg-warning-soft px-4 py-3 text-sm text-warning"><AlertIcon className="mt-0.5 size-4 shrink-0" /><span><b className="capitalize">{user.status}</b>{user.statusChangedAt ? ` on ${formatDate(user.statusChangedAt.toISOString())}` : ""}: {user.statusReason}</span></p>
+        <p className="flex items-start gap-2 rounded-[7px] border border-warning/30 bg-warning-soft px-4 py-3 text-sm text-warning"><AlertIcon className="mt-0.5 size-4 shrink-0" /><span><b className="capitalize">{user.status}</b>{user.statusChangedAt ? ` on ${formatDate(user.statusChangedAt.toISOString())}` : ""}: {user.statusReason}</span></p>
       )}
 
       <div className="grid gap-6 xl:grid-cols-[1fr_1.35fr]">
@@ -87,7 +87,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
               ["Declared income", credit?.monthlyIncome ? `${ngn(credit.monthlyIncome)} a month` : "—"], ["Employment", [credit?.employmentType, credit?.employer].filter(Boolean).join(" · ") || "—"],
             ]} /></div>
             {can(staff, "loans.approve") && (
-              <details className="mt-4 rounded-[5px] border border-line p-4">
+              <details className="mt-4 rounded-[7px] border border-line p-4">
                 <summary className="cursor-pointer text-sm font-semibold text-brand">Change loan limit</summary>
                 <div className="mt-3"><SimpleActionForm action={setLimitOverride.bind(null, user.id)} submit="Save limit" fields={[{ name: "limit", label: "Limit in ₦ (empty = calculated limit)", inputMode: "decimal", required: false, defaultValue: credit?.limitOverride != null ? String(credit.limitOverride / 100) : "" }]} /></div>
               </details>

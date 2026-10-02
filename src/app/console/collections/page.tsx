@@ -30,12 +30,12 @@ export default async function CollectionsPage({ searchParams }: { searchParams: 
         <StatTile label="Open promises to pay" value={String(all.filter((r) => r.promise).length)} hint={`${all.filter((r) => !r.loan.collectorId).length} loans not assigned to anyone`} />
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <Link href={qs(undefined, Boolean(mine))} className={`rounded-[5px] px-4 py-2 text-sm font-semibold ${!bucket ? "bg-brand text-white" : "bg-white text-body ring-1 ring-line hover:text-brand"}`}>All ({all.length})</Link>
+        <Link href={qs(undefined, Boolean(mine))} className={`rounded-[7px] px-4 py-2 text-sm font-semibold ${!bucket ? "bg-brand text-white" : "bg-white text-body ring-1 ring-line hover:text-brand"}`}>All ({all.length})</Link>
         {BUCKETS.map((b) => {
           const n = all.filter((r) => r.bucket === b.key).length;
-          return <Link key={b.key} href={qs(b.key, Boolean(mine))} className={`rounded-[5px] px-4 py-2 text-sm font-semibold ${bucket === b.key ? "bg-brand text-white" : "bg-white text-body ring-1 ring-line hover:text-brand"}`}>{b.label} ({n})</Link>;
+          return <Link key={b.key} href={qs(b.key, Boolean(mine))} className={`rounded-[7px] px-4 py-2 text-sm font-semibold ${bucket === b.key ? "bg-brand text-white" : "bg-white text-body ring-1 ring-line hover:text-brand"}`}>{b.label} ({n})</Link>;
         })}
-        <Link href={qs(bucket, !mine)} className={`ml-auto rounded-[5px] px-4 py-2 text-sm font-semibold ${mine ? "bg-gold text-ink" : "bg-white text-body ring-1 ring-line"}`}>{mine ? "✓ " : ""}Assigned to me</Link>
+        <Link href={qs(bucket, !mine)} className={`ml-auto rounded-[7px] px-4 py-2 text-sm font-semibold ${mine ? "bg-gold text-ink" : "bg-white text-body ring-1 ring-line"}`}>{mine ? "✓ " : ""}Assigned to me</Link>
       </div>
       <Card>
         {rows.length ? (

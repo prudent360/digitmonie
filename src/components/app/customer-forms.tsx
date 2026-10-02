@@ -49,7 +49,7 @@ export function StatusForm({ action, current }: { action: Action; current: strin
       <FormAlert state={state} />
       <div className="space-y-2">
         {options.map((o, i) => (
-          <label key={o.value} className="flex cursor-pointer items-start gap-3 rounded-[5px] border border-line p-3 text-sm has-[:checked]:border-brand has-[:checked]:bg-brand-50">
+          <label key={o.value} className="flex cursor-pointer items-start gap-3 rounded-[7px] border border-line p-3 text-sm has-[:checked]:border-brand has-[:checked]:bg-brand-50">
             <input type="radio" name="status" value={o.value} defaultChecked={i === 0} className="mt-0.5 accent-brand" />
             <span><b className="text-ink">{o.label}</b><span className="block text-xs text-muted">{o.hint}</span></span>
           </label>

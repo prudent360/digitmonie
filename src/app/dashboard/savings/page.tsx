@@ -59,8 +59,8 @@ export default function SavingsPage() {
         <h2 className="font-display text-lg font-bold text-ink">Start a new plan</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-3">
           {PLAN_TYPES.map((t) => (
-            <button key={t.name} type="button" className="group rounded-2xl border border-line bg-white p-5 text-left transition hover:border-brand hover:shadow-[0_20px_40px_-28px_rgba(1,80,200,.6)]">
-              <span className="flex size-11 items-center justify-center rounded-xl bg-brand-50 text-brand transition group-hover:bg-brand group-hover:text-white">{t.icon}</span>
+            <button key={t.name} type="button" className="group rounded-[7px] border border-line bg-white p-5 text-left transition hover:border-brand hover:shadow-[0_20px_40px_-28px_rgba(1,80,200,.6)]">
+              <span className="flex size-11 items-center justify-center rounded-[7px] bg-brand-50 text-brand transition group-hover:bg-brand group-hover:text-white">{t.icon}</span>
               <p className="mt-4 font-bold text-ink">{t.name}</p>
               <p className="mt-1 text-sm text-body">{t.text}</p>
               <p className="mt-3 text-sm font-bold text-brand">{t.rate}</p>

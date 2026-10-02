@@ -45,7 +45,7 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
         <form className="flex flex-wrap items-center gap-3 border-b border-line p-4">
           <label className="relative w-full sm:w-80">
             <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
-            <input name="q" defaultValue={query} placeholder="Name, email or phone number" className="w-full rounded-[5px] border border-line py-2 pl-9 pr-3 text-sm outline-none focus:border-brand focus:ring-4 focus:ring-brand-100" />
+            <input name="q" defaultValue={query} placeholder="Name, email or phone number" className="w-full rounded-[7px] border border-line py-2 pl-9 pr-3 text-sm outline-none focus:border-brand focus:ring-4 focus:ring-brand-100" />
           </label>
           <button className={buttonSecondary}>Search</button>
           {query && <span className="text-sm text-muted">{rows.length} match{rows.length === 1 ? "" : "es"}</span>}

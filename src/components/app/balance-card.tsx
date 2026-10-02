@@ -21,13 +21,13 @@ export function BalanceCard({ total, wallet, accountNumber, bank, change }: { to
   const mask = (v: number) => (hidden ? "₦ ••••••" : formatNaira(v));
 
   return (
-    <div className="gold-corner diamond-pattern relative overflow-hidden rounded-3xl bg-brand p-6 text-white shadow-[0_30px_60px_-30px_rgba(1,80,200,.8)]">
+    <div className="gold-corner diamond-pattern relative overflow-hidden rounded-[7px] bg-brand p-6 text-white shadow-[0_30px_60px_-30px_rgba(1,80,200,.8)]">
       <div className="absolute -right-16 -top-16 size-56 rounded-full bg-brand-400/40 blur-2xl" />
       <div className="relative flex items-start justify-between">
         <div>
           <p className="flex items-center gap-2 text-sm text-white/75">
             Total net worth
-            <button type="button" onClick={() => setHidden((h) => !h)} className="rounded-md p-1 hover:bg-white/10" aria-label={hidden ? "Show balance" : "Hide balance"}>
+            <button type="button" onClick={() => setHidden((h) => !h)} className="rounded-[7px] p-1 hover:bg-white/10" aria-label={hidden ? "Show balance" : "Hide balance"}>
               {hidden ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
             </button>
           </p>
@@ -43,7 +43,7 @@ export function BalanceCard({ total, wallet, accountNumber, bank, change }: { to
           <p className="text-xs text-white/65">Wallet balance</p>
           <p className="mt-0.5 text-lg font-bold tabular-nums">{mask(wallet)}</p>
         </div>
-        <button type="button" onClick={copy} className="relative z-10 flex items-center gap-2 rounded-xl bg-white/10 px-3 py-2 text-left ring-1 ring-white/20 transition hover:bg-white/15">
+        <button type="button" onClick={copy} className="relative z-10 flex items-center gap-2 rounded-[7px] bg-white/10 px-3 py-2 text-left ring-1 ring-white/20 transition hover:bg-white/15">
           <span>
             <span className="block text-[10px] text-white/65">{bank}</span>
             <span className="block font-mono text-sm font-semibold tracking-wider">{accountNumber}</span>

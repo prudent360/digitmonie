@@ -33,9 +33,9 @@ export default async function LoansPage({ searchParams }: { searchParams: Promis
     <div className="space-y-6">
       <PageHeader title="Loans" subtitle="Fast, transparent credit. No hidden charges." actions={!blocked ? <Link href="/dashboard/loans/apply" className={buttonPrimary}>Apply for a loan</Link> : undefined} />
 
-      {applied && <p className="rounded-[5px] bg-success-soft px-4 py-3 text-sm font-medium text-success">Application received. You&apos;ll find its status below.</p>}
-      {paid && <p className="rounded-[5px] bg-success-soft px-4 py-3 text-sm font-medium text-success">Payment received. Thank you!</p>}
-      {payment === "pending" && <p className="rounded-[5px] bg-warning-soft px-4 py-3 text-sm font-medium text-warning">We&apos;re still confirming your payment. It will show here as soon as Paystack confirms it.</p>}
+      {applied && <p className="rounded-[7px] bg-success-soft px-4 py-3 text-sm font-medium text-success">Application received. You&apos;ll find its status below.</p>}
+      {paid && <p className="rounded-[7px] bg-success-soft px-4 py-3 text-sm font-medium text-success">Payment received. Thank you!</p>}
+      {payment === "pending" && <p className="rounded-[7px] bg-warning-soft px-4 py-3 text-sm font-medium text-warning">We&apos;re still confirming your payment. It will show here as soon as Paystack confirms it.</p>}
 
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
         {open ? (
@@ -51,11 +51,11 @@ export default async function LoansPage({ searchParams }: { searchParams: Promis
 
             {balance ? (
               <>
-                <div className="mt-5 h-2.5 overflow-hidden rounded-[5px] bg-brand-50"><div className="grow-x h-full bg-brand" style={{ width: `${Math.round((1 - balance.outstanding / open.loan.totalRepayable) * 100)}%` }} /></div>
+                <div className="mt-5 h-2.5 overflow-hidden rounded-[7px] bg-brand-50"><div className="grow-x h-full bg-brand" style={{ width: `${Math.round((1 - balance.outstanding / open.loan.totalRepayable) * 100)}%` }} /></div>
                 {balance.overdueCount > 0 ? (
-                  <p className="mt-5 flex items-start gap-2 rounded-[5px] bg-danger-soft px-4 py-3 text-sm text-danger"><AlertIcon className="mt-0.5 size-4 shrink-0" /><span><b>{ngn(balance.overdueAmount)} is overdue.</b> Please pay today. Late repayments are reported to credit bureaus and affect your ability to borrow.</span></p>
+                  <p className="mt-5 flex items-start gap-2 rounded-[7px] bg-danger-soft px-4 py-3 text-sm text-danger"><AlertIcon className="mt-0.5 size-4 shrink-0" /><span><b>{ngn(balance.overdueAmount)} is overdue.</b> Please pay today. Late repayments are reported to credit bureaus and affect your ability to borrow.</span></p>
                 ) : balance.next && (
-                  <p className="mt-5 flex items-center gap-2 rounded-[5px] bg-warning-soft px-4 py-3 text-sm text-warning"><ClockIcon className="size-4" /> Next repayment: <b>{ngn(owedOn(balance.next))}</b> on {formatDate(balance.next.dueDate)}</p>
+                  <p className="mt-5 flex items-center gap-2 rounded-[7px] bg-warning-soft px-4 py-3 text-sm text-warning"><ClockIcon className="size-4" /> Next repayment: <b>{ngn(owedOn(balance.next))}</b> on {formatDate(balance.next.dueDate)}</p>
                 )}
               </>
             ) : (
@@ -74,7 +74,7 @@ export default async function LoansPage({ searchParams }: { searchParams: Promis
           </Card>
         ) : (
           <Card className="flex flex-col items-start justify-center p-6">
-            <span className="flex size-12 items-center justify-center rounded-[5px] bg-gold-100 text-gold-700"><LandmarkIcon /></span>
+            <span className="flex size-12 items-center justify-center rounded-[7px] bg-gold-100 text-gold-700"><LandmarkIcon /></span>
             <h2 className="mt-4 font-display text-xl font-bold text-ink">No active loan</h2>
             <p className="mt-1 text-sm text-body">{blocked ?? "Choose an amount and see exactly what you'll repay before you apply."}</p>
             {blocked && user.kycTier < 1 ? <Link href="/dashboard/verify" className={`${buttonPrimary} mt-5`}>Verify your BVN</Link> : !blocked && <Link href="/dashboard/loans/apply" className={`${buttonPrimary} mt-5`}>Apply now</Link>}

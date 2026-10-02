@@ -44,7 +44,7 @@ export default async function SettingsPage() {
               const done = user.kycTier >= t.tier;
               const next = user.kycTier + 1 === t.tier;
               return (
-                <li key={t.tier} className={`flex items-center gap-4 rounded-[5px] border p-4 ${next ? "border-brand bg-brand-50/50" : "border-line"}`}>
+                <li key={t.tier} className={`flex items-center gap-4 rounded-[7px] border p-4 ${next ? "border-brand bg-brand-50/50" : "border-line"}`}>
                   <span className={`flex size-10 shrink-0 items-center justify-center rounded-full ${done ? "bg-success text-white" : next ? "bg-brand text-white" : "bg-canvas text-muted"}`}>
                     {done ? <CheckIcon className="size-5" /> : <ClockIcon className="size-5" />}
                   </span>

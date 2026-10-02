@@ -6,8 +6,8 @@ import { CheckIcon, ChevronRightIcon, IdCardIcon, LockIcon, PhoneIcon, PiggyIcon
 import { AppTabBar, PhoneFrame, ScreenHeader, type AppTab } from "./phone-frame";
 
 const tick = <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-success text-white"><CheckIcon className="size-3" /></span>;
-const tile = "rounded-[5px] bg-white p-3 shadow-[0_1px_2px_rgba(6,31,77,.06)]";
-const primary = "block rounded-[5px] bg-brand py-3 text-center text-[12px] font-bold text-white";
+const tile = "rounded-[7px] bg-white p-3 shadow-[0_1px_2px_rgba(6,31,77,.06)]";
+const primary = "block rounded-[7px] bg-brand py-3 text-center text-[12px] font-bold text-white";
 
 const OpenAccountScreen = (
   <>
@@ -20,12 +20,12 @@ const OpenAccountScreen = (
         { label: "Selfie check", detail: "98% face match", icon: <IdCardIcon className="size-4" /> },
       ].map((row) => (
         <div key={row.label} className={`${tile} flex items-center gap-3`}>
-          <span className="flex size-9 items-center justify-center rounded-[5px] bg-brand-50 text-brand">{row.icon}</span>
+          <span className="flex size-9 items-center justify-center rounded-[7px] bg-brand-50 text-brand">{row.icon}</span>
           <span className="flex-1"><span className="block text-[12px] font-bold text-ink">{row.label}</span><span className="block text-[10.5px] text-muted">{row.detail}</span></span>
           {tick}
         </div>
       ))}
-      <div className="gold-corner diamond-pattern relative rounded-[5px] bg-brand p-4 text-white">
+      <div className="gold-corner diamond-pattern relative rounded-[7px] bg-brand p-4 text-white">
         <p className="text-[10.5px] text-white/70">Your account is ready</p>
         <p className="mt-1 font-mono text-[18px] font-bold tracking-widest">8034 512 907</p>
         <p className="text-[10.5px] text-white/70">DigitMonie MFB · Adaeze Okafor</p>
@@ -37,7 +37,7 @@ const OpenAccountScreen = (
 
 const SaveScreen = (
   <>
-    <ScreenHeader title="Rent Vault" action={<span className="flex items-center gap-1 rounded-[5px] bg-brand-50 px-2 py-1 text-[10px] font-bold text-brand"><LockIcon className="size-3" />Locked</span>} />
+    <ScreenHeader title="Rent Vault" action={<span className="flex items-center gap-1 rounded-[7px] bg-brand-50 px-2 py-1 text-[10px] font-bold text-brand"><LockIcon className="size-3" />Locked</span>} />
     <div className="space-y-3 px-4">
       <div className={`${tile} flex flex-col items-center py-5`}>
         <span className="relative flex size-32 items-center justify-center">
@@ -65,7 +65,7 @@ const InvestScreen = (
   <>
     <ScreenHeader title="Invest" />
     <div className="space-y-3 px-4">
-      <div className="rounded-[5px] bg-brand-950 p-4 text-white">
+      <div className="rounded-[7px] bg-brand-950 p-4 text-white">
         <p className="text-[10.5px] text-white/60">Portfolio value</p>
         <p className="font-display text-[22px] font-extrabold">₦4,620,000</p>
         <p className="text-[10.5px] font-semibold text-gold">+₦186,000 returns</p>
@@ -99,14 +99,14 @@ const BorrowScreen = (
         <p className="mt-2 flex justify-between text-[10px] text-muted"><span>₦50k</span><span>Limit ₦3m</span></p>
       </div>
       <div className="grid grid-cols-4 gap-1.5">
-        {[3, 6, 9, 12].map((m) => <span key={m} className={`rounded-[5px] py-2 text-center text-[11px] font-bold ${m === 6 ? "bg-brand text-white" : "bg-white text-body"}`}>{m} mo</span>)}
+        {[3, 6, 9, 12].map((m) => <span key={m} className={`rounded-[7px] py-2 text-center text-[11px] font-bold ${m === 6 ? "bg-brand text-white" : "bg-white text-body"}`}>{m} mo</span>)}
       </div>
       <div className={`${tile} space-y-2 text-[11px]`}>
         {[["Monthly repayment", "₦140,750"], ["Interest rate", "3.5% monthly"], ["First repayment", "28 Oct"]].map(([k, v]) => (
           <p key={k} className="flex justify-between"><span className="text-muted">{k}</span><span className="font-bold text-ink">{v}</span></p>
         ))}
       </div>
-      <div className="flex items-center gap-2 rounded-[5px] bg-success-soft p-3 text-[11px] font-semibold text-success">{tick} You&apos;re pre-approved. No collateral.</div>
+      <div className="flex items-center gap-2 rounded-[7px] bg-success-soft p-3 text-[11px] font-semibold text-success">{tick} You&apos;re pre-approved. No collateral.</div>
       <span className={primary}>Get ₦750,000</span>
     </div>
   </>
@@ -171,7 +171,7 @@ export function ScrollPhone() {
               <p className="mt-4 max-w-lg text-lg leading-relaxed text-body">{step.text}</p>
               <ul className="mt-6 flex flex-wrap gap-2">
                 {step.points.map((p) => (
-                  <li key={p} className="flex items-center gap-2 rounded-[5px] bg-white px-3 py-2 text-sm font-semibold text-ink ring-1 ring-line">
+                  <li key={p} className="flex items-center gap-2 rounded-[7px] bg-white px-3 py-2 text-sm font-semibold text-ink ring-1 ring-line">
                     <span className="h-3 w-1 bg-gold" />{p}
                   </li>
                 ))}
@@ -189,7 +189,7 @@ export function ScrollPhone() {
           <div className="relative">
             {/* Brand block behind the phone, echoing the stationery */}
             <div className="absolute -inset-x-10 bottom-10 top-16" aria-hidden="true">
-              <div className="diamond-pattern gold-corner size-full rounded-[5px] bg-brand" />
+              <div className="diamond-pattern gold-corner size-full rounded-[7px] bg-brand" />
             </div>
             <PhoneFrame className="relative w-[300px]">
               <div className="relative h-[560px]">
@@ -204,7 +204,7 @@ export function ScrollPhone() {
           </div>
           <ol className="flex flex-col gap-2" aria-label="Steps">
             {STEPS.map((step, i) => (
-              <li key={step.title} className={`w-1 rounded-[5px] transition-all duration-500 ${i === active ? "h-10 bg-gold" : "h-4 bg-brand-100"}`}><span className="sr-only">{step.title}</span></li>
+              <li key={step.title} className={`w-1 rounded-[7px] transition-all duration-500 ${i === active ? "h-10 bg-gold" : "h-4 bg-brand-100"}`}><span className="sr-only">{step.title}</span></li>
             ))}
           </ol>
         </div>

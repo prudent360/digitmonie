@@ -28,8 +28,8 @@ export function ResolveForm({ action, canRecheck }: { action: Action; canRecheck
       <FormAlert state={state} />
       <textarea name="note" rows={2} placeholder="What you found and did" className={`${inputClass} text-sm`} />
       <div className="flex flex-wrap gap-2">
-        {canRecheck && <button name="recheck" value="1" disabled={pending} className="rounded-[5px] bg-brand px-3 py-1.5 text-xs font-bold text-white disabled:opacity-60">Re-check with Flutterwave and apply</button>}
-        <button name="recheck" value="0" disabled={pending} className="rounded-[5px] border border-line bg-white px-3 py-1.5 text-xs font-bold text-ink disabled:opacity-60">Mark resolved</button>
+        {canRecheck && <button name="recheck" value="1" disabled={pending} className="rounded-[7px] bg-brand px-3 py-1.5 text-xs font-bold text-white disabled:opacity-60">Re-check with Flutterwave and apply</button>}
+        <button name="recheck" value="0" disabled={pending} className="rounded-[7px] border border-line bg-white px-3 py-1.5 text-xs font-bold text-ink disabled:opacity-60">Mark resolved</button>
       </div>
     </form>
   );

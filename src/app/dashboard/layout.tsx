@@ -27,7 +27,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <AppShell logos={await getLogos()} unread={await unreadCount(user.id)} variant="customer" sections={SECTIONS} user={{ name: fullName(user), email: user.email, roleLabel: `Personal · Tier ${user.kycTier}` }}>
       {user.status !== "active" && (
-        <p role="status" className="mb-6 rounded-[5px] border border-warning/30 bg-warning-soft px-4 py-3 text-sm text-warning">
+        <p role="status" className="mb-6 rounded-[7px] border border-warning/30 bg-warning-soft px-4 py-3 text-sm text-warning">
           {user.status === "frozen" ? "Your account is frozen." : "Some features on your account are paused."} You can still sign in and repay loans, but you can&apos;t apply for new ones. Please contact support if you have questions.
         </p>
       )}

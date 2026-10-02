@@ -16,12 +16,12 @@ export function RepayForm({ action, loanId, options }: { action: (s: FormState, 
       <input type="hidden" name="loanId" value={loanId} />
       <div className="space-y-2">
         {options.map((o) => (
-          <label key={o.label} className={`flex cursor-pointer items-center justify-between rounded-[5px] border px-4 py-3 text-sm ${choice === String(o.amount) ? "border-brand bg-brand-50" : "border-line"}`}>
+          <label key={o.label} className={`flex cursor-pointer items-center justify-between rounded-[7px] border px-4 py-3 text-sm ${choice === String(o.amount) ? "border-brand bg-brand-50" : "border-line"}`}>
             <span className="flex items-center gap-3"><input type="radio" name="choice" value={o.amount} checked={choice === String(o.amount)} onChange={() => setChoice(String(o.amount))} className="accent-brand" />{o.label}</span>
             <span className="font-bold tabular-nums text-ink">{ngn(o.amount)}</span>
           </label>
         ))}
-        <label className={`flex cursor-pointer items-center gap-3 rounded-[5px] border px-4 py-3 text-sm ${choice === "custom" ? "border-brand bg-brand-50" : "border-line"}`}>
+        <label className={`flex cursor-pointer items-center gap-3 rounded-[7px] border px-4 py-3 text-sm ${choice === "custom" ? "border-brand bg-brand-50" : "border-line"}`}>
           <input type="radio" name="choice" value="custom" checked={choice === "custom"} onChange={() => setChoice("custom")} className="accent-brand" />
           Another amount
           {choice === "custom" && <input name="custom" inputMode="decimal" placeholder="₦" autoFocus className={`${inputClass} ml-auto w-40 py-2`} />}

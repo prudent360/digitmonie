@@ -37,7 +37,7 @@ export default async function VerifyPage() {
     <div className="mx-auto max-w-3xl space-y-6">
       <PageHeader title="Verify your identity" subtitle="Nigerian law (CBN KYC rules) requires us to confirm who you are. Each tier raises your limits." />
 
-      <div className="flex items-start gap-3 rounded-[5px] border border-brand-100 bg-brand-50/60 p-4 text-sm text-body">
+      <div className="flex items-start gap-3 rounded-[7px] border border-brand-100 bg-brand-50/60 p-4 text-sm text-body">
         <ShieldIcon className="mt-0.5 size-5 shrink-0 text-brand" />
         <p>Your BVN and NIN are encrypted and only used to confirm your identity. DigitMonie is licensed by the FCCPC and follows the Nigeria Data Protection Act.</p>
       </div>
@@ -51,7 +51,7 @@ export default async function VerifyPage() {
             <li key={t.tier}>
               <Card className={`p-5 sm:p-6 ${stage === "current" ? "border-brand ring-4 ring-brand-50" : ""}`}>
                 <div className="flex items-start gap-4">
-                  <span className={`flex size-11 shrink-0 items-center justify-center rounded-[5px] ${stage === "done" ? "bg-success text-white" : stage === "pending" ? "bg-warning-soft text-warning" : stage === "current" ? "bg-brand text-white" : "bg-canvas text-muted"}`}>
+                  <span className={`flex size-11 shrink-0 items-center justify-center rounded-[7px] ${stage === "done" ? "bg-success text-white" : stage === "pending" ? "bg-warning-soft text-warning" : stage === "current" ? "bg-brand text-white" : "bg-canvas text-muted"}`}>
                     {stage === "done" ? <CheckIcon /> : stage === "pending" ? <ClockIcon /> : stage === "locked" ? <LockIcon /> : <span className="font-display font-extrabold">{t.tier}</span>}
                   </span>
                   <div className="min-w-0 flex-1">
@@ -71,7 +71,7 @@ export default async function VerifyPage() {
                 {stage === "current" && (
                   <div className="mt-6 border-t border-line pt-6">
                     {rejected && (
-                      <p className="mb-5 flex items-start gap-2 rounded-[5px] bg-danger-soft px-4 py-3 text-sm text-danger"><AlertIcon className="mt-0.5 size-4 shrink-0" /><span><b>Last attempt wasn&apos;t approved:</b> {rejected}</span></p>
+                      <p className="mb-5 flex items-start gap-2 rounded-[7px] bg-danger-soft px-4 py-3 text-sm text-danger"><AlertIcon className="mt-0.5 size-4 shrink-0" /><span><b>Last attempt wasn&apos;t approved:</b> {rejected}</span></p>
                     )}
                     {t.tier === 1 && <BvnForm action={verifyBvn} />}
                     {t.tier === 2 && <NinSelfieForm action={verifyNin} />}

@@ -54,7 +54,7 @@ export default function HomePage() {
         <div className="absolute -left-40 top-10 size-[520px] rounded-full bg-brand-400/30 blur-3xl" />
         <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-[1.1fr_1fr] lg:px-8">
           <div>
-            <p className="rise-in inline-flex items-center gap-2 rounded-[5px] bg-white/10 py-1.5 pl-1.5 pr-4 text-sm font-semibold ring-1 ring-white/20">
+            <p className="rise-in inline-flex items-center gap-2 rounded-[7px] bg-white/10 py-1.5 pl-1.5 pr-4 text-sm font-semibold ring-1 ring-white/20">
               <span className="rounded-[3px] bg-gold px-2.5 py-0.5 text-xs font-bold text-ink">New</span>
               Earn up to 21% p.a. on Fixed Notes
             </p>
@@ -72,10 +72,10 @@ export default function HomePage() {
               Save towards your goals, invest in high-yield Naira products and get loans in minutes, all from one secure account built for Nigerians.
             </p>
             <div className="rise-in mt-9 flex flex-wrap items-center gap-4" style={{ animationDelay: "300ms" }}>
-              <Link href="/register" className="group flex items-center gap-2 rounded-[5px] bg-gold px-7 py-4 text-base font-bold text-ink shadow-[0_18px_40px_-16px_rgba(240,202,86,.9)] transition-all hover:-translate-y-0.5 hover:bg-gold-600">
+              <Link href="/register" className="group flex items-center gap-2 rounded-[7px] bg-gold px-7 py-4 text-base font-bold text-ink shadow-[0_18px_40px_-16px_rgba(240,202,86,.9)] transition-all hover:-translate-y-0.5 hover:bg-gold-600">
                 Open a free account <ArrowRightIcon className="size-5 transition-transform group-hover:translate-x-1" />
               </Link>
-              <a href="#how-it-works" className="rounded-[5px] px-6 py-4 text-base font-semibold text-white ring-1 ring-white/30 transition-colors hover:bg-white/10">See how it works</a>
+              <a href="#how-it-works" className="rounded-[7px] px-6 py-4 text-base font-semibold text-white ring-1 ring-white/30 transition-colors hover:bg-white/10">See how it works</a>
             </div>
             <div className="rise-in mt-10 flex flex-wrap items-center gap-6" style={{ animationDelay: "400ms" }}>
               <div className="flex items-center gap-3">
@@ -89,7 +89,7 @@ export default function HomePage() {
                   <span className="text-white/75">4.8 from 12k+ reviews</span>
                 </div>
               </div>
-              <span className="flex items-center gap-2 rounded-[5px] bg-white/10 px-3 py-2 text-sm font-semibold ring-1 ring-white/20">
+              <span className="flex items-center gap-2 rounded-[7px] bg-white/10 px-3 py-2 text-sm font-semibold ring-1 ring-white/20">
                 <ShieldIcon className="size-4 text-gold" /> Licensed by the FCCPC
               </span>
             </div>
@@ -104,7 +104,7 @@ export default function HomePage() {
       <section className="overflow-hidden py-14" aria-label="Our safeguards">
         <div className="flex w-max animate-marquee gap-4 hover:[animation-play-state:paused]">
           {[...TRUST, ...TRUST].map((item, i) => (
-            <span key={i} className="flex items-center gap-2 whitespace-nowrap rounded-[5px] border border-line bg-white px-5 py-2.5 text-sm font-semibold text-body" aria-hidden={i >= TRUST.length}>
+            <span key={i} className="flex items-center gap-2 whitespace-nowrap rounded-[7px] border border-line bg-white px-5 py-2.5 text-sm font-semibold text-body" aria-hidden={i >= TRUST.length}>
               <span className="flex size-5 items-center justify-center rounded-[3px] bg-brand-50 text-brand"><CheckIcon className="size-3" /></span>{item}
             </span>
           ))}
@@ -156,15 +156,15 @@ export default function HomePage() {
                 <span className="pulse-ring absolute inset-6 rounded-full bg-brand/40" />
                 <span className="absolute inset-0 rounded-full border border-white/10" />
                 <span className="absolute inset-6 rounded-full border border-white/10" />
-                <span className="flex size-24 items-center justify-center rounded-[5px] bg-brand text-white shadow-[0_20px_60px_-10px_rgba(1,80,200,.9)]"><ShieldIcon className="size-11" /></span>
+                <span className="flex size-24 items-center justify-center rounded-[7px] bg-brand text-white shadow-[0_20px_60px_-10px_rgba(1,80,200,.9)]"><ShieldIcon className="size-11" /></span>
               </div>
             </Reveal>
           </div>
           <div className="grid gap-5 sm:grid-cols-2">
             {SECURITY.map((item, i) => (
               <Reveal key={item.title} delay={i * 100}>
-                <div className="h-full rounded-[5px] bg-white/[.05] p-7 ring-1 ring-white/10 backdrop-blur transition-colors hover:bg-white/[.08]">
-                  <span className="flex size-12 items-center justify-center rounded-[5px] bg-gold/15 text-gold">{item.icon}</span>
+                <div className="h-full rounded-[7px] bg-white/[.05] p-7 ring-1 ring-white/10 backdrop-blur transition-colors hover:bg-white/[.08]">
+                  <span className="flex size-12 items-center justify-center rounded-[7px] bg-gold/15 text-gold">{item.icon}</span>
                   <h3 className="mt-5 font-display text-lg font-bold text-white">{item.title}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-white/65">{item.text}</p>
                 </div>
@@ -181,7 +181,7 @@ export default function HomePage() {
         </div>
         <div className="mt-14 flex w-max animate-marquee gap-5 hover:[animation-play-state:paused]" style={{ animationDuration: "60s" }}>
           {[...TESTIMONIALS, ...TESTIMONIALS].map((t, i) => (
-            <figure key={i} className="w-[340px] shrink-0 rounded-[5px] border border-line bg-white p-7" aria-hidden={i >= TESTIMONIALS.length}>
+            <figure key={i} className="w-[340px] shrink-0 rounded-[7px] border border-line bg-white p-7" aria-hidden={i >= TESTIMONIALS.length}>
               <span className="flex text-gold">{Array.from({ length: 5 }, (_, s) => <StarIcon key={s} className="size-4" />)}</span>
               <blockquote className="mt-4 text-[15px] leading-relaxed text-ink">“{t.text}”</blockquote>
               <figcaption className="mt-6 flex items-center gap-3">
@@ -205,10 +205,10 @@ export default function HomePage() {
           <div className="space-y-3">
             {FAQS.map((f, i) => (
               <Reveal key={f.q} delay={i * 60}>
-                <details className="group rounded-[5px] bg-white ring-1 ring-line open:shadow-[0_20px_40px_-25px_rgba(6,31,77,.35)]">
+                <details className="group rounded-[7px] bg-white ring-1 ring-line open:shadow-[0_20px_40px_-25px_rgba(6,31,77,.35)]">
                   <summary className="flex cursor-pointer items-center justify-between gap-4 px-6 py-5 font-display font-bold text-ink">
                     {f.q}
-                    <span className="faq-icon flex size-8 shrink-0 items-center justify-center rounded-[5px] bg-brand-50 text-brand transition-transform"><span className="text-xl leading-none">+</span></span>
+                    <span className="faq-icon flex size-8 shrink-0 items-center justify-center rounded-[7px] bg-brand-50 text-brand transition-transform"><span className="text-xl leading-none">+</span></span>
                   </summary>
                   <p className="px-6 pb-6 leading-relaxed text-body">{f.a}</p>
                 </details>
@@ -221,19 +221,19 @@ export default function HomePage() {
       {/* ---------- CTA ---------- */}
       <section className="px-4 py-24 sm:px-6 lg:px-8">
         <Reveal className="mx-auto max-w-7xl">
-          <div className="gold-corner diamond-pattern relative overflow-hidden rounded-[5px] bg-brand px-8 py-16 text-white sm:px-14">
+          <div className="gold-corner diamond-pattern relative overflow-hidden rounded-[7px] bg-brand px-8 py-16 text-white sm:px-14">
             <div className="relative z-10 grid items-center gap-10 lg:grid-cols-[1.4fr_1fr]">
               <div>
                 <h2 className="font-display text-3xl font-extrabold leading-tight sm:text-5xl">Your bigger possibilities start today.</h2>
                 <p className="mt-4 max-w-xl text-lg text-white/80">Open a free account in minutes and get ₦1,000 bonus when you save your first ₦10,000.</p>
                 <div className="mt-8 flex flex-wrap items-center gap-4">
-                  <Link href="/register" className="flex items-center gap-2 rounded-[5px] bg-gold px-7 py-4 font-bold text-ink transition-transform hover:-translate-y-0.5">Open free account <ArrowRightIcon className="size-5" /></Link>
-                  <Link href="/login" className="rounded-[5px] px-6 py-4 font-semibold text-white ring-1 ring-white/30 transition-colors hover:bg-white/10">Log in</Link>
+                  <Link href="/register" className="flex items-center gap-2 rounded-[7px] bg-gold px-7 py-4 font-bold text-ink transition-transform hover:-translate-y-0.5">Open free account <ArrowRightIcon className="size-5" /></Link>
+                  <Link href="/login" className="rounded-[7px] px-6 py-4 font-semibold text-white ring-1 ring-white/30 transition-colors hover:bg-white/10">Log in</Link>
                 </div>
               </div>
               <ul className="space-y-3 text-sm">
                 {["No account maintenance fees", "Free transfers every month", "Daily interest on savings", "Support 24/7, 365 days"].map((b) => (
-                  <li key={b} className="flex items-center gap-3 rounded-[5px] bg-white/10 px-5 py-3.5 font-semibold ring-1 ring-white/15">
+                  <li key={b} className="flex items-center gap-3 rounded-[7px] bg-white/10 px-5 py-3.5 font-semibold ring-1 ring-white/15">
                     <ZapIcon className="size-4 text-gold" />{b}
                   </li>
                 ))}

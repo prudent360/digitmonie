@@ -43,7 +43,7 @@ export function TransactionsTable({ transactions }: { transactions: Transaction[
         </div>
         <label className="relative ml-auto w-full sm:w-64">
           <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by name or reference" className="w-full rounded-xl border border-line py-2 pl-9 pr-3 text-sm outline-none focus:border-brand focus:ring-4 focus:ring-brand-100" />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by name or reference" className="w-full rounded-[7px] border border-line py-2 pl-9 pr-3 text-sm outline-none focus:border-brand focus:ring-4 focus:ring-brand-100" />
         </label>
         <button type="button" className={buttonSecondary}><DownloadIcon className="size-4" /> Statement</button>
       </div>

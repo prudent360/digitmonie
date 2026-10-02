@@ -27,8 +27,8 @@ export default async function ConsoleLoansPage({ searchParams }: { searchParams:
         {QUEUES.map((t) => {
           const n = counts[t.key as keyof typeof counts];
           return (
-            <Link key={t.key} href={`/console/loans?q=${t.key}`} className={`flex shrink-0 items-center gap-2 rounded-[5px] px-4 py-2 text-sm font-semibold ${t.key === queue.key ? "bg-brand text-white" : "bg-white text-body ring-1 ring-line hover:text-brand"}`}>
-              {t.label}{n ? <span className={`rounded-[5px] px-1.5 text-xs font-bold ${t.key === queue.key ? "bg-white/20" : t.key === "overdue" ? "bg-danger-soft text-danger" : "bg-gold text-ink"}`}>{n}</span> : null}
+            <Link key={t.key} href={`/console/loans?q=${t.key}`} className={`flex shrink-0 items-center gap-2 rounded-[7px] px-4 py-2 text-sm font-semibold ${t.key === queue.key ? "bg-brand text-white" : "bg-white text-body ring-1 ring-line hover:text-brand"}`}>
+              {t.label}{n ? <span className={`rounded-[7px] px-1.5 text-xs font-bold ${t.key === queue.key ? "bg-white/20" : t.key === "overdue" ? "bg-danger-soft text-danger" : "bg-gold text-ink"}`}>{n}</span> : null}
             </Link>
           );
         })}

@@ -6,7 +6,7 @@ import { CountUp } from "./count-up";
 function Floater({ className, delay, children }: { className: string; delay: number; children: React.ReactNode }) {
   return (
     <div className={`pop-in absolute z-20 ${className}`} style={{ animationDelay: `${delay}ms` }}>
-      <div className="animate-float rounded-[5px] bg-white p-3 shadow-[0_24px_50px_-20px_rgba(4,19,47,.55)] ring-1 ring-black/5" style={{ animationDelay: `${delay + 400}ms` }}>
+      <div className="animate-float rounded-[7px] bg-white p-3 shadow-[0_24px_50px_-20px_rgba(4,19,47,.55)] ring-1 ring-black/5" style={{ animationDelay: `${delay + 400}ms` }}>
         {children}
       </div>
     </div>
@@ -50,7 +50,7 @@ export function HeroPhone() {
           </div>
 
           {/* Balance card */}
-          <div className="gold-corner diamond-pattern relative mx-4 mt-3 rounded-[5px] bg-brand p-4 text-white">
+          <div className="gold-corner diamond-pattern relative mx-4 mt-3 rounded-[7px] bg-brand p-4 text-white">
             <div className="flex items-center justify-between">
               <p className="text-[9px] font-medium text-white/70">Total balance</p>
               <LogoMark inverted className="size-5" />
@@ -71,14 +71,14 @@ export function HeroPhone() {
               { label: "Borrow", icon: <LandmarkIcon className="size-4" /> },
             ].map((a) => (
               <div key={a.label} className="flex flex-col items-center gap-1">
-                <span className="flex size-9 items-center justify-center rounded-xl bg-white text-brand shadow-sm">{a.icon}</span>
+                <span className="flex size-9 items-center justify-center rounded-[7px] bg-white text-brand shadow-sm">{a.icon}</span>
                 <span className="text-[8.5px] font-semibold text-body">{a.label}</span>
               </div>
             ))}
           </div>
 
           {/* Mini portfolio chart */}
-          <div className="mx-4 mt-3 rounded-2xl bg-white p-3 shadow-sm">
+          <div className="mx-4 mt-3 rounded-[7px] bg-white p-3 shadow-sm">
             <div className="flex items-center justify-between">
               <p className="text-[10px] font-bold text-ink">Investments</p>
               <p className="text-[9px] font-semibold text-success">+₦186,000</p>
@@ -97,9 +97,9 @@ export function HeroPhone() {
 
           <div className="mx-4 mb-5 mt-3 space-y-1.5">
             {rows.map((row, i) => (
-              <div key={row.label} className="rise-in flex items-center justify-between rounded-xl bg-white px-2.5 py-2 shadow-sm" style={{ animationDelay: `${900 + i * 150}ms` }}>
+              <div key={row.label} className="rise-in flex items-center justify-between rounded-[7px] bg-white px-2.5 py-2 shadow-sm" style={{ animationDelay: `${900 + i * 150}ms` }}>
                 <span className="flex items-center gap-2">
-                  <span className="flex size-6 items-center justify-center rounded-lg bg-brand-50 text-brand">{row.icon}</span>
+                  <span className="flex size-6 items-center justify-center rounded-[7px] bg-brand-50 text-brand">{row.icon}</span>
                   <span className="text-[9.5px] font-semibold text-ink">{row.label}</span>
                 </span>
                 <span className={`text-[9.5px] font-bold ${row.tone}`}>{row.amount}</span>

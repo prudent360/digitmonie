@@ -29,10 +29,10 @@ export default async function TwoFactorSetupPage() {
           <p className="text-sm font-bold text-ink">2. Scan this QR code with the app</p>
           <div className="mt-3 flex flex-wrap items-center gap-5">
             {/* eslint-disable-next-line @next/next/no-img-element -- data URL generated on the server */}
-            <img src={qr} alt="QR code for your authenticator app" width={160} height={160} className="rounded-[5px] ring-1 ring-line" />
+            <img src={qr} alt="QR code for your authenticator app" width={160} height={160} className="rounded-[7px] ring-1 ring-line" />
             <div className="text-sm text-body">
               <p>Can&apos;t scan it? Enter this key:</p>
-              <p className="mt-1 select-all rounded-[5px] bg-canvas px-3 py-2 font-mono text-[13px] font-bold tracking-wider text-ink">{formatSecret(secret)}</p>
+              <p className="mt-1 select-all rounded-[7px] bg-canvas px-3 py-2 font-mono text-[13px] font-bold tracking-wider text-ink">{formatSecret(secret)}</p>
             </div>
           </div>
         </li>

@@ -20,10 +20,10 @@ export default async function EmailLogPage({ params }: { params: Promise<{ id: s
       <Link href="/console/settings?tab=email" className="text-sm font-semibold text-brand">← Email settings</Link>
       <PageHeader title={e.subject} subtitle={`To ${e.to} · ${formatDate(e.createdAt.toISOString(), { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })} · ${EMAIL_TEMPLATES[e.template as TemplateKey]?.name ?? e.template}`}
         actions={e.status === "logged" ? <Badge>Logged only</Badge> : e.status === "skipped" ? <Badge>Switched off</Badge> : <StatusBadge status={e.status === "sent" ? "successful" : "failed"} />} />
-      {e.error && <p className="rounded-[5px] bg-danger-soft px-4 py-3 text-sm text-danger">{e.error}</p>}
+      {e.error && <p className="rounded-[7px] bg-danger-soft px-4 py-3 text-sm text-danger">{e.error}</p>}
       <Card className="p-5">
         <p className="mb-3 text-xs text-muted">Verification codes are masked in this copy.</p>
-        <iframe title="Email" srcDoc={e.html} sandbox="" className="h-[720px] w-full rounded-[5px] border border-line bg-canvas" />
+        <iframe title="Email" srcDoc={e.html} sandbox="" className="h-[720px] w-full rounded-[7px] border border-line bg-canvas" />
       </Card>
     </div>
   );

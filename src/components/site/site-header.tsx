@@ -34,22 +34,22 @@ export function SiteHeader({ logos }: { logos: Logos }) {
 
         <nav className="hidden items-center gap-1 lg:flex" aria-label="Main">
           {NAV.map((item) => (
-            <a key={item.href} href={item.href} className={`rounded-[5px] px-4 py-2 text-sm font-semibold transition-colors ${solid ? "text-body hover:bg-brand-50 hover:text-brand" : "text-white/85 hover:bg-white/10 hover:text-white"}`}>
+            <a key={item.href} href={item.href} className={`rounded-[7px] px-4 py-2 text-sm font-semibold transition-colors ${solid ? "text-body hover:bg-brand-50 hover:text-brand" : "text-white/85 hover:bg-white/10 hover:text-white"}`}>
               {item.label}
             </a>
           ))}
         </nav>
 
         <div className="hidden items-center gap-2 lg:flex">
-          <Link href="/login" className={`rounded-[5px] px-5 py-2.5 text-sm font-semibold transition-colors ${solid ? "text-brand hover:bg-brand-50" : "text-white hover:bg-white/10"}`}>
+          <Link href="/login" className={`rounded-[7px] px-5 py-2.5 text-sm font-semibold transition-colors ${solid ? "text-brand hover:bg-brand-50" : "text-white hover:bg-white/10"}`}>
             Log in
           </Link>
-          <Link href="/register" className={`rounded-[5px] px-5 py-2.5 text-sm font-bold transition-all hover:-translate-y-0.5 ${solid ? "bg-brand text-white shadow-[0_10px_24px_-10px_rgba(1,80,200,.7)] hover:bg-brand-600" : "bg-gold text-ink hover:bg-gold-600"}`}>
+          <Link href="/register" className={`rounded-[7px] px-5 py-2.5 text-sm font-bold transition-all hover:-translate-y-0.5 ${solid ? "bg-brand text-white shadow-[0_10px_24px_-10px_rgba(1,80,200,.7)] hover:bg-brand-600" : "bg-gold text-ink hover:bg-gold-600"}`}>
             Open free account
           </Link>
         </div>
 
-        <button type="button" onClick={() => setOpen((v) => !v)} className={`rounded-xl p-2 lg:hidden ${solid ? "text-ink" : "text-white"}`} aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open}>
+        <button type="button" onClick={() => setOpen((v) => !v)} className={`rounded-[7px] p-2 lg:hidden ${solid ? "text-ink" : "text-white"}`} aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open}>
           {open ? <XIcon className="size-6" /> : <MenuIcon className="size-6" />}
         </button>
       </div>
@@ -64,8 +64,8 @@ export function SiteHeader({ logos }: { logos: Logos }) {
             ))}
           </nav>
           <div className="mt-5 grid grid-cols-2 gap-3">
-            <Link href="/login" className="rounded-[5px] border border-line py-3 text-center text-sm font-semibold text-brand">Log in</Link>
-            <Link href="/register" className="rounded-[5px] bg-brand py-3 text-center text-sm font-bold text-white">Open account</Link>
+            <Link href="/login" className="rounded-[7px] border border-line py-3 text-center text-sm font-semibold text-brand">Log in</Link>
+            <Link href="/register" className="rounded-[7px] bg-brand py-3 text-center text-sm font-bold text-white">Open account</Link>
           </div>
         </div>
       )}

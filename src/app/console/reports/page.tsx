@@ -25,7 +25,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
     <div className="space-y-6">
       <PageHeader title="Reports" subtitle="Lending performance from the live data and the ledger." actions={
         <div className="flex flex-wrap gap-2">
-          {PERIODS.map((p) => <Link key={p.days} href={`/console/reports?days=${p.days}`} className={`rounded-[5px] px-3.5 py-2 text-sm font-semibold ${p.days === days ? "bg-brand text-white" : "bg-white text-body ring-1 ring-line"}`}>{p.label}</Link>)}
+          {PERIODS.map((p) => <Link key={p.days} href={`/console/reports?days=${p.days}`} className={`rounded-[7px] px-3.5 py-2 text-sm font-semibold ${p.days === days ? "bg-brand text-white" : "bg-white text-body ring-1 ring-line"}`}>{p.label}</Link>)}
         </div>
       } />
 
@@ -54,7 +54,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
                   <td className="px-5 py-2.5 tabular-nums">{b.loans}</td>
                   <td className="px-5 py-2.5 tabular-nums">{ngn(b.principal)}</td>
                   <td className="w-40 px-5 py-2.5">
-                    <div className="flex items-center gap-2"><span className="h-1.5 flex-1 overflow-hidden rounded-[5px] bg-canvas"><span className={`block h-full ${b.key === "current" ? "bg-success" : b.key === "1-7" || b.key === "8-30" ? "bg-warning" : "bg-danger"}`} style={{ width: `${book.principal ? (b.principal / book.principal) * 100 : 0}%` }} /></span><span className="w-10 text-right text-xs tabular-nums text-muted">{book.principal ? Math.round((b.principal / book.principal) * 100) : 0}%</span></div>
+                    <div className="flex items-center gap-2"><span className="h-1.5 flex-1 overflow-hidden rounded-[7px] bg-canvas"><span className={`block h-full ${b.key === "current" ? "bg-success" : b.key === "1-7" || b.key === "8-30" ? "bg-warning" : "bg-danger"}`} style={{ width: `${book.principal ? (b.principal / book.principal) * 100 : 0}%` }} /></span><span className="w-10 text-right text-xs tabular-nums text-muted">{book.principal ? Math.round((b.principal / book.principal) * 100) : 0}%</span></div>
                   </td>
                 </tr>
               ))}
@@ -107,7 +107,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
           <h2 className="text-[15px] font-bold text-ink">Collections · last {PERIODS.find((p) => p.days === days)!.label}</h2>
           <dl className="mt-4 grid grid-cols-2 gap-4 text-sm">
             {[["Contacts made", formatNumber(col.contacts)], ["Promises made", formatNumber(col.promisesMade)], ["Promises kept", `${col.kept} (${pct(col.keptRate)})`], ["Promises broken", formatNumber(col.broken)]].map(([k, v]) => (
-              <div key={k} className="rounded-[5px] bg-canvas p-3"><dt className="text-xs text-muted">{k}</dt><dd className="mt-1 font-display text-lg font-bold text-ink">{v}</dd></div>
+              <div key={k} className="rounded-[7px] bg-canvas p-3"><dt className="text-xs text-muted">{k}</dt><dd className="mt-1 font-display text-lg font-bold text-ink">{v}</dd></div>
             ))}
           </dl>
         </Card>
