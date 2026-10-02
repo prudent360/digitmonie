@@ -240,6 +240,8 @@ export const loans = pgTable("loans", {
   purpose: text("purpose").notNull(),
   // Where the money goes
   payoutBank: text("payout_bank").notNull(),
+  /** NIP / Flutterwave bank code, needed for automatic payouts. */
+  payoutBankCode: text("payout_bank_code"),
   payoutAccount: text("payout_account").notNull(),
   payoutName: text("payout_name").notNull(),
   // Assessment
@@ -274,6 +276,10 @@ export const loanInstalments = pgTable("loan_instalments", {
   interest: kobo("interest").notNull(),
   lateFee: kobo("late_fee").notNull().default(0),
   paid: kobo("paid").notNull().default(0),
+  /** How `paid` splits across late fee, interest and principal (filled in that order), for the ledger. */
+  paidLateFee: kobo("paid_late_fee").notNull().default(0),
+  paidInterest: kobo("paid_interest").notNull().default(0),
+  paidPrincipal: kobo("paid_principal").notNull().default(0),
   status: text("status").$type<InstalmentStatus>().notNull().default("upcoming"),
   paidAt: timestamp("paid_at", { withTimezone: true }),
   reminderSentAt: timestamp("reminder_sent_at", { withTimezone: true }),
@@ -284,7 +290,7 @@ export const loanPayments = pgTable("loan_payments", {
   id: serial("id").primaryKey(),
   loanId: integer("loan_id").notNull().references(() => loans.id, { onDelete: "cascade" }),
   amount: kobo("amount").notNull(),
-  method: text("method").$type<"paystack" | "manual" | "test">().notNull(),
+  method: text("method").$type<"flutterwave" | "paystack" | "manual" | "test">().notNull(),
   reference: text("reference").notNull().unique(),
   status: text("status").$type<PaymentStatus>().notNull().default("pending"),
   note: text("note"),
@@ -309,3 +315,67 @@ export type LoanProduct = typeof loanProducts.$inferSelect;
 export type Loan = typeof loans.$inferSelect;
 export type LoanInstalment = typeof loanInstalments.$inferSelect;
 export type LoanPayment = typeof loanPayments.$inferSelect;
+
+/* ---------- Platform settings ---------- */
+
+/** One row per setting. Secret values are encrypted (see lib/settings). */
+export const settings = pgTable("settings", {
+  key: text("key").primaryKey(),
+  value: jsonb("value").$type<string | number | boolean>().notNull(),
+  updatedById: integer("updated_by_id").references(() => users.id, { onDelete: "set null" }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/* ---------- Payouts ---------- */
+
+export type PayoutStatus = "processing" | "successful" | "failed";
+
+/** Every attempt to send a loan to the customer's bank account, automatic (Flutterwave) or manual. */
+export const payouts = pgTable("payouts", {
+  id: serial("id").primaryKey(),
+  loanId: integer("loan_id").notNull().references(() => loans.id, { onDelete: "restrict" }),
+  method: text("method").$type<"flutterwave" | "manual" | "test">().notNull(),
+  amount: kobo("amount").notNull(),
+  bankName: text("bank_name").notNull(),
+  bankCode: text("bank_code"),
+  accountNumber: text("account_number").notNull(),
+  accountName: text("account_name").notNull(),
+  /** Our reference; for manual payouts, the bank transfer reference. */
+  reference: text("reference").notNull().unique(),
+  providerId: text("provider_id"),
+  status: text("status").$type<PayoutStatus>().notNull(),
+  failureReason: text("failure_reason"),
+  initiatedById: integer("initiated_by_id").references(() => users.id, { onDelete: "set null" }),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  createdAt: createdAt(),
+}, (t) => [index("payouts_loan_idx").on(t.loanId), index("payouts_status_idx").on(t.status, t.createdAt)]);
+
+/* ---------- Ledger (double entry) ---------- */
+
+export type LedgerAccountType = "asset" | "liability" | "income" | "expense";
+export const ledgerAccounts = pgTable("ledger_accounts", {
+  code: text("code").primaryKey(),
+  name: text("name").notNull(),
+  type: text("type").$type<LedgerAccountType>().notNull(),
+});
+
+/** One business event (a payout, a repayment). Its lines always balance: total debits = total credits. */
+export const ledgerEntries = pgTable("ledger_entries", {
+  id: serial("id").primaryKey(),
+  /** Idempotency: the same event can't be posted twice. */
+  reference: text("reference").notNull().unique(),
+  description: text("description").notNull(),
+  loanId: integer("loan_id").references(() => loans.id, { onDelete: "restrict" }),
+  createdById: integer("created_by_id").references(() => users.id, { onDelete: "set null" }),
+  createdAt: createdAt(),
+});
+
+export const ledgerLines = pgTable("ledger_lines", {
+  id: serial("id").primaryKey(),
+  entryId: integer("entry_id").notNull().references(() => ledgerEntries.id, { onDelete: "restrict" }),
+  accountCode: text("account_code").notNull().references(() => ledgerAccounts.code),
+  debit: kobo("debit").notNull().default(0),
+  credit: kobo("credit").notNull().default(0),
+}, (t) => [index("ledger_lines_account_idx").on(t.accountCode), index("ledger_lines_entry_idx").on(t.entryId)]);
+
+export type Payout = typeof payouts.$inferSelect;

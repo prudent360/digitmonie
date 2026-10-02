@@ -8,10 +8,9 @@ import type { CurrentUser } from "@/lib/auth";
 import { sendSms } from "@/lib/messaging";
 import { blockedFor, recordFailure } from "@/lib/rate-limit";
 import { encryptSecret } from "@/lib/secrets";
-import { identityProvider } from ".";
+import { identityProvider, kycThresholds } from ".";
 import { ageOn, nameScore } from "./matching";
 import { normalizeDate, ProviderError, type Applicant, type IdentityRecord } from "./provider";
-import { FACE_AUTO_APPROVE, FACE_REVIEW, NAME_AUTO_APPROVE } from "./tiers";
 import { NIGERIAN_STATES } from "./states";
 
 export type KycOutcome = { ok: true; status: KycStatus; message: string } | { ok: false; error: string };
@@ -84,7 +83,9 @@ export async function submitBvn(user: CurrentUser, input: { bvn: string; dateOfB
     return { ok: false, error: "This BVN is already linked to another DigitMonie account. Contact support if that isn't you." };
   }
 
-  const provider = identityProvider();
+  const provider = await identityProvider().catch((e: Error) => e);
+  if (provider instanceof Error) return providerFailure(new ProviderError(provider.message));
+  const { nameMatch } = await kycThresholds();
   const applicant: Applicant = { firstName: user.firstName, lastName: user.lastName, dateOfBirth: dob };
   let found: IdentityRecord | null;
   try {
@@ -100,7 +101,7 @@ export async function submitBvn(user: CurrentUser, input: { bvn: string; dateOfB
   const checks: KycChecks = { provider: provider.name, nameScore: nameScore(user, found), dobMatch: found.dateOfBirth === dob, watchlisted: found.watchlisted };
   let status: KycStatus;
   let reason: string | null = null;
-  if (checks.dobMatch && checks.nameScore! >= NAME_AUTO_APPROVE && !checks.watchlisted) status = "approved";
+  if (checks.dobMatch && checks.nameScore! >= nameMatch && !checks.watchlisted) status = "approved";
   else if (checks.watchlisted || (checks.dobMatch && checks.nameScore! >= 50)) {
     status = "pending_review";
     reason = checks.watchlisted ? "BVN is on a watch-list." : "Name only partly matches the BVN record.";
@@ -151,7 +152,9 @@ export async function submitNinSelfie(user: CurrentUser, input: { nin: string; s
     return { ok: false, error: "This NIN is already linked to another DigitMonie account. Contact support if that isn't you." };
   }
 
-  const provider = identityProvider();
+  const provider = await identityProvider().catch((e: Error) => e);
+  if (provider instanceof Error) return providerFailure(new ProviderError(provider.message));
+  const { faceAutoApprove, faceReview, nameMatch } = await kycThresholds();
   const legal = { firstName: profile.legalFirstName, lastName: profile.legalLastName ?? "" };
   let result;
   try {
@@ -170,17 +173,17 @@ export async function submitNinSelfie(user: CurrentUser, input: { nin: string; s
   };
   let status: KycStatus;
   let reason: string | null = null;
-  if (checks.faceScore! < FACE_REVIEW) {
+  if (checks.faceScore! < faceReview) {
     status = "rejected";
     reason = "Your selfie didn't match the photo on your NIN.";
   } else if (checks.nameScore! < 50) {
     status = "rejected";
     reason = "The name on this NIN doesn't match your BVN.";
-  } else if (checks.faceScore! >= FACE_AUTO_APPROVE && checks.nameScore! >= NAME_AUTO_APPROVE && checks.dobMatch) {
+  } else if (checks.faceScore! >= faceAutoApprove && checks.nameScore! >= nameMatch && checks.dobMatch) {
     status = "approved";
   } else {
     status = "pending_review";
-    reason = [checks.faceScore! < FACE_AUTO_APPROVE && `Face match ${checks.faceScore}%`, checks.nameScore! < NAME_AUTO_APPROVE && "Name partly matches BVN", !checks.dobMatch && "Date of birth differs from BVN"].filter(Boolean).join(" · ");
+    reason = [checks.faceScore! < faceAutoApprove && `Face match ${checks.faceScore}%`, checks.nameScore! < nameMatch && "Name partly matches BVN", !checks.dobMatch && "Date of birth differs from BVN"].filter(Boolean).join(" · ");
   }
 
   if (status !== "rejected") {

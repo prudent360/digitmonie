@@ -3,13 +3,14 @@ import { eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { loanPayments } from "@/db/schema";
 import { settlePayment } from "@/lib/loans/service";
+import { getSetting } from "@/lib/settings";
 
 /**
  * Paystack webhook (charge.success). Endpoint: /api/webhooks/paystack.
  * Paystack signs the raw body with your secret key (HMAC SHA-512).
  */
 export async function POST(request: Request) {
-  const key = process.env.PAYSTACK_SECRET_KEY;
+  const key = await getSetting("paystackSecretKey");
   if (!key) return new Response("Paystack is not configured", { status: 503 });
 
   const body = await request.text();

@@ -1,5 +1,6 @@
 import "server-only";
 import type { BureauSummary, Loan } from "@/db/schema";
+import { getSetting } from "@/lib/settings";
 
 export type BureauEvent = "disbursed" | "payment" | "repaid" | "overdue" | "defaulted";
 
@@ -32,9 +33,7 @@ const sandboxBureau: CreditBureau = {
   },
 };
 
-/** null when no bureau is connected (production without CREDIT_BUREAU): applications then go to staff. */
-export function creditBureau(): CreditBureau | null {
-  const chosen = process.env.CREDIT_BUREAU;
-  if (chosen === "sandbox" || (!chosen && process.env.NODE_ENV !== "production")) return sandboxBureau;
-  return null;
+/** The bureau chosen in Console → Settings, or null when none is connected (applications then go to staff). */
+export async function creditBureau(): Promise<CreditBureau | null> {
+  return (await getSetting("creditBureau")) === "sandbox" ? sandboxBureau : null;
 }

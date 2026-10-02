@@ -4,7 +4,8 @@ import { AreaChart, GroupedBars } from "@/components/charts/charts";
 import { AlertIcon, ChartIcon, IdCardIcon, LandmarkIcon, TrendUpIcon, UsersIcon } from "@/components/icons";
 import { Avatar, Badge, Card, CardHeader, PageHeader, StatTile, StatusBadge } from "@/components/ui";
 import { formatCompactNaira, formatDate, formatNaira, formatNumber } from "@/lib/format";
-import { consoleKpis, disbursements, platformTransactions, signups } from "@/lib/mock-data";
+import { consoleKpis, disbursements, signups } from "@/lib/mock-data";
+import { payoutsNeedingAttention, recentPayouts, recentRepayments } from "@/lib/money";
 import { staffLoanQueue } from "@/lib/loans/queries";
 import { listAudit } from "@/lib/audit-queries";
 import { listKycSubmissions } from "@/lib/kyc/queries";
@@ -18,7 +19,13 @@ export default async function ConsoleOverview({ searchParams }: { searchParams: 
   const showAudit = can(user, "audit.view");
   const kycPending = can(user, "kyc.review") ? await listKycSubmissions("pending_review", 4) : null;
   const audit = showAudit ? (await listAudit({ limit: 5 })).rows : [];
-  const flagged = platformTransactions.filter((t) => t.flagged);
+  const seesMoney = can(user, "transactions.view");
+  const attention = seesMoney ? await payoutsNeedingAttention() : [];
+  const movements = seesMoney
+    ? [...(await recentPayouts(5)).map((r) => ({ id: `o${r.p.id}`, ref: r.p.reference, who: `${r.firstName} ${r.lastName}`, what: "Loan payout", amount: -r.p.amount, at: r.p.createdAt, status: r.p.status === "processing" ? "pending" : r.p.status })),
+       ...(await recentRepayments(5)).map((r) => ({ id: `i${r.p.id}`, ref: r.p.reference, who: `${r.firstName} ${r.lastName}`, what: "Repayment", amount: r.p.amount, at: r.p.paidAt ?? r.p.createdAt, status: "successful" }))]
+        .sort((a, b) => b.at.getTime() - a.at.getTime()).slice(0, 6)
+    : [];
   const pendingLoans = can(user, "loans.review") ? (await staffLoanQueue("review")).rows.slice(0, 5) : null;
 
   return (
@@ -38,14 +45,14 @@ export default async function ConsoleOverview({ searchParams }: { searchParams: 
         <StatTile label="NPL ratio" value={`${(consoleKpis.nplRatio * 100).toFixed(1)}%`} hint="▼ 0.4pt vs last month · target < 5%" icon={<ChartIcon className="size-5" />} />
       </div>
 
-      {flagged.length > 0 && can(user, "transactions.view") && (
-        <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-danger/20 bg-danger-soft p-4">
-          <span className="flex size-10 items-center justify-center rounded-xl bg-danger text-white"><AlertIcon /></span>
+      {attention.length > 0 && (
+        <div className="flex flex-wrap items-center gap-4 rounded-[5px] border border-danger/20 bg-danger-soft p-4">
+          <span className="flex size-10 items-center justify-center rounded-[5px] bg-danger text-white"><AlertIcon /></span>
           <div className="flex-1">
-            <p className="text-sm font-bold text-ink">{flagged.length} transactions flagged for AML review</p>
-            <p className="text-xs text-body">Large outbound transfers held pending compliance checks.</p>
+            <p className="text-sm font-bold text-ink">{attention.length} payout{attention.length > 1 ? "s" : ""} need attention</p>
+            <p className="text-xs text-body">Transfers that failed or have been processing for over 15 minutes.</p>
           </div>
-          <Link href="/console/transactions" className="rounded-xl bg-white px-4 py-2 text-sm font-bold text-danger ring-1 ring-danger/20">Review now</Link>
+          <Link href="/console/transactions" className="rounded-[5px] bg-white px-4 py-2 text-sm font-bold text-danger ring-1 ring-danger/20">Review now</Link>
         </div>
       )}
 
@@ -112,21 +119,24 @@ export default async function ConsoleOverview({ searchParams }: { searchParams: 
         )}
       </div>
 
-      <Card>
-        <CardHeader title="Live transactions" action={<Link href="/console/transactions" className="text-sm font-semibold text-brand">All transactions</Link>} />
-        <ul className="divide-y divide-line pt-2">
-          {platformTransactions.slice(0, 5).map((t) => (
-            <li key={t.id} className="flex flex-wrap items-center gap-3 px-5 py-3 text-sm">
-              <span className="w-32 font-mono text-xs text-muted">{t.reference}</span>
-              <span className="flex-1 font-semibold text-ink">{t.customer}</span>
-              <span className="text-muted">{t.channel}</span>
-              <span className={`w-36 text-right font-bold tabular-nums ${t.type === "credit" ? "text-success" : "text-ink"}`}>{t.type === "credit" ? "+" : "−"}{formatNaira(t.amount)}</span>
-              <span className="w-28 text-right"><StatusBadge status={t.status} /></span>
-            </li>
-          ))}
-        </ul>
-      </Card>
-      <p className="flex items-center gap-2 text-xs text-muted"><IdCardIcon className="size-4" /> Figures shown are sample data.</p>
+      {seesMoney && (
+        <Card>
+          <CardHeader title="Latest money movements" action={<Link href="/console/transactions" className="text-sm font-semibold text-brand">Open Money</Link>} />
+          <ul className="divide-y divide-line pt-2">
+            {movements.map((t) => (
+              <li key={t.id} className="flex flex-wrap items-center gap-3 px-5 py-3 text-sm">
+                <span className="w-32 font-mono text-xs text-muted">{t.ref}</span>
+                <span className="flex-1 font-semibold text-ink">{t.who}</span>
+                <span className="text-muted">{t.what}</span>
+                <span className={`w-36 text-right font-bold tabular-nums ${t.amount > 0 ? "text-success" : "text-ink"}`}>{t.amount > 0 ? "+" : "−"}{formatNaira(Math.abs(t.amount) / 100)}</span>
+                <span className="w-28 text-right"><StatusBadge status={t.status} /></span>
+              </li>
+            ))}
+            {!movements.length && <li className="px-5 py-6 text-sm text-muted">No payouts or repayments yet.</li>}
+          </ul>
+        </Card>
+      )}
+      <p className="flex items-center gap-2 text-xs text-muted"><IdCardIcon className="size-4" /> The top figures and charts are still sample data until enough real activity exists.</p>
     </div>
   );
 }

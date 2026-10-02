@@ -8,7 +8,7 @@ import { logAudit } from "@/lib/audit";
 import { fullName, requirePermission } from "@/lib/auth";
 import { formatDate } from "@/lib/format";
 import { getKycSubmission } from "@/lib/kyc/queries";
-import { FACE_AUTO_APPROVE, NAME_AUTO_APPROVE } from "@/lib/kyc/tiers";
+import { kycThresholds } from "@/lib/kyc";
 import { formatNgPhone } from "@/lib/phone";
 
 export const metadata: Metadata = { title: "KYC review" };
@@ -33,6 +33,7 @@ export default async function KycReviewPage({ params }: { params: Promise<{ id: 
   // Viewing someone's identity documents is itself recorded (NDPA accountability).
   await logAudit({ actorId: staff.id, action: "kyc.viewed", summary: `viewed Tier ${s.tier} KYC for ${fullName(user)}`, target: { type: "kyc_submission", id: s.id } });
   const c = s.checks;
+  const { faceAutoApprove, nameMatch } = await kycThresholds();
 
   return (
     <div className="space-y-6">
@@ -53,9 +54,9 @@ export default async function KycReviewPage({ params }: { params: Promise<{ id: 
             {s.reason && <p className="mt-2 rounded-[5px] bg-warning-soft px-3 py-2 text-sm text-warning">{s.reason}</p>}
             <div className="mt-3">
               {c.provider && <Check label="Verified with" ok={undefined} value={c.provider === "sandbox" ? "Test provider" : c.provider} />}
-              {c.nameScore !== undefined && <Check label="Name match" ok={c.nameScore >= NAME_AUTO_APPROVE} value={`${c.nameScore}%`} />}
+              {c.nameScore !== undefined && <Check label="Name match" ok={c.nameScore >= nameMatch} value={`${c.nameScore}%`} />}
               {c.dobMatch !== undefined && <Check label="Date of birth match" ok={c.dobMatch} value={c.dobMatch ? "Yes" : "No"} />}
-              {c.faceScore !== undefined && <Check label="Selfie vs ID photo" ok={c.faceScore >= FACE_AUTO_APPROVE} value={`${c.faceScore}%`} />}
+              {c.faceScore !== undefined && <Check label="Selfie vs ID photo" ok={c.faceScore >= faceAutoApprove} value={`${c.faceScore}%`} />}
               {c.watchlisted !== undefined && <Check label="On a watch-list" ok={!c.watchlisted} value={c.watchlisted ? "Yes" : "No"} />}
               {c.duplicate && <Check label="Already linked to another account" ok={false} value="Yes" />}
             </div>

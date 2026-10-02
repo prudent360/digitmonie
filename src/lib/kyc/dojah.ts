@@ -1,13 +1,13 @@
 import "server-only";
+import { getSetting } from "@/lib/settings";
 import { normalizeDate, ProviderError, type IdentityProvider, type IdentityRecord } from "./provider";
 
-// Dojah (https://docs.dojah.io). Set DOJAH_APP_ID and DOJAH_SECRET_KEY; DOJAH_ENV=live for production,
-// anything else uses the Dojah sandbox (test BVN 22222222222).
-function config() {
-  const appId = process.env.DOJAH_APP_ID;
-  const secret = process.env.DOJAH_SECRET_KEY;
+// Dojah (https://docs.dojah.io). Keys and environment are set in Console → Settings → Identity verification.
+// The sandbox environment accepts test BVN 22222222222.
+export async function dojahConfig() {
+  const [appId, secret, env] = await Promise.all([getSetting("dojahAppId"), getSetting("dojahSecretKey"), getSetting("dojahEnv")]);
   if (!appId || !secret) throw new ProviderError("Dojah keys are not configured.");
-  const base = process.env.DOJAH_ENV === "live" ? "https://api.dojah.io" : "https://sandbox.dojah.io";
+  const base = env === "live" ? "https://api.dojah.io" : "https://sandbox.dojah.io";
   return { base, headers: { AppId: appId, Authorization: secret, "Content-Type": "application/json" } };
 }
 
@@ -29,7 +29,7 @@ function toRecord(e: Entity): IdentityRecord {
 }
 
 async function call(path: string, init?: RequestInit): Promise<Entity | null> {
-  const { base, headers } = config();
+  const { base, headers } = await dojahConfig();
   const res = await fetch(`${base}${path}`, { ...init, headers, cache: "no-store" });
   if (res.status === 404 || res.status === 400) return null;
   if (!res.ok) throw new ProviderError(`Dojah responded ${res.status}`);

@@ -17,6 +17,7 @@ import { normalizeNgPhone } from "@/lib/phone";
 import { passwordProblem, pinProblem } from "@/lib/password";
 import { blockedFor, clearFailures, recordFailure } from "@/lib/rate-limit";
 import { consumeInviteToken, peekInviteToken } from "@/lib/tokens";
+import { getSetting } from "@/lib/settings";
 import { generateTotpSecret, verifyTotp } from "@/lib/totp";
 
 export type FormState = { error?: string; notice?: string; fields?: Record<string, string> } | undefined;
@@ -92,6 +93,7 @@ const registerSchema = z.object({
 export async function register(_: FormState, fd: FormData): Promise<FormState> {
   const raw = Object.fromEntries(["firstName", "lastName", "phone", "email", "password", "referral"].map((k) => [k, String(fd.get(k) ?? "")]));
   const fields = { firstName: raw.firstName, lastName: raw.lastName, phone: raw.phone, email: raw.email, referral: raw.referral };
+  if (await getSetting<boolean>("pauseSignups")) return { error: "We've paused new sign-ups for a short while. Please try again soon.", fields };
   if (fd.get("terms") !== "on") return { error: "Please accept the Terms and Privacy Policy to continue.", fields };
 
   const parsed = registerSchema.safeParse(raw);

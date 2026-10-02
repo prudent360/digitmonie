@@ -8,6 +8,7 @@ import { requireCustomer } from "@/lib/auth";
 import { formatDate } from "@/lib/format";
 import { bpsToPercent, toNaira } from "@/lib/loans/math";
 import { customerLoans, loanPaymentsFor } from "@/lib/loans/queries";
+import { loanPayouts } from "@/lib/loans/payouts";
 import { loanBalance, loanEligibility, owedOn, refreshInstalments } from "@/lib/loans/service";
 import { LOAN_STATUS_LABEL, LOAN_STATUS_TONE } from "@/lib/loans/status";
 
@@ -25,6 +26,7 @@ export default async function LoansPage({ searchParams }: { searchParams: Promis
   const balance = open?.loan.status === "active" ? await loanBalance(open.loan.id) : null;
   const payments = open?.loan.status === "active" ? await loanPaymentsFor(open.loan.id) : [];
   const past = all.filter((l) => l.loan.id !== open?.loan.id);
+  const sending = open?.loan.status === "approved" && (await loanPayouts(open.loan.id)).some((p) => p.status === "processing");
 
   return (
     <div className="space-y-6">
@@ -61,11 +63,11 @@ export default async function LoansPage({ searchParams }: { searchParams: Promis
                   { label: "Application received", done: true },
                   { label: "Credit review", done: ["reviewed", "approved"].includes(open.loan.status) },
                   { label: "Approved", done: open.loan.status === "approved" },
-                  { label: `Money sent to ${open.loan.payoutBank} ••${open.loan.payoutAccount.slice(-4)}`, done: false },
+                  { label: sending ? `Sending to ${open.loan.payoutBank} ••${open.loan.payoutAccount.slice(-4)} now…` : `Money sent to ${open.loan.payoutBank} ••${open.loan.payoutAccount.slice(-4)}`, done: false },
                 ].map((s) => (
                   <p key={s.label} className="flex items-center gap-3 text-sm"><span className={`flex size-6 items-center justify-center rounded-full ${s.done ? "bg-success text-white" : "bg-canvas text-muted"}`}>{s.done ? <CheckIcon className="size-3.5" /> : <ClockIcon className="size-3.5" />}</span><span className={s.done ? "font-semibold text-ink" : "text-muted"}>{s.label}</span></p>
                 ))}
-                <div className="pt-2"><CancelLoanButton action={cancelApplication} loanId={open.loan.id} /></div>
+                {!sending && <div className="pt-2"><CancelLoanButton action={cancelApplication} loanId={open.loan.id} /></div>}
               </div>
             )}
           </Card>

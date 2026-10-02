@@ -4,7 +4,7 @@ import { and, count, desc, eq, gt, gte, isNull } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { getDb } from "@/db";
 import { otpCodes, type OtpPurpose, type User } from "@/db/schema";
-import { sendEmail, sendSms, smsConfigured } from "./messaging";
+import { emailConfigured, sendEmail, sendSms, smsConfigured } from "./messaging";
 
 const TTL_MS = 10 * 60 * 1000;
 const RESEND_AFTER_MS = 60 * 1000;
@@ -40,7 +40,7 @@ export async function issueOtp(user: Pick<User, "id" | "phone" | "email">, purpo
   if (user.phone) await sendSms(user.phone, TEXT[purpose](code));
   else await sendEmail({ to: user.email, subject: "Your DigitMonie code", text: TEXT[purpose](code) });
 
-  if (process.env.NODE_ENV !== "production" && (channel === "email" ? !process.env.RESEND_API_KEY : !smsConfigured())) {
+  if (process.env.NODE_ENV !== "production" && !(channel === "email" ? await emailConfigured() : await smsConfigured())) {
     (await cookies()).set(DEV_OTP_COOKIE, code, { httpOnly: true, sameSite: "lax", path: "/", maxAge: TTL_MS / 1000 });
   }
   return { ok: true, channel };

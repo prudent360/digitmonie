@@ -3,10 +3,14 @@ import { eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db";
 import { creditProfiles, loanInstalments, loans } from "@/db/schema";
 
-/** Starting limit by KYC tier, in kobo. Grows 50% for each loan repaid with no late instalments. */
-export const STARTING_LIMIT: Record<number, number> = { 0: 0, 1: 5_000_000, 2: 20_000_000, 3: 100_000_000 };
-const GROWTH_PER_GOOD_LOAN = 0.5;
-const CAP = 500_000_000;
+import { getSettings } from "@/lib/settings";
+
+/** Starting limits, growth and cap come from Console → Settings → Lending rules (in naira there; kobo here). */
+async function limitRules() {
+  const s = await getSettings("limitTier1", "limitTier2", "limitTier3", "limitGrowth", "limitCap");
+  const kobo = (v: unknown) => Math.round(Number(v) * 100);
+  return { starting: [0, kobo(s.limitTier1), kobo(s.limitTier2), kobo(s.limitTier3)], growth: Number(s.limitGrowth) / 100, cap: kobo(s.limitCap) };
+}
 
 export type RepaymentHistory = { repaidOnTime: number; repaidLate: number; defaulted: number; open: number };
 
@@ -34,6 +38,7 @@ export async function creditLimit(userId: number, kycTier: number): Promise<{ li
   const [profile] = await (await getDb()).select({ limitOverride: creditProfiles.limitOverride }).from(creditProfiles).where(eq(creditProfiles.userId, userId));
   if (profile?.limitOverride != null) return { limit: profile.limitOverride, history, overridden: true };
   if (history.defaulted > 0) return { limit: 0, history, overridden: false };
-  const growth = history.repaidLate > 0 ? 1 : 1 + GROWTH_PER_GOOD_LOAN * history.repaidOnTime;
-  return { limit: Math.min(CAP, Math.round((STARTING_LIMIT[kycTier] ?? 0) * growth)), history, overridden: false };
+  const rules = await limitRules();
+  const growth = history.repaidLate > 0 ? 1 : 1 + rules.growth * history.repaidOnTime;
+  return { limit: Math.min(rules.cap, Math.round((rules.starting[kycTier] ?? 0) * growth)), history, overridden: false };
 }

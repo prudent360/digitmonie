@@ -20,8 +20,4 @@ export const KYC_TIERS: TierInfo[] = [
 
 export const tierInfo = (tier: number) => KYC_TIERS.find((t) => t.tier === tier);
 
-/** Face-match confidence (0–100): at or above AUTO_APPROVE passes; between REVIEW and AUTO_APPROVE goes to staff. */
-export const FACE_AUTO_APPROVE = 90;
-export const FACE_REVIEW = 70;
-/** Name similarity (0–100) needed to accept a BVN or NIN as belonging to the customer. */
-export const NAME_AUTO_APPROVE = 80;
+// Face and name match thresholds are set in Console → Settings → Identity verification (lib/kyc/index.ts).

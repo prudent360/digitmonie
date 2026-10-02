@@ -1,41 +1,25 @@
 import "server-only";
-import { randomBytes } from "node:crypto";
 import { and, asc, eq, inArray, isNull, lt, lte, ne } from "drizzle-orm";
 import { getDb } from "@/db";
-import { creditProfiles, kycProfiles, loanDocuments, loanInstalments, loanPayments, loanProducts, loans, users, type Loan, type LoanInstalment, type LoanProduct, type LoanStatus } from "@/db/schema";
+import { creditProfiles, kycProfiles, loanDocuments, loanInstalments, loanPayments, loanProducts, loans, payouts, type Loan, type LoanInstalment, type LoanProduct, type LoanStatus } from "@/db/schema";
 import { logAudit } from "@/lib/audit";
 import { can, type CurrentUser } from "@/lib/auth";
-import { creditBureau, type BureauEvent } from "@/lib/credit/bureau";
+import { creditBureau } from "@/lib/credit/bureau";
 import { creditLimit } from "@/lib/credit/limits";
 import { scoreApplication } from "@/lib/credit/score";
-import { formatNaira } from "@/lib/format";
-import { sendSms } from "@/lib/messaging";
 import { verifyTransactionPin } from "@/lib/pin";
 import { decryptSecret } from "@/lib/secrets";
-import { quoteLoan, todayIso, toNaira } from "./math";
-import { NIGERIAN_BANKS, OPEN_STATUSES } from "./status";
+import { getSetting, getSettings } from "@/lib/settings";
+import { naira, newReference, notify, report } from "./common";
+import { quoteLoan, todayIso } from "./math";
+import { OPEN_STATUSES } from "./status";
+import { nameScore } from "@/lib/kyc/matching";
+import { postJournal, type JournalLine } from "@/lib/ledger";
+import { bankName, lookupAccount } from "@/lib/payments/banks";
+import { payoutAfterApproval } from "./payouts";
 
 export type Outcome = { ok: true; message: string; loanId?: number } | { ok: false; error: string };
 const fail = (error: string): Outcome => ({ ok: false, error });
-const naira = (kobo: number) => formatNaira(toNaira(kobo)).replace(/\.00$/, "");
-
-function newReference(prefix: string) {
-  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  return `${prefix}-${Array.from(randomBytes(7), (b) => alphabet[b % alphabet.length]).join("")}`;
-}
-
-async function notify(userId: number, text: string) {
-  const [u] = await (await getDb()).select({ phone: users.phone }).from(users).where(eq(users.id, userId));
-  if (u?.phone) await sendSms(u.phone, `DigitMonie: ${text}`).catch(() => {});
-}
-
-async function report(loan: Loan, event: BureauEvent) {
-  try {
-    await creditBureau()?.report(loan, event);
-  } catch (error) {
-    console.error("[bureau] report failed", loan.reference, event, error);
-  }
-}
 
 /* ---------- Eligibility ---------- */
 
@@ -45,7 +29,8 @@ export async function loanEligibility(user: CurrentUser) {
   const { limit, history } = await creditLimit(user.id, user.kycTier);
   const [open] = await db.select().from(loans).where(and(eq(loans.userId, user.id), inArray(loans.status, OPEN_STATUSES))).limit(1);
   let blocked: string | null = null;
-  if (user.kycTier < 1) blocked = "Verify your BVN to see your loan limit.";
+  if (await getSetting<boolean>("pauseLoans")) blocked = "We've paused new loan applications for a short while. Please check back soon.";
+  else if (user.kycTier < 1) blocked = "Verify your BVN to see your loan limit.";
   else if (user.status !== "active") blocked = "Your account can't take new loans right now. Contact support.";
   else if (open) blocked = "You already have a loan in progress. Repay it to apply again.";
   else if (history.defaulted) blocked = "You can't take a new loan while a previous one is in default.";
@@ -63,9 +48,8 @@ export type ApplicationInput = {
   monthlyIncome: number; // kobo
   employmentType: string;
   employer: string;
-  payoutBank: string;
+  payoutBankCode: string;
   payoutAccount: string;
-  payoutName: string;
   acceptTerms: boolean;
   pin: string;
   statement: { fileName: string; mimeType: string; data: string; size: number } | null;
@@ -86,9 +70,19 @@ export async function applyForLoan(user: CurrentUser, input: ApplicationInput): 
   if (input.purpose.trim().length < 3) return fail("Tell us what the loan is for.");
   if (input.monthlyIncome <= 0) return fail("Enter your monthly income.");
   if (!EMPLOYMENT_TYPES.includes(input.employmentType)) return fail("Choose your employment type.");
-  if (!NIGERIAN_BANKS.includes(input.payoutBank)) return fail("Choose the bank to pay the loan into.");
-  if (!/^\d{10}$/.test(input.payoutAccount)) return fail("Your account number is 10 digits.");
-  if (input.payoutName.trim().length < 3) return fail("Enter the account name.");
+  // Re-check the account with the bank (never trust the name the browser sends) and that it's theirs.
+  const payoutBank = await bankName(input.payoutBankCode);
+  if (!payoutBank) return fail("Choose the bank to pay the loan into.");
+  const db0 = await getDb();
+  const [kycNames] = await db0.select({ first: kycProfiles.legalFirstName, last: kycProfiles.legalLastName }).from(kycProfiles).where(eq(kycProfiles.userId, user.id));
+  const legal = { firstName: kycNames?.first ?? user.firstName, lastName: kycNames?.last ?? user.lastName };
+  const account = await lookupAccount(input.payoutBankCode, input.payoutAccount, `${legal.firstName} ${legal.lastName}`);
+  if (!account.ok) return fail(account.error);
+  if (await getSetting<boolean>("payoutNameCheck")) {
+    // How well the BVN first and last names appear among the account name's words (order and middle names don't matter).
+    const score = nameScore(legal, { firstName: account.accountName, lastName: "" });
+    if (score < Number(await getSetting("payoutNameMatch"))) return fail(`That account belongs to ${account.accountName}. Loans can only be paid into an account in your own name.`);
+  }
   const needsStatement = product.statementAbove != null && input.amount > product.statementAbove;
   if (needsStatement && !input.statement) return fail("Upload your last 6 months' bank statement for this amount.");
   if (!input.acceptTerms) return fail("Read and accept the loan terms to continue.");
@@ -100,7 +94,7 @@ export async function applyForLoan(user: CurrentUser, input: ApplicationInput): 
   // Credit bureau check, if one is connected.
   const db = await getDb();
   const [kyc] = await db.select().from(kycProfiles).where(eq(kycProfiles.userId, user.id));
-  const bureauProvider = creditBureau();
+  const bureauProvider = await creditBureau();
   let bureau = null;
   if (bureauProvider && kyc?.bvnEncrypted) {
     try {
@@ -112,6 +106,7 @@ export async function applyForLoan(user: CurrentUser, input: ApplicationInput): 
   const score = scoreApplication({
     kycTier: user.kycTier, monthlyIncome: input.monthlyIncome, instalment: quote.instalment, history, bureau,
     accountAgeDays: Math.floor((Date.now() - user.createdAt.getTime()) / 86_400_000),
+    rules: await getSettings("autoApproveScore", "maxRepaymentToIncome").then((r) => ({ autoApproveScore: Number(r.autoApproveScore), maxRepaymentToIncome: Number(r.maxRepaymentToIncome) })),
   });
 
   let status: LoanStatus = "pending";
@@ -134,7 +129,7 @@ export async function applyForLoan(user: CurrentUser, input: ApplicationInput): 
     principal: input.amount, tenorMonths: input.tenor, monthlyRateBps: product.monthlyRateBps, interestMethod: product.interestMethod,
     processingFee: quote.processingFee, lateFeeBps: product.lateFeeBps, totalInterest: quote.totalInterest, totalRepayable: quote.totalRepayable,
     instalment: quote.instalment, aprBps: quote.aprBps, purpose: input.purpose.trim().slice(0, 200),
-    payoutBank: input.payoutBank, payoutAccount: input.payoutAccount, payoutName: input.payoutName.trim().toUpperCase(),
+    payoutBank, payoutBankCode: input.payoutBankCode, payoutAccount: input.payoutAccount, payoutName: account.accountName,
     declaredIncome: input.monthlyIncome, score, bureau, termsAcceptedAt: now,
     autoApproved, approvedAt: autoApproved ? now : null, declineReason,
     closedAt: status === "declined" ? now : null,
@@ -148,8 +143,9 @@ export async function applyForLoan(user: CurrentUser, input: ApplicationInput): 
   });
 
   if (status === "approved") {
-    await notify(user.id, `your ${naira(input.amount)} loan (${loan.reference}) is approved. We'll pay ${naira(quote.disbursed)} into your ${input.payoutBank} account shortly.`);
-    return { ok: true, loanId: loan.id, message: `Approved! We'll pay ${naira(quote.disbursed)} into your ${input.payoutBank} account shortly.` };
+    await notify(user.id, `your ${naira(input.amount)} loan (${loan.reference}) is approved. We'll pay ${naira(quote.disbursed)} into your ${payoutBank} account shortly.`);
+    await payoutAfterApproval(loan);
+    return { ok: true, loanId: loan.id, message: `Approved! We'll pay ${naira(quote.disbursed)} into your ${payoutBank} account shortly.` };
   }
   if (status === "declined") return fail(`We can't offer you this loan right now. ${declineReason}`);
   await notify(user.id, `we've received your loan application ${loan.reference}. We'll update you within one working day.`);
@@ -158,6 +154,8 @@ export async function applyForLoan(user: CurrentUser, input: ApplicationInput): 
 
 export async function cancelLoan(user: CurrentUser, loanId: number): Promise<Outcome> {
   const db = await getDb();
+  const [sending] = await db.select({ id: payouts.id }).from(payouts).where(and(eq(payouts.loanId, loanId), eq(payouts.status, "processing")));
+  if (sending) return fail("The money is already on its way to your bank, so this loan can't be cancelled.");
   const [loan] = await db.update(loans).set({ status: "cancelled", closedAt: new Date() })
     .where(and(eq(loans.id, loanId), eq(loans.userId, user.id), inArray(loans.status, ["pending", "reviewed", "approved"])))
     .returning();
@@ -207,35 +205,11 @@ export async function approveLoan(staff: CurrentUser, loanId: number, decision: 
     await notify(loan.userId, `we couldn't approve your loan application ${loan.reference}. Open the app to see why.`);
     return { ok: true, message: "Declined. The customer has been told." };
   }
-  await db.update(loans).set({ status: "approved", approvedById: staff.id, approvedAt: now }).where(eq(loans.id, loan.id));
+  const [approved] = await db.update(loans).set({ status: "approved", approvedById: staff.id, approvedAt: now }).where(eq(loans.id, loan.id)).returning();
   await logAudit({ actorId: staff.id, action: "loan.approved", summary: `approved ${loan.reference} (${naira(loan.principal)})`, target: { type: "loan", id: loan.id } });
   await notify(loan.userId, `your loan ${loan.reference} is approved. We'll pay ${naira(loan.principal - loan.processingFee)} into your ${loan.payoutBank} account shortly.`);
-  return { ok: true, message: "Approved. It's now ready to pay out." };
-}
-
-/**
- * Records that the money was sent (manual bank transfer until a payout provider is connected),
- * builds the repayment schedule from today and starts the loan.
- */
-export async function disburseLoan(staff: CurrentUser, loanId: number, transferReference: string): Promise<Outcome> {
-  if (!can(staff, "loans.approve")) return fail("You can't pay out loans.");
-  if (transferReference.trim().length < 4) return fail("Enter the bank transfer reference.");
-  const db = await getDb();
-  const start = todayIso();
-  const result = await db.transaction(async (tx) => {
-    const [loan] = await tx.update(loans)
-      .set({ status: "active", disbursedById: staff.id, disbursedAt: new Date(), disbursementReference: transferReference.trim() })
-      .where(and(eq(loans.id, loanId), eq(loans.status, "approved"))).returning();
-    if (!loan) return null;
-    const { schedule } = quoteLoan({ principal: loan.principal, tenor: loan.tenorMonths, monthlyRateBps: loan.monthlyRateBps, method: loan.interestMethod, processingFeeBps: 0, start });
-    await tx.insert(loanInstalments).values(schedule.map((l) => ({ loanId: loan.id, n: l.n, dueDate: l.dueDate, principal: l.principal, interest: l.interest })));
-    return loan;
-  });
-  if (!result) return fail("This loan isn't ready to pay out.");
-  await logAudit({ actorId: staff.id, action: "loan.disbursed", summary: `paid out ${result.reference}: ${naira(result.principal - result.processingFee)} to ${result.payoutBank} ${result.payoutAccount} (ref ${transferReference.trim()})`, target: { type: "loan", id: result.id } });
-  await report(result, "disbursed");
-  await notify(result.userId, `we've sent ${naira(result.principal - result.processingFee)} to your ${result.payoutBank} account. Your first repayment of ${naira(result.instalment)} is due one month from today.`);
-  return { ok: true, message: "Paid out. The repayment schedule has started." };
+  const payout = await payoutAfterApproval(approved);
+  return { ok: true, message: payout === "sent" ? "Approved and sent to Flutterwave for payout." : "Approved. It's now ready to pay out." };
 }
 
 export async function markDefaulted(staff: CurrentUser, loanId: number, note: string): Promise<Outcome> {
@@ -261,10 +235,12 @@ export async function loanBalance(loanId: number) {
   return { instalments, outstanding, next, overdueAmount: overdue.reduce((s, i) => s + owedOn(i), 0), overdueCount: overdue.length };
 }
 
+const CASH_ACCOUNT = { flutterwave: "flutterwave", paystack: "paystack", manual: "bank", test: "bank" } as const;
+
 /**
- * Applies a successful payment to the oldest unpaid instalments first (late fee, then interest,
- * then principal all sit inside the instalment), and closes the loan when nothing is left.
- * Claims the payment row first so a webhook and a redirect can't both apply it.
+ * Applies a successful payment to the oldest unpaid instalments first; within an instalment the late fee
+ * is paid first, then interest, then principal. Posts the matching ledger entry and closes the loan when
+ * nothing is left. Claims the payment row first so a webhook and a redirect can't both apply it.
  */
 export async function settlePayment(reference: string): Promise<{ applied: boolean; loan?: Loan }> {
   const db = await getDb();
@@ -274,19 +250,33 @@ export async function settlePayment(reference: string): Promise<{ applied: boole
     if (!payment) return null;
     const instalments = await tx.select().from(loanInstalments).where(eq(loanInstalments.loanId, payment.loanId)).orderBy(asc(loanInstalments.n));
     let left = payment.amount;
+    const split = { lateFee: 0, interest: 0, principal: 0 };
     for (const inst of instalments) {
       if (left <= 0) break;
-      const owed = owedOn(inst);
-      if (owed <= 0) continue;
-      const take = Math.min(owed, left);
-      left -= take;
-      const fullyPaid = take === owed;
-      await tx.update(loanInstalments).set({ paid: inst.paid + take, ...(fullyPaid ? { status: "paid" as const, paidAt: new Date() } : {}) }).where(eq(loanInstalments.id, inst.id));
+      if (owedOn(inst) <= 0) continue;
+      const late = Math.min(left, inst.lateFee - inst.paidLateFee); left -= late;
+      const interest = Math.min(left, inst.interest - inst.paidInterest); left -= interest;
+      const principal = Math.min(left, inst.principal - inst.paidPrincipal); left -= principal;
+      split.lateFee += late; split.interest += interest; split.principal += principal;
+      const paid = inst.paid + late + interest + principal;
+      const fullyPaid = paid >= inst.principal + inst.interest + inst.lateFee;
+      await tx.update(loanInstalments).set({
+        paid, paidLateFee: inst.paidLateFee + late, paidInterest: inst.paidInterest + interest, paidPrincipal: inst.paidPrincipal + principal,
+        ...(fullyPaid ? { status: "paid" as const, paidAt: new Date() } : {}),
+      }).where(eq(loanInstalments.id, inst.id));
     }
+    if (left > 0) throw new Error(`Payment ${reference} is ${left} kobo more than the loan balance`);
+    const lines: JournalLine[] = [
+      { account: CASH_ACCOUNT[payment.method], debit: payment.amount },
+      { account: "lateFeeIncome", credit: split.lateFee },
+      { account: "interestIncome", credit: split.interest },
+      { account: "loansReceivable", credit: split.principal },
+    ];
     const remaining = (await tx.select().from(loanInstalments).where(eq(loanInstalments.loanId, payment.loanId))).reduce((s, i) => s + owedOn(i), 0);
     const [loan] = remaining === 0
       ? await tx.update(loans).set({ status: "repaid", closedAt: new Date() }).where(eq(loans.id, payment.loanId)).returning()
       : await tx.select().from(loans).where(eq(loans.id, payment.loanId));
+    await postJournal(tx, { reference: `repayment:${payment.reference}`, description: `Repayment on ${loan.reference} (${payment.method})`, loanId: loan.id, createdById: payment.recordedById, lines });
     return { payment, loan, remaining };
   });
   if (!outcome) return { applied: false };
@@ -297,7 +287,7 @@ export async function settlePayment(reference: string): Promise<{ applied: boole
   return { applied: true, loan };
 }
 
-export async function createPayment(loan: Loan, amount: number, method: "paystack" | "manual" | "test", recordedById: number | null, note?: string) {
+export async function createPayment(loan: Loan, amount: number, method: "flutterwave" | "paystack" | "manual" | "test", recordedById: number | null, note?: string) {
   const [payment] = await (await getDb()).insert(loanPayments).values({ loanId: loan.id, amount, method, reference: newReference("DMP"), recordedById, note: note ?? null }).returning();
   return payment;
 }
@@ -334,10 +324,10 @@ export async function refreshInstalments(): Promise<{ newlyOverdue: number }> {
   return { newlyOverdue: late.length };
 }
 
-/** Friendly reminder 3 days before each due date. */
+/** Friendly reminder before each due date (how many days before is set in Console → Settings). */
 export async function sendDueReminders(): Promise<number> {
   const db = await getDb();
-  const soon = new Date(Date.now() + 3 * 86_400_000);
+  const soon = new Date(Date.now() + Number(await getSetting("reminderDays")) * 86_400_000);
   const rows = await db.select({ i: loanInstalments, loan: loans }).from(loanInstalments).innerJoin(loans, eq(loans.id, loanInstalments.loanId))
     .where(and(eq(loanInstalments.status, "upcoming"), lte(loanInstalments.dueDate, todayIso(soon)), isNull(loanInstalments.reminderSentAt), eq(loans.status, "active")));
   for (const { i, loan } of rows) {

@@ -18,11 +18,3 @@ export const LOAN_STATUS_TONE: Record<LoanStatus, "neutral" | "brand" | "success
 };
 
 export const OPEN_STATUSES: LoanStatus[] = ["pending", "reviewed", "approved", "active"];
-
-/** Payout banks; the list a real payout provider returns will replace this. */
-export const NIGERIAN_BANKS = [
-  "Access Bank", "Citibank", "Ecobank", "Fidelity Bank", "First Bank", "FCMB", "Globus Bank", "GTBank", "Heritage Bank",
-  "Jaiz Bank", "Keystone Bank", "Kuda", "Moniepoint", "OPay", "PalmPay", "Polaris Bank", "Providus Bank", "Stanbic IBTC",
-  "Standard Chartered", "Sterling Bank", "SunTrust Bank", "Titan Trust Bank", "Union Bank", "UBA", "Unity Bank", "VFD Microfinance Bank",
-  "Wema Bank", "Zenith Bank",
-];

@@ -28,7 +28,7 @@ export function RepayForm({ action, loanId, options }: { action: (s: FormState, 
         </label>
       </div>
       <SubmitButton>Pay now</SubmitButton>
-      <p className="text-center text-xs text-muted">Pay by card, bank transfer or USSD through Paystack.</p>
+      <p className="text-center text-xs text-muted">Pay by card, bank transfer or USSD on our payment partner&apos;s secure page.</p>
     </form>
   );
 }

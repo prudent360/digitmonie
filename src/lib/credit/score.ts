@@ -9,6 +9,8 @@ type Input = {
   history: RepaymentHistory;
   bureau: BureauSummary | null;
   accountAgeDays: number;
+  /** From Console → Settings → Lending rules. */
+  rules: { autoApproveScore: number; maxRepaymentToIncome: number };
 };
 
 /**
@@ -25,10 +27,10 @@ export function scoreApplication(i: Input): ScoreDetails {
 
   const dti = i.monthlyIncome > 0 ? i.instalment / i.monthlyIncome : Infinity;
   const dtiPct = Number.isFinite(dti) ? `${Math.round(dti * 100)}%` : "no income";
-  if (dti <= 0.2) add(`Repayment is ${dtiPct} of income`, 35);
+  if (dti > i.rules.maxRepaymentToIncome / 100) hardStops.push(`Repayment would be ${dtiPct} of declared income (over ${i.rules.maxRepaymentToIncome}%)`);
+  else if (dti <= 0.2) add(`Repayment is ${dtiPct} of income`, 35);
   else if (dti <= 0.33) add(`Repayment is ${dtiPct} of income`, 20);
-  else if (dti <= 0.5) add(`Repayment is ${dtiPct} of income`, 5);
-  else hardStops.push(`Repayment would be ${dtiPct} of declared income (over 50%)`);
+  else add(`Repayment is ${dtiPct} of income`, 5);
 
   if (i.history.defaulted) hardStops.push("Has defaulted on a DigitMonie loan");
   if (i.history.repaidOnTime) add(`${i.history.repaidOnTime} DigitMonie loan${i.history.repaidOnTime > 1 ? "s" : ""} repaid on time`, Math.min(25, 10 * i.history.repaidOnTime));
@@ -46,6 +48,6 @@ export function scoreApplication(i: Input): ScoreDetails {
 
   const score = Math.max(0, Math.min(100, reasons.reduce((s, r) => s + r.points, 0)));
   const band = score >= 75 ? "A" : score >= 60 ? "B" : score >= 45 ? "C" : "D";
-  const recommendation = hardStops.length || score < 30 ? "decline" : score >= 70 ? "approve" : "review";
+  const recommendation = hardStops.length || score < 30 ? "decline" : score >= i.rules.autoApproveScore ? "approve" : "review";
   return { score, band, recommendation, reasons, hardStops };
 }

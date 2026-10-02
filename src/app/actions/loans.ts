@@ -4,13 +4,16 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
-import { creditProfiles, loanProducts, users } from "@/db/schema";
+import { creditProfiles, kycProfiles, loanProducts, users } from "@/db/schema";
 import { logAudit } from "@/lib/audit";
 import { can, fullName, requireCustomer, requirePermission, requireStaff } from "@/lib/auth";
 import { formatNaira } from "@/lib/format";
 import { toKobo } from "@/lib/loans/math";
 import { startRepayment } from "@/lib/loans/repay";
-import { applyForLoan, approveLoan, cancelLoan, disburseLoan, markDefaulted, recordManualPayment, reviewLoan, type Outcome } from "@/lib/loans/service";
+import { confirmPayout, recordManualPayout, sendAutomaticPayout } from "@/lib/loans/payouts";
+import { applyForLoan, approveLoan, cancelLoan, markDefaulted, recordManualPayment, reviewLoan, type Outcome } from "@/lib/loans/service";
+import { lookupAccount } from "@/lib/payments/banks";
+import { blockedFor, recordFailure } from "@/lib/rate-limit";
 import type { FormState } from "./auth";
 
 const str = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
@@ -31,7 +34,7 @@ function result(outcome: Outcome, paths: string[], fields?: Record<string, strin
 
 export async function applyLoan(_: FormState, fd: FormData): Promise<FormState> {
   const user = await requireCustomer();
-  const fields = Object.fromEntries(["productId", "amount", "tenor", "purpose", "monthlyIncome", "employmentType", "employer", "payoutBank", "payoutAccount", "payoutName"].map((k) => [k, str(fd, k)]));
+  const fields = Object.fromEntries(["productId", "amount", "tenor", "purpose", "monthlyIncome", "employmentType", "employer", "payoutBankCode", "payoutAccount"].map((k) => [k, str(fd, k)]));
 
   let statement = null;
   const file = fd.get("statement");
@@ -44,7 +47,7 @@ export async function applyLoan(_: FormState, fd: FormData): Promise<FormState> 
   const outcome = await applyForLoan(user, {
     productId: Number(fields.productId), amount: nairaToKobo(fields.amount), tenor: Number(fields.tenor), purpose: fields.purpose,
     monthlyIncome: nairaToKobo(fields.monthlyIncome), employmentType: fields.employmentType, employer: fields.employer,
-    payoutBank: fields.payoutBank, payoutAccount: fields.payoutAccount, payoutName: fields.payoutName,
+    payoutBankCode: fields.payoutBankCode, payoutAccount: fields.payoutAccount,
     acceptTerms: fd.get("acceptTerms") === "on", pin: str(fd, "pin"), statement,
   });
   if (!outcome.ok) return { error: outcome.error, fields };
@@ -67,6 +70,17 @@ export async function repayLoan(_: FormState, fd: FormData): Promise<FormState> 
   redirect(started.redirectTo);
 }
 
+/** Name enquiry while the customer types their account number. The application re-checks it on submit. */
+export async function lookupPayoutAccount(bankCode: string, accountNumber: string): Promise<{ ok: true; accountName: string } | { ok: false; error: string }> {
+  const user = await requireCustomer();
+  const wait = await blockedFor(String(user.id), "account_lookup");
+  if (wait) return { ok: false, error: `Too many lookups. Try again in ${wait} minute${wait === 1 ? "" : "s"}.` };
+  const [kyc] = await (await getDb()).select({ first: kycProfiles.legalFirstName, last: kycProfiles.legalLastName }).from(kycProfiles).where(eq(kycProfiles.userId, user.id));
+  const found = await lookupAccount(bankCode, accountNumber, kyc?.first ? `${kyc.first} ${kyc.last}` : fullName(user));
+  if (!found.ok) await recordFailure(String(user.id), "account_lookup");
+  return found;
+}
+
 /* ---------- Staff ---------- */
 
 const staffPaths = (id: number) => [`/console/loans/${id}`, "/console"];
@@ -81,9 +95,25 @@ export async function approveLoanAction(loanId: number, _: FormState, fd: FormDa
   return result(await approveLoan(staff, loanId, fd.get("decision") === "approve" ? "approve" : "decline", str(fd, "note")), staffPaths(loanId));
 }
 
-export async function disburseLoanAction(loanId: number, _: FormState, fd: FormData): Promise<FormState> {
+export async function manualPayoutAction(loanId: number, _: FormState, fd: FormData): Promise<FormState> {
   const staff = await requirePermission("loans.approve");
-  return result(await disburseLoan(staff, loanId, str(fd, "reference")), staffPaths(loanId));
+  return result(await recordManualPayout(staff, loanId, str(fd, "reference")), staffPaths(loanId));
+}
+
+export async function sendPayoutAction(loanId: number): Promise<FormState> {
+  const staff = await requirePermission("loans.approve");
+  return result(await sendAutomaticPayout(loanId, staff), staffPaths(loanId));
+}
+
+export async function checkPayoutAction(loanId: number, reference: string): Promise<FormState> {
+  await requirePermission("loans.review");
+  try {
+    const status = await confirmPayout(reference);
+    revalidatePath(`/console/loans/${loanId}`);
+    return { notice: status === "processing" ? "Still processing at the bank. Check again shortly." : `Transfer ${status}.` };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Couldn't reach Flutterwave." };
+  }
 }
 
 export async function recordPaymentAction(loanId: number, _: FormState, fd: FormData): Promise<FormState> {

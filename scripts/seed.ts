@@ -3,6 +3,8 @@ import { eq } from "drizzle-orm";
 import { closeDb, createDb, runMigrations } from "../src/db/client";
 import { loanProducts, roles, users } from "../src/db/schema";
 import { ADMIN_ROLE, CUSTOMER_ROLE, DEFAULT_STAFF_ROLE, PERMISSIONS } from "../src/lib/permissions";
+import { ledgerAccounts } from "../src/db/schema";
+import { ACCOUNTS } from "../src/lib/ledger-accounts";
 
 /**
  * Creates the built-in roles and the first administrator. Safe to run repeatedly: it never
@@ -19,6 +21,8 @@ async function main() {
     { key: DEFAULT_STAFF_ROLE, name: "Staff", description: "Day-to-day operations: customers, KYC and loan reviews.", kind: "staff", permissions: ["console.access", "users.view", "kyc.review", "loans.review", "transactions.view"], system: true },
   ]).onConflictDoNothing();
   await db.update(roles).set({ permissions: [...PERMISSIONS] }).where(eq(roles.key, ADMIN_ROLE));
+
+  await db.insert(ledgerAccounts).values(Object.values(ACCOUNTS).map((a) => ({ ...a }))).onConflictDoNothing();
 
   // Starter loan products (placeholders; edit rates and limits in Console → Products).
   const [anyProduct] = await db.select({ id: loanProducts.id }).from(loanProducts).limit(1);

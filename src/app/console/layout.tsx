@@ -1,5 +1,5 @@
 import { AppShell, type NavItem } from "@/components/app/app-shell";
-import { ChartIcon, ClockIcon, IdCardIcon, LandmarkIcon, ReceiptIcon, TrendUpIcon, UserCogIcon, UsersIcon } from "@/components/icons";
+import { ChartIcon, ClockIcon, SettingsIcon, IdCardIcon, LandmarkIcon, ReceiptIcon, TrendUpIcon, UserCogIcon, UsersIcon } from "@/components/icons";
 import { can, fullName, requirePermission } from "@/lib/auth";
 import { pendingKycCount } from "@/lib/kyc/queries";
 import { loanQueueCounts } from "@/lib/loans/queries";
@@ -10,10 +10,11 @@ const ITEMS: (NavItem & { permission: Permission; group: "Overview" | "Operation
   { href: "/console/customers", label: "Customers", icon: <UsersIcon />, permission: "users.view", group: "Operations" },
   { href: "/console/kyc", label: "KYC reviews", icon: <IdCardIcon />, permission: "kyc.review", group: "Operations" },
   { href: "/console/loans", label: "Loans", icon: <LandmarkIcon />, permission: "loans.review", group: "Operations" },
-  { href: "/console/transactions", label: "Transactions", icon: <ReceiptIcon />, permission: "transactions.view", group: "Operations" },
+  { href: "/console/transactions", label: "Money", icon: <ReceiptIcon />, permission: "transactions.view", group: "Operations" },
   { href: "/console/products", label: "Products", icon: <TrendUpIcon />, permission: "investments.manage", group: "Administration" },
   { href: "/console/team", label: "Team & roles", icon: <UserCogIcon />, permission: "team.manage", group: "Administration" },
   { href: "/console/audit", label: "Audit log", icon: <ClockIcon />, permission: "audit.view", group: "Administration" },
+  { href: "/console/settings", label: "Settings", icon: <SettingsIcon />, permission: "settings.manage", group: "Administration" },
 ];
 
 export default async function ConsoleLayout({ children }: { children: React.ReactNode }) {

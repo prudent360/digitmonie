@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { approveLoanAction, disburseLoanAction, markDefaultedAction, recordPaymentAction, reviewLoanAction, setLimitOverride } from "@/app/actions/loans";
-import { DecisionForm, SimpleActionForm } from "@/components/app/loan-staff";
+import { approveLoanAction, checkPayoutAction, manualPayoutAction, markDefaultedAction, recordPaymentAction, reviewLoanAction, sendPayoutAction, setLimitOverride } from "@/app/actions/loans";
+import { ActionButton, DecisionForm, SimpleActionForm } from "@/components/app/loan-staff";
 import { AlertIcon } from "@/components/icons";
 import { Avatar, Badge, Card, CardHeader, StatusBadge, Table } from "@/components/ui";
 import { listAudit } from "@/lib/audit-queries";
@@ -11,7 +11,9 @@ import { creditLimit } from "@/lib/credit/limits";
 import { formatDate } from "@/lib/format";
 import { bpsToPercent, toNaira } from "@/lib/loans/math";
 import { loanPaymentsFor, staffLoanDetail } from "@/lib/loans/queries";
+import { loanPayouts } from "@/lib/loans/payouts";
 import { loanBalance } from "@/lib/loans/service";
+import { getSetting } from "@/lib/settings";
 import { LOAN_STATUS_LABEL, LOAN_STATUS_TONE } from "@/lib/loans/status";
 import { formatNgPhone } from "@/lib/phone";
 
@@ -37,6 +39,9 @@ export default async function ConsoleLoanPage({ params }: { params: Promise<{ id
   const balance = loan.status === "active" || loan.status === "repaid" || loan.status === "defaulted" ? await loanBalance(loan.id) : null;
   const payments = balance ? await loanPaymentsFor(loan.id) : [];
   const limit = await creditLimit(customer.id, customer.kycTier);
+  const payoutList = await loanPayouts(loan.id);
+  const inFlight = payoutList.find((p) => p.status === "processing");
+  const payoutMode = await getSetting("payoutMode");
   const timeline = (await listAudit({ limit: 30, query: loan.reference })).rows;
   const s = loan.score;
   const b = loan.bureau;
@@ -75,12 +80,34 @@ export default async function ConsoleLoanPage({ params }: { params: Promise<{ id
                   </>
               )}
               {loan.status === "approved" && (
-                can(staff, "loans.approve") ? (
-                  <>
-                    <p className="mb-4 text-sm text-body">Send <b>{ngn(loan.principal - loan.processingFee)}</b> to <b>{loan.payoutName}</b>, {loan.payoutBank} <span className="font-mono">{loan.payoutAccount}</span>, then record the transfer reference. The repayment schedule starts today.</p>
-                    <SimpleActionForm action={disburseLoanAction.bind(null, loan.id)} submit="Mark as paid out" fields={[{ name: "reference", label: "Bank transfer reference", placeholder: "e.g. NIP 000013241002…" }]} />
-                  </>
-                ) : <p className="text-sm text-body">Approved{loan.autoApproved ? " automatically" : ""}. Waiting for someone with approval rights to pay it out.</p>
+                <div className="space-y-5">
+                  <p className="text-sm text-body">
+                    Pay <b>{ngn(loan.principal - loan.processingFee)}</b> to <b>{loan.payoutName}</b>, {loan.payoutBank} <span className="font-mono">{loan.payoutAccount}</span>
+                    {loan.payoutBankCode ? " (name confirmed with the bank)" : ""}. The repayment schedule starts when the money arrives.
+                  </p>
+                  <p className="text-xs text-muted">Payout method in Settings: <b>{payoutMode === "automatic" ? "Automatic" : "Manual"}</b>{loan.autoApproved ? " · approved automatically" : ""}</p>
+                  {inFlight ? (
+                    <div className="rounded-[5px] bg-warning-soft p-4 text-sm text-warning">
+                      <p><b>Transfer {inFlight.reference} is processing at the bank.</b> Wait for it to finish before trying anything else, so the customer isn&apos;t paid twice.</p>
+                      <div className="mt-3"><ActionButton action={checkPayoutAction.bind(null, loan.id, inFlight.reference)} label="Check status now" tone="secondary" /></div>
+                    </div>
+                  ) : !can(staff, "loans.approve") ? (
+                    <p className="text-sm text-body">Waiting for someone with approval rights to pay it out.</p>
+                  ) : (
+                    <>
+                      {loan.payoutBankCode && (
+                        <div>
+                          <p className="mb-2 text-sm font-bold text-ink">Send through Flutterwave</p>
+                          <ActionButton action={sendPayoutAction.bind(null, loan.id)} label={`Send ${ngn(loan.principal - loan.processingFee)} now`} confirm={`Send ${ngn(loan.principal - loan.processingFee)} to ${loan.payoutName} (${loan.payoutBank} ${loan.payoutAccount})?`} />
+                        </div>
+                      )}
+                      <details className="rounded-[5px] border border-line p-4" open={!loan.payoutBankCode}>
+                        <summary className="cursor-pointer text-sm font-bold text-ink">Paid it yourself? Record a manual transfer</summary>
+                        <div className="mt-3"><SimpleActionForm action={manualPayoutAction.bind(null, loan.id)} submit="Record manual payout" fields={[{ name: "reference", label: "Bank transfer reference", placeholder: "e.g. NIP 000013241002…" }]} /></div>
+                      </details>
+                    </>
+                  )}
+                </div>
               )}
               {loan.status === "active" && balance && (
                 <div className="space-y-6">
@@ -148,6 +175,20 @@ export default async function ConsoleLoanPage({ params }: { params: Promise<{ id
               </details>
             )}
           </Card>
+
+          {payoutList.length > 0 && (
+            <Card>
+              <CardHeader title="Payouts" subtitle="Every attempt to send this loan" />
+              <ul className="divide-y divide-line pt-2 text-sm">
+                {payoutList.map((p) => (
+                  <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3">
+                    <span><span className="font-mono text-xs">{p.reference}</span> · {p.method === "flutterwave" ? "Flutterwave" : p.method === "test" ? "Test transfer" : "Manual"} · {formatDate(p.createdAt.toISOString(), { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}{p.failureReason ? <span className="block text-xs text-danger">{p.failureReason}</span> : null}</span>
+                    <span className="flex items-center gap-3"><b className="tabular-nums">{ngn(p.amount)}</b><StatusBadge status={p.status === "processing" ? "pending" : p.status === "successful" ? "successful" : "failed"} /></span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
 
           {balance && (
             <Card>

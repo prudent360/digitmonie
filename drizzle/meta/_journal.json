@@ -22,6 +22,27 @@
       "when": 1790932551731,
       "tag": "0002_lending",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790933611814,
+      "tag": "0003_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790934374849,
+      "tag": "0004_payouts_ledger",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790934452232,
+      "tag": "0005_instalment_split",
+      "breakpoints": true
     }
   ]
 }

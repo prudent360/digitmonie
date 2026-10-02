@@ -61,10 +61,29 @@ Customers verify in three CBN tiers at **Verify identity** (`/dashboard/verify`)
 - **Assessment:** a transparent rules-based score (`src/lib/credit/score.ts`) using KYC tier, repayment-to-income, DigitMonie history and the credit bureau report. Hard stops (e.g. delinquent elsewhere, repayment over 50% of income) decline automatically. Strong small applications can be approved automatically if the product allows.
 - **Limits** start at ₦50k / ₦200k / ₦1m for KYC Tier 1 / 2 / 3 and grow 50% per loan repaid on time (`src/lib/credit/limits.ts`). Staff can override.
 - **Four eyes:** one person reviews (`loans.review`), a different person approves (`loans.approve`).
-- **Payout** is recorded manually (bank transfer reference) until a payout provider is connected; the schedule starts on the payout date.
+- **Payouts** (Settings → Loan payouts): *Manual* (staff send the transfer and record its reference) or *Automatic* (DigitMonie sends it through Flutterwave as soon as a loan is approved, up to a limit you set). Staff can always send through Flutterwave or record a manual payout from the loan page. Transfers are confirmed with Flutterwave (webhook, "Check status", and the daily job), and failures are listed under Console → Money.
+- **Bank account check:** customers' payout accounts are looked up with the bank as they type, and must be in their own (BVN) name.
 - **Repayments:** customers pay through Paystack (`PAYSTACK_SECRET_KEY`; webhook `/api/webhooks/paystack`). Staff with `loans.collect` can record transfers received. Payments go to the oldest instalment first.
 - **Overdue:** a daily job (`/api/cron/loans`, `CRON_SECRET`, scheduled in `vercel.json`) marks instalments overdue, adds the one-off late fee, and sends reminders 3 days before due dates. Pages also run it when opened.
 - **Credit bureau:** `src/lib/credit/bureau.ts` defines the adapter; a test bureau runs in development (BVN ending 9 → delinquent, 8 → many loans, else clean). Add the CRC/FirstCentral adapter once subscribed.
+
+## Money and ledger
+
+Every payout and repayment posts a balanced double-entry journal (`src/lib/ledger.ts`): cash accounts per provider, loans receivable, interest, fee and late-fee income. Console → Money shows the Flutterwave balance, payouts, repayments, payouts needing attention and the trial balance.
+
+## Settings (Console → Settings)
+
+Administrators (`settings.manage`) control, without a redeploy:
+
+- **General:** support contacts, FCCPC licence number, pause new loans, pause new sign-ups.
+- **Lending rules:** starting limits per KYC tier, growth per on-time loan, limit cap, auto-approval score, maximum repayment-to-income, reminder timing.
+- **Identity verification:** provider (Dojah or test), Dojah keys and environment, selfie and name match thresholds.
+- **Flutterwave:** public, secret and encryption keys, webhook hash (webhook URL `/api/webhooks/flutterwave`).
+- **Repayments:** Flutterwave or Paystack.
+- **SMS and email:** Termii and Resend keys, sender ID, from address.
+- **Credit bureau:** which bureau to use.
+
+Saved values override environment variables. Keys are encrypted with `SESSION_SECRET` and never sent back to the browser (only their last 4 characters). Each section has a read-only "Test connection" button, and every change and test is in the audit log.
 
 ## Roles & permissions
 

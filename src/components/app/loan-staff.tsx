@@ -57,3 +57,16 @@ export function SimpleActionForm({ action, fields, submit, tone = "brand", confi
     </form>
   );
 }
+
+/** One button that runs an action and shows its result underneath. */
+export function ActionButton({ action, label, confirm, tone = "brand" }: { action: (s: FormState) => Promise<FormState>; label: string; confirm?: string; tone?: "brand" | "secondary" }) {
+  const [state, formAction, pending] = useActionState(action, undefined);
+  return (
+    <form action={formAction} onSubmit={(e) => { if (confirm && !window.confirm(confirm)) e.preventDefault(); }} className="space-y-2">
+      <button disabled={pending} className={`inline-flex items-center justify-center gap-2 rounded-[5px] px-5 py-2.5 text-sm font-bold disabled:opacity-60 ${tone === "brand" ? "bg-brand text-white hover:bg-brand-600" : "border border-line bg-white text-ink hover:border-brand-200"}`}>
+        {pending ? "Working…" : label}
+      </button>
+      <FormAlert state={state} />
+    </form>
+  );
+}

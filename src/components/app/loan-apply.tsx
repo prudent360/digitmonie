@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useState, useTransition } from "react";
 import type { FormState } from "@/app/actions/auth";
 import { FormAlert, SubmitButton } from "@/components/auth/form-bits";
 import { Field, inputClass } from "@/components/form";
@@ -50,10 +50,48 @@ function KeyFacts({ product, amount, tenor }: { product: ProductOption; amount: 
   );
 }
 
-export function LoanApplyForm({ action, products, limit, kycTier, banks, employmentTypes, defaults }: {
+type Lookup = (bankCode: string, account: string) => Promise<{ ok: true; accountName: string } | { ok: false; error: string }>;
+
+/** Bank + account number, with a live name check against the bank as soon as 10 digits are entered. */
+function PayoutAccount({ banks, lookup, initialBank, initialAccount }: { banks: { code: string; name: string }[]; lookup: Lookup; initialBank?: string; initialAccount?: string }) {
+  const [bank, setBank] = useState(initialBank ?? "");
+  const [account, setAccount] = useState(initialAccount ?? "");
+  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
+  const [checking, start] = useTransition();
+  useEffect(() => {
+    if (!bank || !/^\d{10}$/.test(account)) return;
+    let cancelled = false;
+    start(async () => {
+      const r = await lookup(bank, account);
+      if (!cancelled) setResult(r.ok ? { ok: true, text: r.accountName } : { ok: false, text: r.error });
+    });
+    return () => { cancelled = true; };
+  }, [bank, account, lookup]);
+  const ready = bank && /^\d{10}$/.test(account);
+  return (
+    <div className="mt-4 grid gap-4 sm:grid-cols-2">
+      <Field label="Bank">
+        <select className={inputClass} name="payoutBankCode" value={bank} onChange={(e) => { setBank(e.target.value); setResult(null); }} required>
+          <option value="" disabled>Choose bank</option>
+          {banks.map((b) => <option key={b.code} value={b.code}>{b.name}</option>)}
+        </select>
+      </Field>
+      <Field label="Account number"><input className={`${inputClass} font-mono tracking-wider`} name="payoutAccount" inputMode="numeric" maxLength={10} pattern="\d{10}" value={account} onChange={(e) => { setAccount(e.target.value.replace(/\D/g, "")); setResult(null); }} required /></Field>
+      <div className="sm:col-span-2" aria-live="polite">
+        {checking && <p className="rounded-[5px] bg-canvas px-4 py-3 text-sm text-muted">Checking with the bank…</p>}
+        {!checking && ready && result && (result.ok
+          ? <p className="flex items-center gap-2 rounded-[5px] bg-success-soft px-4 py-3 text-sm font-bold text-success"><CheckIcon className="size-4" />{result.text}</p>
+          : <p className="rounded-[5px] bg-danger-soft px-4 py-3 text-sm font-medium text-danger">{result.text}</p>)}
+      </div>
+    </div>
+  );
+}
+
+export function LoanApplyForm({ action, lookup, products, limit, kycTier, banks, employmentTypes, defaults }: {
   action: (s: FormState, fd: FormData) => Promise<FormState>;
-  products: ProductOption[]; limit: number; kycTier: number; banks: string[]; employmentTypes: string[];
-  defaults: { payoutName: string; monthlyIncome: string; employmentType: string; employer: string };
+  lookup: Lookup;
+  products: ProductOption[]; limit: number; kycTier: number; banks: { code: string; name: string }[]; employmentTypes: string[];
+  defaults: { monthlyIncome: string; employmentType: string; employer: string };
 }) {
   const [state, formAction] = useActionState(action, undefined);
   const f = state?.fields ?? {};
@@ -142,17 +180,8 @@ export function LoanApplyForm({ action, products, limit, kycTier, banks, employm
 
         <section className="rounded-[5px] border border-line bg-white p-5">
           <h2 className="text-sm font-bold text-ink">4. Where should we send the money?</h2>
-          <p className="mt-1 text-xs text-muted">The account must be in your name.</p>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <Field label="Bank">
-              <select className={inputClass} name="payoutBank" defaultValue={f.payoutBank ?? ""} required>
-                <option value="" disabled>Choose bank</option>
-                {banks.map((b) => <option key={b}>{b}</option>)}
-              </select>
-            </Field>
-            <Field label="Account number"><input className={`${inputClass} font-mono tracking-wider`} name="payoutAccount" inputMode="numeric" maxLength={10} pattern="\d{10}" defaultValue={f.payoutAccount} required /></Field>
-            <div className="sm:col-span-2"><Field label="Account name"><input className={inputClass} name="payoutName" defaultValue={f.payoutName ?? defaults.payoutName} required /></Field></div>
-          </div>
+          <p className="mt-1 text-xs text-muted">The account must be in your own name. We check it with your bank.</p>
+          <PayoutAccount banks={banks} lookup={lookup} initialBank={f.payoutBankCode} initialAccount={f.payoutAccount} />
         </section>
 
         {needsStatement && (
