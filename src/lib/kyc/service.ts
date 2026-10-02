@@ -60,6 +60,12 @@ async function saveProfile(userId: number, values: Partial<typeof kycProfiles.$i
 
 const photoDoc = (r: IdentityRecord) => (r.photo ? [{ kind: "id_photo" as const, mimeType: r.photo.startsWith("/9j") ? "image/jpeg" : "image/png", data: r.photo }] : []);
 
+/** No live provider is set up (the test provider is refused in production). Say so, not "try again". */
+function notConfigured(error: Error): KycOutcome {
+  console.error("[kyc] no identity provider:", error.message);
+  return { ok: false, error: "Identity checks aren't switched on yet, so we can't verify you right now. Please try again later." };
+}
+
 function providerFailure(error: unknown): KycOutcome {
   console.error("[kyc] provider error", error);
   return { ok: false, error: error instanceof ProviderError ? "Our verification partner isn't responding. Please try again shortly." : "Something went wrong. Please try again." };
@@ -85,7 +91,7 @@ export async function submitBvn(user: CurrentUser, input: { bvn: string; dateOfB
   }
 
   const provider = await identityProvider().catch((e: Error) => e);
-  if (provider instanceof Error) return providerFailure(new ProviderError(provider.message));
+  if (provider instanceof Error) return notConfigured(provider);
   const { nameMatch } = await kycThresholds();
   const applicant: Applicant = { firstName: user.firstName, lastName: user.lastName, dateOfBirth: dob };
   let found: IdentityRecord | null;
@@ -154,7 +160,7 @@ export async function submitNinSelfie(user: CurrentUser, input: { nin: string; s
   }
 
   const provider = await identityProvider().catch((e: Error) => e);
-  if (provider instanceof Error) return providerFailure(new ProviderError(provider.message));
+  if (provider instanceof Error) return notConfigured(provider);
   const { faceAutoApprove, faceReview, nameMatch } = await kycThresholds();
   const legal = { firstName: profile.legalFirstName, lastName: profile.legalLastName ?? "" };
   let result;

@@ -35,6 +35,7 @@ export async function launchChecklist(): Promise<Check[]> {
     { label: "Flutterwave webhook", ok: Boolean(str("flwWebhookHash")), fix: "Set a webhook secret hash, and the same value in Flutterwave → Settings → Webhooks.", href: "/console/settings?tab=flutterwave" },
     ...(str("repaymentProvider") === "paystack" ? [{ label: "Paystack key", ok: Boolean(str("paystackSecretKey")) && !str("paystackSecretKey").startsWith("sk_test"), fix: "Repayments use Paystack: add your live Paystack secret key.", href: "/console/settings?tab=payments" }] : []),
     { label: "Identity checks (Dojah live)", ok: str("kycProvider") === "dojah" && str("dojahEnv") === "live" && Boolean(str("dojahAppId") && str("dojahSecretKey")), fix: "Choose Dojah, enter your app ID and secret key, and set the environment to Live.", href: "/console/settings?tab=kyc" },
+    ...(process.env.KYC_ALLOW_SANDBOX === "true" ? [{ label: "Test identity checks switched off", ok: false, fix: "KYC_ALLOW_SANDBOX is on, so anyone can pass BVN and NIN checks with made-up numbers. Remove it in Vercel and redeploy before real customers sign up." }] : []),
     { label: "Company details", ok: !missingCompany.length, fix: `Add your ${missingCompany.join(", ")}. They appear in the footer and legal pages.`, href: "/console/settings?tab=general" },
     { label: "A loan product on offer", ok: Boolean(product), fix: "Offer at least one loan product, with your real rates and limits.", href: "/console/products" },
   ];
