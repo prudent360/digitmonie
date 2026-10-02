@@ -49,6 +49,8 @@ export const SECTIONS: Section[] = [
       { key: "logoUrl", label: "Logo for light backgrounds", type: "text", default: "" },
       { key: "logoDarkUrl", label: "Logo for dark backgrounds", type: "text", default: "" },
       { key: "faviconUrl", label: "Favicon", type: "text", default: "" },
+      { key: "logoSizeLight", label: "Light-background logo height (px)", type: "number", default: 36, min: 20, max: 72 },
+      { key: "logoSizeDark", label: "Dark-background logo height (px)", type: "number", default: 36, min: 20, max: 72 },
     ],
   },
   {

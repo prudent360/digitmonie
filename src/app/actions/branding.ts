@@ -6,7 +6,7 @@ import { getDb } from "@/db";
 import { settings } from "@/db/schema";
 import { logAudit } from "@/lib/audit";
 import { requirePermission } from "@/lib/auth";
-import { getBranding, prepareImage } from "@/lib/branding";
+import { getBranding, LOGO_SIZE, prepareImage } from "@/lib/branding";
 import { deletePublicFile, isEmptyFile, savePublicFile, UploadError } from "@/lib/storage";
 import type { FormState } from "./auth";
 
@@ -41,8 +41,18 @@ export async function saveBranding(_: FormState, fd: FormData): Promise<FormStat
     throw error;
   }
 
+  // Logo heights (sliders).
+  for (const [field, label] of [["logoSizeLight", "light-background logo height"], ["logoSizeDark", "dark-background logo height"]] as const) {
+    const raw = fd.get(field);
+    if (raw == null) continue;
+    const size = Math.min(LOGO_SIZE.max, Math.max(LOGO_SIZE.min, Math.round(Number(raw))));
+    if (!Number.isFinite(size) || size === current[field]) continue;
+    await db.insert(settings).values({ key: field, value: size, updatedById: admin.id }).onConflictDoUpdate({ target: settings.key, set: { value: size, updatedById: admin.id, updatedAt: new Date() } });
+    changed.push(`set the ${label} to ${size}px`);
+  }
+
   for (const url of stale) await deletePublicFile(url);
-  if (!changed.length) return { notice: "Nothing changed. Choose an image to upload." };
+  if (!changed.length) return { notice: "Nothing changed." };
   await logAudit({ actorId: admin.id, action: "settings.branding", summary: changed.join("; "), target: { type: "settings", id: "branding" } });
   revalidatePath("/", "layout");
   return { notice: "Branding saved. It's live everywhere now." };

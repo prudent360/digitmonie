@@ -101,7 +101,7 @@ export function AppShell({ variant, sections, user, switchLink, unread, logos, c
           <button type="button" onClick={() => setOpen(true)} className="rounded-lg p-2 text-ink lg:hidden" aria-label="Open menu"><MenuIcon /></button>
           {logos.light
             // eslint-disable-next-line @next/next/no-img-element -- uploaded logo
-            ? <Link href={dark ? "/console" : "/dashboard"} className="lg:hidden" aria-label="Home"><img src={logos.light} alt="DigitMonie" className="h-7 w-auto max-w-[140px] object-contain" /></Link>
+            ? <Link href={dark ? "/console" : "/dashboard"} className="lg:hidden" aria-label="Home"><img src={logos.light} alt="DigitMonie" style={{ height: Math.min(32, logos.lightSize ?? 28) }} className="w-auto max-w-[150px] object-contain" /></Link>
             : <Link href={dark ? "/console" : "/dashboard"} className="lg:hidden" aria-label="Home"><LogoMark className="size-8" /></Link>}
           <label className="relative hidden max-w-md flex-1 sm:block">
             <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" />

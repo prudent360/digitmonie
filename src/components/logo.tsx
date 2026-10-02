@@ -17,7 +17,7 @@ export function LogoMark({ className = "size-9", inverted = false }: { className
   );
 }
 
-export type Logos = { light: string | null; dark: string | null };
+export type Logos = { light: string | null; dark: string | null; lightSize?: number; darkSize?: number };
 
 /**
  * The logo lockup. Uses the logo uploaded in Settings → Branding for the background (light, or
@@ -27,11 +27,13 @@ export type Logos = { light: string | null; dark: string | null };
 export function Logo({ href = "/", inverted = false, className = "", logos }: { href?: string; inverted?: boolean; className?: string; logos?: Logos }) {
   const uploaded = inverted ? logos?.dark ?? logos?.light ?? null : logos?.light ?? null;
   const onTile = inverted && !logos?.dark && Boolean(logos?.light);
+  // Height set in Settings → Branding; width follows the logo's proportions, capped so wide logos can't break the header.
+  const height = (inverted && logos?.dark ? logos.darkSize : logos?.lightSize) ?? 36;
   return (
     <Link href={href} className={`flex items-center gap-2.5 ${className}`} aria-label="DigitMonie home">
       {uploaded ? (
         // eslint-disable-next-line @next/next/no-img-element -- uploaded logo of unknown size
-        <img src={uploaded} alt="DigitMonie" className={`h-9 w-auto max-w-[200px] object-contain ${onTile ? "rounded-[5px] bg-white px-2 py-1" : ""}`} />
+        <img src={uploaded} alt="DigitMonie" style={{ height, maxWidth: Math.min(240, height * 7) }} className={`w-auto object-contain ${onTile ? "rounded-[5px] bg-white px-2 py-1" : ""}`} />
       ) : (
         <>
           <LogoMark inverted={inverted} />

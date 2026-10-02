@@ -78,7 +78,7 @@ export async function renderEmail(source: { subject: string; body: string }, var
   const abs = (url: string) => (url.startsWith("/") ? `${home}${url}` : url);
   // The dark-background logo sits on the blue header; a light-only logo goes on a white tile; otherwise the wordmark.
   const headerLogo = brand.logoDarkUrl
-    ? `<img src="${escapeHtml(abs(brand.logoDarkUrl))}" alt="DigitMonie" height="36" style="display:block;height:36px;width:auto;max-width:220px;border:0">`
+    ? `<img src="${escapeHtml(abs(brand.logoDarkUrl))}" alt="DigitMonie" height="${brand.logoSizeDark}" style="display:block;height:${brand.logoSizeDark}px;width:auto;max-width:240px;border:0">`
     : brand.logoUrl
       ? `<span style="display:inline-block;background:#ffffff;border-radius:5px;padding:7px 12px"><img src="${escapeHtml(abs(brand.logoUrl))}" alt="DigitMonie" height="28" style="display:block;height:28px;width:auto;max-width:200px;border:0"></span>`
       : null;

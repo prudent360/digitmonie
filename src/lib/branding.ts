@@ -3,13 +3,23 @@ import sharp from "sharp";
 import { UploadError } from "./storage";
 import { getSettings } from "./settings";
 
-export type Branding = { logoUrl: string | null; logoDarkUrl: string | null; faviconUrl: string | null };
+export type Branding = { logoUrl: string | null; logoDarkUrl: string | null; faviconUrl: string | null; logoSizeLight: number; logoSizeDark: number };
+
+export const LOGO_SIZE = { min: 20, max: 72, default: 36 };
+const clampSize = (v: unknown) => Math.min(LOGO_SIZE.max, Math.max(LOGO_SIZE.min, Math.round(Number(v)) || LOGO_SIZE.default));
 
 /** Uploaded logos and favicon from Console → Settings → Branding (null = use the built-in mark). */
 export async function getBranding(): Promise<Branding> {
-  const s = await getSettings("logoUrl", "logoDarkUrl", "faviconUrl").catch(() => ({ logoUrl: "", logoDarkUrl: "", faviconUrl: "" }));
+  const s = await getSettings("logoUrl", "logoDarkUrl", "faviconUrl", "logoSizeLight", "logoSizeDark")
+    .catch(() => ({ logoUrl: "", logoDarkUrl: "", faviconUrl: "", logoSizeLight: LOGO_SIZE.default, logoSizeDark: LOGO_SIZE.default }));
   const v = (x: unknown) => (typeof x === "string" && x ? x : null);
-  return { logoUrl: v(s.logoUrl), logoDarkUrl: v(s.logoDarkUrl), faviconUrl: v(s.faviconUrl) };
+  return { logoUrl: v(s.logoUrl), logoDarkUrl: v(s.logoDarkUrl), faviconUrl: v(s.faviconUrl), logoSizeLight: clampSize(s.logoSizeLight), logoSizeDark: clampSize(s.logoSizeDark) };
+}
+
+/** What the Logo component needs. */
+export async function getLogos() {
+  const b = await getBranding();
+  return { light: b.logoUrl, dark: b.logoDarkUrl, lightSize: b.logoSizeLight, darkSize: b.logoSizeDark };
 }
 
 const ACCEPTED = ["image/png", "image/webp", "image/jpeg"];
