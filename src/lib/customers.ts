@@ -53,7 +53,7 @@ export async function setCustomerStatus(staff: CurrentUser, customerId: number, 
   }).where(eq(users.id, customerId));
   await logAudit({ actorId: staff.id, action: `customer.${status}`, summary: `${STATUS_COPY[status].verb} ${fullName(customer)}'s account: ${reason.trim()}`, target: { type: "user", id: customerId } });
   const tell = STATUS_COPY[status].tell;
-  if (tell) await notifyCustomer(customerId, { category: "account", title: status === "active" ? "Account active" : "Account update", body: tell, sms: tell, email: true });
+  if (tell) await notifyCustomer(customerId, { category: "account", title: status === "active" ? "Account active" : "Account update", body: tell, sms: tell, email: { template: "account_update", vars: { message: tell } } });
   return { ok: true, message: `Account ${status}.` };
 }
 

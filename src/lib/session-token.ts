@@ -11,7 +11,7 @@ export const SESSION_TTL_SECONDS: Record<UserKind, number> = { staff: 8 * 60 * 6
 export const PENDING_TTL_SECONDS = 15 * 60;
 
 export type SessionPayload = { uid: number; kind: UserKind; v: number };
-export type PendingStep = "verify_phone" | "two_factor" | "two_factor_setup" | "reset_password";
+export type PendingStep = "verify_contact" | "two_factor" | "two_factor_setup" | "reset_password";
 export type PendingPayload = { uid: number; step: PendingStep };
 
 export function sessionSecretProblem(): string | null {

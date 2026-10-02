@@ -110,10 +110,11 @@ export async function continueSignIn(user: CurrentUser): Promise<string> {
     await setPending(user.id, "two_factor_setup");
     return "/login/two-factor/setup";
   }
-  if (!user.phoneVerifiedAt) {
-    await issueOtp(user, "verify_phone");
-    await setPending(user.id, "verify_phone");
-    return "/verify-phone";
+  // Customers must confirm at least one contact (email or phone) before using the account.
+  if (!user.emailVerifiedAt && !user.phoneVerifiedAt) {
+    await issueOtp(user, "verify");
+    await setPending(user.id, "verify_contact");
+    return "/verify-code";
   }
   return finishSignIn(user);
 }

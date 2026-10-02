@@ -7,7 +7,8 @@ import { getDb } from "@/db";
 import { roles, users } from "@/db/schema";
 import { logAudit } from "@/lib/audit";
 import { fullName, loadUser, requirePermission, type CurrentUser } from "@/lib/auth";
-import { sendEmail, siteUrl } from "@/lib/messaging";
+import { sendTemplate } from "@/lib/email";
+import { siteUrl } from "@/lib/messaging";
 import { ADMIN_ROLE, PERMISSIONS, isPermission, type Permission } from "@/lib/permissions";
 import { issueInviteToken } from "@/lib/tokens";
 import type { FormState } from "./auth";
@@ -32,11 +33,7 @@ async function isLastAdmin(userId: number): Promise<boolean> {
 
 async function sendInvite(user: CurrentUser, invitedBy: CurrentUser): Promise<string> {
   const url = `${siteUrl()}/invite/${await issueInviteToken(user.id)}`;
-  await sendEmail({
-    to: user.email,
-    subject: "You've been invited to the DigitMonie console",
-    text: `Hi ${user.firstName},\n\n${fullName(invitedBy)} has invited you to join DigitMonie as ${user.role.name}.\n\nSet your password here (the link expires in 7 days):\n${url}\n\nYou'll then set up two-factor sign-in with an authenticator app.`,
-  });
+  await sendTemplate(user.email, "staff_invite", { name: user.firstName, role: user.role.name, invitedBy: fullName(invitedBy), inviteUrl: url });
   return url;
 }
 

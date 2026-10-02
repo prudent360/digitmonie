@@ -17,6 +17,8 @@ import { normalizeNgPhone } from "@/lib/phone";
 import { passwordProblem, pinProblem } from "@/lib/password";
 import { blockedFor, clearFailures, recordFailure } from "@/lib/rate-limit";
 import { consumeInviteToken, peekInviteToken } from "@/lib/tokens";
+import { sendTemplate } from "@/lib/email";
+import { siteUrl } from "@/lib/messaging";
 import { getSetting } from "@/lib/settings";
 import { generateTotpSecret, verifyTotp } from "@/lib/totp";
 
@@ -121,22 +123,25 @@ export async function register(_: FormState, fd: FormData): Promise<FormState> {
   redirect(await continueSignIn(user));
 }
 
-/* ---------- Phone verification ---------- */
+/* ---------- Confirming a new account (code by email or SMS) ---------- */
 
-export async function verifyPhone(_: FormState, fd: FormData): Promise<FormState> {
-  const user = await getPending("verify_phone");
+export async function verifyCode(_: FormState, fd: FormData): Promise<FormState> {
+  const user = await getPending("verify_contact");
   if (!user) redirect("/login");
-  const result = await verifyOtp(user.id, "verify_phone", str(fd, "code"));
+  const result = await verifyOtp(user.id, ["verify_email", "verify_phone"], str(fd, "code"));
   if (!result.ok) return { error: result.error };
-  await (await getDb()).update(users).set({ phoneVerifiedAt: new Date() }).where(eq(users.id, user.id));
-  redirect(await finishSignIn({ ...user, phoneVerifiedAt: new Date() }));
+  const now = new Date();
+  const confirmed = result.purpose === "verify_email" ? { emailVerifiedAt: now } : { phoneVerifiedAt: now };
+  await (await getDb()).update(users).set(confirmed).where(eq(users.id, user.id));
+  await sendTemplate(user.email, "welcome", { name: user.firstName, dashboardUrl: `${siteUrl()}/dashboard/verify` });
+  redirect(await finishSignIn({ ...user, ...confirmed }));
 }
 
-export async function resendPhoneCode(): Promise<FormState> {
-  const user = await getPending("verify_phone");
+export async function resendCode(): Promise<FormState> {
+  const user = await getPending("verify_contact");
   if (!user) redirect("/login");
-  const result = await issueOtp(user, "verify_phone");
-  return result.ok ? { notice: "We've sent a new code." } : { error: result.error };
+  const result = await issueOtp(user, "verify");
+  return result.ok ? { notice: `We've sent a new code to ${result.sentTo}.` } : { error: result.error };
 }
 
 /* ---------- Transaction PIN (first time) ---------- */

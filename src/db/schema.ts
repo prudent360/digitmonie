@@ -51,7 +51,7 @@ export const users = pgTable("users", {
 }, (t) => [index("users_role_idx").on(t.roleKey)]);
 
 /** Short numeric codes sent by SMS or email. Only the hash is stored. */
-export type OtpPurpose = "verify_phone" | "reset_password";
+export type OtpPurpose = "verify_phone" | "verify_email" | "reset_password";
 export const otpCodes = pgTable("otp_codes", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
@@ -465,3 +465,28 @@ export const reconciliationItems = pgTable("reconciliation_items", {
 }, (t) => [index("reconciliation_items_run_idx").on(t.runId)]);
 
 export type Notification = typeof notifications.$inferSelect;
+
+/* ---------- Email ---------- */
+
+/** Admin overrides of the built-in templates (lib/email-templates.ts). No row = the original wording. */
+export const emailTemplates = pgTable("email_templates", {
+  key: text("key").primaryKey(),
+  subject: text("subject").notNull(),
+  body: text("body").notNull(),
+  enabled: boolean("enabled").notNull().default(true),
+  updatedById: integer("updated_by_id").references(() => users.id, { onDelete: "set null" }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Every email attempt. Verification codes are masked before the HTML is stored. */
+export const emailLog = pgTable("email_log", {
+  id: serial("id").primaryKey(),
+  to: text("to").notNull(),
+  template: text("template").notNull(),
+  subject: text("subject").notNull(),
+  html: text("html").notNull().default(""),
+  status: text("status").$type<"sent" | "failed" | "logged" | "skipped">().notNull(),
+  error: text("error"),
+  providerId: text("provider_id"),
+  createdAt: createdAt(),
+}, (t) => [index("email_log_created_idx").on(t.createdAt)]);

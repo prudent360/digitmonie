@@ -11,6 +11,7 @@ import { verifyTransactionPin } from "@/lib/pin";
 import { decryptSecret } from "@/lib/secrets";
 import { getSetting, getSettings } from "@/lib/settings";
 import { naira, newReference, notify, report } from "./common";
+import { formatDate } from "@/lib/format";
 import { quoteLoan, todayIso } from "./math";
 import { OPEN_STATUSES } from "./status";
 import { nameScore } from "@/lib/kyc/matching";
@@ -146,7 +147,7 @@ export async function applyForLoan(user: CurrentUser, input: ApplicationInput): 
   });
 
   if (status === "approved") {
-    await notify(user.id, `your ${naira(input.amount)} loan (${loan.reference}) is approved. We'll pay ${naira(quote.disbursed)} into your ${payoutBank} account shortly.`, { title: "Your loan is approved", email: true });
+    await notify(user.id, `your ${naira(input.amount)} loan (${loan.reference}) is approved. We'll pay ${naira(quote.disbursed)} into your ${payoutBank} account shortly.`, { title: "Your loan is approved", email: { template: "loan_approved", vars: { reference: loan.reference, amount: naira(input.amount), payout: naira(quote.disbursed), bank: payoutBank } } });
     await payoutAfterApproval(loan);
     return { ok: true, loanId: loan.id, message: `Approved! We'll pay ${naira(quote.disbursed)} into your ${payoutBank} account shortly.` };
   }
@@ -186,7 +187,7 @@ export async function reviewLoan(staff: CurrentUser, loanId: number, decision: "
   if (decision === "decline") {
     await db.update(loans).set({ status: "declined", declinedById: staff.id, declineReason: note.trim(), reviewedById: staff.id, reviewedAt: now, reviewNote: note.trim(), closedAt: now }).where(eq(loans.id, loan.id));
     await logAudit({ actorId: staff.id, action: "loan.declined", summary: `declined ${loan.reference}: ${note.trim()}`, target: { type: "loan", id: loan.id } });
-    await notify(loan.userId, `we couldn't approve your loan application ${loan.reference}. Open the app to see why.`, { title: "About your loan application", email: true });
+    await notify(loan.userId, `we couldn't approve your loan application ${loan.reference}. Open the app to see why.`, { title: "About your loan application", email: { template: "loan_declined", vars: { reference: loan.reference, reason: note.trim() } } });
     return { ok: true, message: "Declined. The customer has been told." };
   }
   await db.update(loans).set({ status: "reviewed", reviewedById: staff.id, reviewedAt: now, reviewNote: note.trim() || null }).where(eq(loans.id, loan.id));
@@ -207,12 +208,12 @@ export async function approveLoan(staff: CurrentUser, loanId: number, decision: 
   if (decision === "decline") {
     await db.update(loans).set({ status: "declined", declinedById: staff.id, declineReason: note.trim(), closedAt: now }).where(eq(loans.id, loan.id));
     await logAudit({ actorId: staff.id, action: "loan.declined", summary: `declined ${loan.reference} at approval: ${note.trim()}`, target: { type: "loan", id: loan.id } });
-    await notify(loan.userId, `we couldn't approve your loan application ${loan.reference}. Open the app to see why.`, { title: "About your loan application", email: true });
+    await notify(loan.userId, `we couldn't approve your loan application ${loan.reference}. Open the app to see why.`, { title: "About your loan application", email: { template: "loan_declined", vars: { reference: loan.reference, reason: note.trim() } } });
     return { ok: true, message: "Declined. The customer has been told." };
   }
   const [approved] = await db.update(loans).set({ status: "approved", approvedById: staff.id, approvedAt: now }).where(eq(loans.id, loan.id)).returning();
   await logAudit({ actorId: staff.id, action: "loan.approved", summary: `approved ${loan.reference} (${naira(loan.principal)})`, target: { type: "loan", id: loan.id } });
-  await notify(loan.userId, `your loan ${loan.reference} is approved. We'll pay ${naira(loan.principal - loan.processingFee)} into your ${loan.payoutBank} account shortly.`, { title: "Your loan is approved", email: true });
+  await notify(loan.userId, `your loan ${loan.reference} is approved. We'll pay ${naira(loan.principal - loan.processingFee)} into your ${loan.payoutBank} account shortly.`, { title: "Your loan is approved", email: { template: "loan_approved", vars: { reference: loan.reference, amount: naira(loan.principal), payout: naira(loan.principal - loan.processingFee), bank: loan.payoutBank } } });
   const payout = await payoutAfterApproval(approved);
   if (payout === "waiting") await notifyStaff("loans.approve", { category: "payout", title: "Loan ready to pay out", body: `${loan.reference}: send ${naira(loan.principal - loan.processingFee)} to ${loan.payoutName}`, href: `/console/loans/${loan.id}` });
   return { ok: true, message: payout === "sent" ? "Approved and sent to Flutterwave for payout." : "Approved. It's now ready to pay out." };
@@ -294,7 +295,7 @@ export async function settlePayment(reference: string): Promise<{ applied: boole
   await settlePromises(loan);
   await logAudit({ actorId: payment.recordedById, action: "loan.payment", summary: `received ${naira(payment.amount)} on ${loan.reference} (${payment.method}, ${payment.reference})${remaining === 0 ? " · loan fully repaid" : ""}`, target: { type: "loan", id: loan.id } });
   await report(loan, remaining === 0 ? "repaid" : "payment");
-  await notify(loan.userId, remaining === 0 ? `thank you! Your loan ${loan.reference} is fully repaid. Your limit may now increase.` : `we received ${naira(payment.amount)} for loan ${loan.reference}. ${naira(remaining)} left to pay.`, { title: remaining === 0 ? "Loan fully repaid" : "Payment received", email: remaining === 0 });
+  await notify(loan.userId, remaining === 0 ? `thank you! Your loan ${loan.reference} is fully repaid. Your limit may now increase.` : `we received ${naira(payment.amount)} for loan ${loan.reference}. ${naira(remaining)} left to pay.`, { title: remaining === 0 ? "Loan fully repaid" : "Payment received", email: remaining === 0 ? { template: "loan_repaid", vars: { reference: loan.reference } } : { template: "payment_received", vars: { reference: loan.reference, amount: naira(payment.amount), remaining: naira(remaining) } } });
   return { applied: true, loan };
 }
 
@@ -330,7 +331,7 @@ export async function refreshInstalments(): Promise<{ newlyOverdue: number }> {
     const fee = i.lateFee || Math.round(((i.principal + i.interest) * lateFeeBps) / 10_000);
     await db.update(loanInstalments).set({ status: "overdue", lateFee: fee }).where(and(eq(loanInstalments.id, i.id), ne(loanInstalments.status, "paid")));
     await report(loan, "overdue");
-    await notify(loan.userId, `your repayment of ${naira(owedOn({ ...i, lateFee: fee }))} for loan ${loan.reference} is overdue. Please pay today to avoid further impact on your credit record.`, { title: "Your repayment is overdue", email: true });
+    await notify(loan.userId, `your repayment of ${naira(owedOn({ ...i, lateFee: fee }))} for loan ${loan.reference} is overdue. Please pay today to avoid further impact on your credit record.`, { title: "Your repayment is overdue", email: { template: "repayment_overdue", vars: { reference: loan.reference, amount: naira(owedOn({ ...i, lateFee: fee })) } } });
   }
   return { newlyOverdue: late.length };
 }
@@ -342,7 +343,7 @@ export async function sendDueReminders(): Promise<number> {
   const rows = await db.select({ i: loanInstalments, loan: loans }).from(loanInstalments).innerJoin(loans, eq(loans.id, loanInstalments.loanId))
     .where(and(eq(loanInstalments.status, "upcoming"), lte(loanInstalments.dueDate, todayIso(soon)), isNull(loanInstalments.reminderSentAt), eq(loans.status, "active")));
   for (const { i, loan } of rows) {
-    await notify(loan.userId, `reminder: ${naira(owedOn(i))} for loan ${loan.reference} is due on ${i.dueDate}. Pay in the app to stay on track.`, { title: "Repayment due soon" });
+    await notify(loan.userId, `reminder: ${naira(owedOn(i))} for loan ${loan.reference} is due on ${i.dueDate}. Pay in the app to stay on track.`, { title: "Repayment due soon", email: { template: "repayment_due", vars: { reference: loan.reference, amount: naira(owedOn(i)), dueDate: formatDate(i.dueDate) } } });
     await db.update(loanInstalments).set({ reminderSentAt: new Date() }).where(eq(loanInstalments.id, i.id));
   }
   return rows.length;

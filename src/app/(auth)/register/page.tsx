@@ -16,7 +16,7 @@ export default async function RegisterPage() {
     <div className="page-in">
       <Steps current={1} />
       <h1 className="mt-6 font-display text-3xl font-extrabold text-ink">Open your free account</h1>
-      <p className="mt-2 text-body">It takes less than 2 minutes. We&apos;ll text a code to your phone next.</p>
+      <p className="mt-2 text-body">It takes less than 2 minutes. We&apos;ll send you a code to confirm it next.</p>
       <div className="mt-8"><RegisterForm action={register} /></div>
       <p className="mt-6 text-center text-sm text-body">Already have an account? <Link href="/login" className="font-semibold text-brand">Log in</Link></p>
     </div>

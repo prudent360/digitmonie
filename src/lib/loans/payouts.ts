@@ -10,7 +10,8 @@ import { createTransfer, flutterwaveConfigured, getTransfer } from "@/lib/paymen
 import { getSetting } from "@/lib/settings";
 import { naira, newReference, notify, report } from "./common";
 import { notifyStaff } from "@/lib/notifications";
-import { quoteLoan, todayIso } from "./math";
+import { addMonths, quoteLoan, todayIso } from "./math";
+import { formatDate } from "@/lib/format";
 
 export type PayoutOutcome = { ok: true; message: string } | { ok: false; error: string };
 const fail = (error: string): PayoutOutcome => ({ ok: false, error });
@@ -53,7 +54,7 @@ async function completePayout(payoutId: number, actorId: number | null, feeKobo 
   });
   if (!loan) return null;
   await report(loan, "disbursed");
-  await notify(loan.userId, `we've sent ${naira(sendAmount(loan))} to your ${loan.payoutBank} account. Your first repayment of ${naira(loan.instalment)} is due one month from today.`, { title: "Your loan has been paid out", email: true });
+  await notify(loan.userId, `we've sent ${naira(sendAmount(loan))} to your ${loan.payoutBank} account. Your first repayment of ${naira(loan.instalment)} is due one month from today.`, { title: "Your loan has been paid out", email: { template: "loan_paid_out", vars: { reference: loan.reference, payout: naira(sendAmount(loan)), bank: loan.payoutBank, instalment: naira(loan.instalment), firstDue: formatDate(addMonths(todayIso(), 1)) } } });
   return loan;
 }
 

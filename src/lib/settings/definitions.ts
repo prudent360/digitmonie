@@ -17,7 +17,11 @@ export type Field = {
   max?: number;
 };
 export type Integration = "flutterwave" | "paystack" | "dojah" | "termii" | "resend";
-export type Section = { id: string; title: string; description: string; fields: Field[]; tests?: Integration[] };
+export type Section = {
+  id: string; title: string; description: string; fields: Field[]; tests?: Integration[];
+  /** Rendered by its own component instead of the generic form (fields are still saved the generic way). */
+  custom?: "email" | "templates";
+};
 
 export const SECTIONS: Section[] = [
   {
@@ -96,15 +100,39 @@ export const SECTIONS: Section[] = [
     ],
   },
   {
+    id: "email",
+    title: "Email",
+    description: "How DigitMonie sends email: one-time codes, staff invitations, and loan and verification updates.",
+    custom: "email",
+    fields: [
+      { key: "otpChannel", label: "Send one-time codes by", type: "select", default: "email", options: [{ value: "email", label: "Email" }, { value: "sms", label: "SMS (Termii)" }, { value: "both", label: "Email and SMS" }], help: "Codes for confirming a new account and resetting a password." },
+      { key: "emailDriver", label: "Send email with", type: "select", default: "resend", options: [{ value: "resend", label: "Resend" }, { value: "smtp", label: "Your own mail server (SMTP)" }, { value: "log", label: "Don't send (log only)" }] },
+      { key: "resendApiKey", label: "Resend API key", type: "secret", default: "", env: "RESEND_API_KEY" },
+      { key: "smtpHost", label: "SMTP host", type: "text", default: "" },
+      { key: "smtpPort", label: "SMTP port", type: "number", default: 465, min: 1, max: 65535 },
+      { key: "smtpSecurity", label: "Encryption", type: "select", default: "ssl", options: [{ value: "ssl", label: "SSL (port 465)" }, { value: "tls", label: "TLS (port 587)" }, { value: "none", label: "None" }] },
+      { key: "smtpUser", label: "SMTP username", type: "text", default: "" },
+      { key: "smtpPassword", label: "SMTP password", type: "secret", default: "" },
+      { key: "emailFromName", label: "Sender name", type: "text", default: "DigitMonie" },
+      { key: "emailFromAddress", label: "Sender address", type: "text", default: "", env: "EMAIL_FROM_ADDRESS" },
+      { key: "emailReplyTo", label: "Reply-to", type: "text", default: "" },
+    ],
+  },
+  {
+    id: "templates",
+    title: "Email templates",
+    description: "The wording of every automatic email.",
+    custom: "templates",
+    fields: [],
+  },
+  {
     id: "messaging",
-    title: "SMS and email",
-    description: "Termii sends verification codes and loan alerts by SMS; Resend sends email.",
-    tests: ["termii", "resend"],
+    title: "SMS",
+    description: "Termii sends SMS: loan alerts and reminders, and one-time codes if you choose SMS under Email.",
+    tests: ["termii"],
     fields: [
       { key: "termiiApiKey", label: "Termii API key", type: "secret", default: "", env: "TERMII_API_KEY" },
       { key: "termiiSenderId", label: "SMS sender ID", type: "text", default: "DigitMonie", env: "TERMII_SENDER_ID", help: "Must be approved by Termii." },
-      { key: "resendApiKey", label: "Resend API key", type: "secret", default: "", env: "RESEND_API_KEY" },
-      { key: "emailFrom", label: "Send email from", type: "text", default: "DigitMonie <hello@digitmonie.com>", env: "EMAIL_FROM" },
     ],
   },
   {

@@ -146,7 +146,7 @@ export async function reschedule(staff: CurrentUser, loanId: number, months: num
     await tx.update(paymentPromises).set({ status: "cancelled", resolvedAt: new Date() }).where(and(eq(paymentPromises.loanId, loanId), eq(paymentPromises.status, "open")));
   });
   await logAudit({ actorId: staff.id, action: "loan.rescheduled", summary: `moved ${row.loan.reference}'s unpaid instalments by ${months} month${months > 1 ? "s" : ""}${waiveLateFees ? " and waived unpaid late fees" : ""}: ${note.trim()}`, target: { type: "loan", id: loanId } });
-  await notify(row.customer.id, `your loan ${row.loan.reference} has a new repayment schedule. Open the app to see your new dates.`, { title: "New repayment schedule", email: true });
+  await notify(row.customer.id, `your loan ${row.loan.reference} has a new repayment schedule. Open the app to see your new dates.`, { title: "New repayment schedule", email: { template: "loan_rescheduled", vars: { reference: row.loan.reference } } });
   return { ok: true, message: "Rescheduled. The customer has been told." };
 }
 

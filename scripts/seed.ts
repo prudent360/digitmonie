@@ -53,7 +53,7 @@ async function main() {
     const now = new Date();
     if (!adminEmail) await ensureUser({ firstName: "Ifiok", lastName: "Udo", email: "admin@digitmonie.local", password: "AdminPass123!", roleKey: ADMIN_ROLE, emailVerifiedAt: now }, "Demo admin");
     await ensureUser({ firstName: "Tunde", lastName: "Bakare", email: "staff@digitmonie.local", password: "StaffPass123!", roleKey: DEFAULT_STAFF_ROLE, emailVerifiedAt: now }, "Demo staff");
-    await ensureUser({ firstName: "Adaeze", lastName: "Okafor", email: "customer@digitmonie.local", phone: "2348030000001", password: "CustomerPass123!", pin: "2580", roleKey: CUSTOMER_ROLE, phoneVerifiedAt: now, kycTier: 2 }, "Demo customer");
+    await ensureUser({ firstName: "Adaeze", lastName: "Okafor", email: "customer@digitmonie.local", phone: "2348030000001", password: "CustomerPass123!", pin: "2580", roleKey: CUSTOMER_ROLE, phoneVerifiedAt: now, emailVerifiedAt: now, kycTier: 2 }, "Demo customer");
   }
 
   await closeDb(db);

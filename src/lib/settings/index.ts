@@ -107,6 +107,17 @@ export async function saveSection(sectionId: string, fd: FormData, actorId: numb
     changed.push(`${field.label}: ${String(current)} → ${String(value)}`);
   }
 
+  if (sectionId === "email") {
+    const isEmail = (v: string) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+    for (const k of ["emailFromAddress", "emailReplyTo"]) if (!isEmail(String(fd.get(k) ?? "").trim())) return { ok: false, error: `${FIELDS.get(k)!.label}: enter a valid email address, or leave it empty.` };
+    const key = String(fd.get("resendApiKey") ?? "").trim();
+    if (key && !key.startsWith("re_")) return { ok: false, error: "Resend API keys start with re_." };
+    if (fd.get("emailDriver") === "smtp") {
+      const hasPassword = String(fd.get("smtpPassword") ?? "").trim() || saved.get("smtpPassword");
+      if (!String(fd.get("smtpHost") ?? "").trim() || !String(fd.get("smtpUser") ?? "").trim() || !hasPassword) return { ok: false, error: "Add the SMTP host, username and password to send with your own mail server." };
+    }
+  }
+
   if (sectionId === "kyc") {
     const face = Number(fd.get("faceAutoApprove")), review = Number(fd.get("faceReview"));
     if (review > face) return { ok: false, error: "The rejection threshold must be lower than the automatic-pass threshold." };

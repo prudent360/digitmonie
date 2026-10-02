@@ -2,15 +2,11 @@ import "server-only";
 import { getSetting } from "./settings";
 
 /**
- * Outbound SMS and email. Uses Termii (SMS) and Resend (email) when their keys are set in
- * Console → Settings (or the environment); otherwise messages are written to the server log.
+ * Outbound SMS through Termii when its key is set in Console → Settings (or the environment);
+ * otherwise messages are written to the server log. Email lives in lib/email.ts.
  */
 export async function smsConfigured(): Promise<boolean> {
   return Boolean(await getSetting("termiiApiKey"));
-}
-
-export async function emailConfigured(): Promise<boolean> {
-  return Boolean(await getSetting("resendApiKey"));
 }
 
 export async function sendSms(to: string, message: string): Promise<void> {
@@ -25,20 +21,6 @@ export async function sendSms(to: string, message: string): Promise<void> {
     body: JSON.stringify({ api_key: apiKey, to, from: await getSetting("termiiSenderId"), sms: message, type: "plain", channel: "dnd" }),
   });
   if (!res.ok) throw new Error(`Termii responded ${res.status}`);
-}
-
-export async function sendEmail({ to, subject, text, html }: { to: string; subject: string; text: string; html?: string }): Promise<void> {
-  const apiKey = await getSetting("resendApiKey");
-  if (!apiKey) {
-    console.info(`[email → ${to}] ${subject}\n${text}`);
-    return;
-  }
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({ from: await getSetting("emailFrom"), to, subject, text, html }),
-  });
-  if (!res.ok) throw new Error(`Resend responded ${res.status}`);
 }
 
 export function siteUrl(): string {

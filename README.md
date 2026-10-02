@@ -26,7 +26,12 @@ npm run dev     # http://localhost:3002
 - Sign-in, codes and PINs are rate limited; five wrong PINs lock PIN use for 30 minutes.
 - Every staff action and security change is written to the audit log (Console → Audit log).
 
-Without `TERMII_API_KEY` / `RESEND_API_KEY`, codes and invitation emails are printed to the server log, and in development the code is shown on the verification screen.
+One-time codes (new accounts, password resets) go by **email** by default; change it in Console → Settings → Email (Email, SMS or both). Without working email or SMS, codes are printed to the server log, and in development the code is shown on the verification screen. In production, if email isn't set up, codes also go by SMS.
+
+## Email
+
+Console → Settings → **Email**: send with Resend, your own mail server (SMTP) or log only; sender name/address and reply-to; send a test; recent emails (open any to see exactly what was sent; codes are masked).
+Console → Settings → **Email templates**: edit the subject and Markdown body of every automatic email with a live preview, send a test, restore the original, and switch non-security emails off. Templates are defined in `src/lib/email-templates.ts`; edits are stored in the database.
 
 **Local demo accounts** (created by the seed in development only):
 

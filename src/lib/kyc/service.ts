@@ -5,7 +5,7 @@ import { getDb } from "@/db";
 import { kycDocuments, kycProfiles, kycSubmissions, users, type KycChecks, type KycDocumentKind, type KycProfile, type KycStatus, type KycSubmission } from "@/db/schema";
 import { logAudit } from "@/lib/audit";
 import type { CurrentUser } from "@/lib/auth";
-import { notifyCustomer, notifyStaff } from "@/lib/notifications";
+import { appUrl, notifyCustomer, notifyStaff } from "@/lib/notifications";
 import { blockedFor, recordFailure } from "@/lib/rate-limit";
 import { encryptSecret } from "@/lib/secrets";
 import { identityProvider, kycThresholds } from ".";
@@ -246,8 +246,8 @@ export async function decideSubmission(staff: CurrentUser, submissionId: number,
     target: { type: "kyc_submission", id: sub.id },
   });
   await notifyCustomer(customer.id, status === "approved"
-    ? { category: "kyc", title: `Tier ${sub.tier} verification approved`, body: `Your new limits are active now.`, href: "/dashboard/verify", sms: `your Tier ${sub.tier} verification is approved. Your new limits are active now.`, email: true }
-    : { category: "kyc", title: `We couldn't approve your Tier ${sub.tier} verification`, body: reason.trim(), href: "/dashboard/verify", sms: `we couldn't approve your Tier ${sub.tier} verification. Open the app to see why and try again.`, email: true });
+    ? { category: "kyc", title: `Tier ${sub.tier} verification approved`, body: `Your new limits are active now.`, href: "/dashboard/verify", sms: `your Tier ${sub.tier} verification is approved. Your new limits are active now.`, email: { template: "kyc_approved", vars: { tier: sub.tier, verifyUrl: appUrl("/dashboard/verify") } } }
+    : { category: "kyc", title: `We couldn't approve your Tier ${sub.tier} verification`, body: reason.trim(), href: "/dashboard/verify", sms: `we couldn't approve your Tier ${sub.tier} verification. Open the app to see why and try again.`, email: { template: "kyc_rejected", vars: { tier: sub.tier, reason: reason.trim(), verifyUrl: appUrl("/dashboard/verify") } } });
   return { ok: true };
 }
 
