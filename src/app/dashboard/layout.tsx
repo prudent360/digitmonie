@@ -1,8 +1,9 @@
 import { unreadCount } from "@/lib/notifications";
 import { getLogos } from "@/lib/branding";
+import { SessionWatch } from "@/components/app/session-watch";
 import { AppShell, type NavSection } from "@/components/app/app-shell";
 import { CardIcon, HomeIcon, IdCardIcon, LandmarkIcon, PiggyIcon, ReceiptIcon, SettingsIcon, TrendUpIcon, WalletIcon } from "@/components/icons";
-import { fullName, requireCustomer } from "@/lib/auth";
+import { fullName, requireCustomer, sessionTiming } from "@/lib/auth";
 
 const SECTIONS: NavSection[] = [
   { items: [
@@ -24,6 +25,7 @@ const SECTIONS: NavSection[] = [
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await requireCustomer();
+  const timing = await sessionTiming();
   return (
     <AppShell logos={await getLogos()} unread={await unreadCount(user.id)} variant="customer" sections={SECTIONS} user={{ name: fullName(user), email: user.email, roleLabel: `Personal · Tier ${user.kycTier}` }}>
       {user.status !== "active" && (
@@ -32,6 +34,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </p>
       )}
       {children}
+      {timing && <SessionWatch initial={timing} />}
     </AppShell>
   );
 }

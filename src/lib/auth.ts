@@ -7,9 +7,10 @@ import { getDb } from "@/db";
 import { roles, users, type Role, type User, type UserKind } from "@/db/schema";
 import { ADMIN_ROLE, type Permission } from "./permissions";
 import { issueOtp } from "./otp";
+import { getSetting } from "./settings";
 import {
-  PENDING_COOKIE, PENDING_TTL_SECONDS, SESSION_COOKIE, SESSION_TTL_SECONDS,
-  signPending, signSession, verifyPendingToken, verifySessionToken, type PendingStep,
+  DEFAULT_IDLE_MINUTES, PENDING_COOKIE, PENDING_TTL_SECONDS, SESSION_COOKIE, hardExpiry,
+  signPending, signSession, verifyPendingToken, verifySessionToken, type PendingStep, type SessionPayload,
 } from "./session-token";
 
 export type CurrentUser = User & { role: Role };
@@ -64,12 +65,55 @@ export async function requirePermission(permission: Permission): Promise<Current
   return user;
 }
 
+/** Where the browser should go after signing in again: the page they were on, if it's one of ours. */
+const NEXT_COOKIE = "dm_next";
+
+async function idleSeconds(kind: UserKind): Promise<number> {
+  const minutes = Number(await getSetting<number>(kind === "staff" ? "staffIdleMinutes" : "customerIdleMinutes"));
+  return Math.round((Number.isFinite(minutes) && minutes >= 5 ? minutes : DEFAULT_IDLE_MINUTES[kind]) * 60);
+}
+
+/** Writes a session cookie that stops working after the idle limit (or the hard limit, if sooner). */
+async function writeSession(payload: SessionPayload) {
+  const { token, exp } = await signSession(payload, await idleSeconds(payload.kind));
+  // The browser keeps the cookie until the hard limit; the token inside enforces the idle limit.
+  const maxAge = Math.max(0, hardExpiry(payload) - Math.floor(Date.now() / 1000));
+  (await cookies()).set(SESSION_COOKIE, token, { ...cookieBase, maxAge });
+  return { expiresAt: exp, hardExpiresAt: hardExpiry(payload) };
+}
+
 async function createSession(user: Pick<CurrentUser, "id" | "sessionVersion" | "role">) {
-  const kind: UserKind = user.role.kind;
-  const token = await signSession({ uid: user.id, kind, v: user.sessionVersion });
+  await writeSession({ uid: user.id, kind: user.role.kind, v: user.sessionVersion, st: Math.floor(Date.now() / 1000) });
+  (await cookies()).delete(PENDING_COOKIE);
+}
+
+export type SessionTiming = { /** Epoch seconds. */ expiresAt: number; hardExpiresAt: number };
+
+/** When the current session ends if the user does nothing more, without extending it. */
+export async function sessionTiming(): Promise<SessionTiming | null> {
+  const session = await verifySessionToken((await cookies()).get(SESSION_COOKIE)?.value);
+  return session ? { expiresAt: session.exp, hardExpiresAt: hardExpiry(session) } : null;
+}
+
+/** The user is active: restart the idle clock (never past the hard limit). Null if the session has ended. */
+export async function extendSession(): Promise<SessionTiming | null> {
+  const session = await verifySessionToken((await cookies()).get(SESSION_COOKIE)?.value);
+  if (!session || !(await getCurrentUser())) return null;
+  return writeSession({ uid: session.uid, kind: session.kind, v: session.v, st: session.st });
+}
+
+/** A path inside the signed-in app, or null. Rejects anything that could leave the site. */
+export function safeNextPath(value: unknown): string | null {
+  if (typeof value !== "string" || !value.startsWith("/") || value.startsWith("//") || value.includes("\\")) return null;
+  return /^\/(dashboard|console)(\/|\?|$)/.test(value) ? value : null;
+}
+
+/** Remembers where to return after the sign-in steps (password, codes, 2FA) are done. */
+export async function rememberNext(value: unknown) {
+  const next = safeNextPath(value);
   const jar = await cookies();
-  jar.set(SESSION_COOKIE, token, { ...cookieBase, maxAge: SESSION_TTL_SECONDS[kind] });
-  jar.delete(PENDING_COOKIE);
+  if (next) jar.set(NEXT_COOKIE, next, { ...cookieBase, maxAge: PENDING_TTL_SECONDS });
+  else jar.delete(NEXT_COOKIE);
 }
 
 export async function destroySession() {
@@ -123,5 +167,10 @@ export async function continueSignIn(user: CurrentUser): Promise<string> {
 export async function finishSignIn(user: CurrentUser): Promise<string> {
   await createSession(user);
   await (await getDb()).update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, user.id));
-  return homeFor(user);
+  const jar = await cookies();
+  const next = safeNextPath(jar.get(NEXT_COOKIE)?.value);
+  jar.delete(NEXT_COOKIE);
+  const home = homeFor(user);
+  // Only back to the same area (staff to the console, customers to the dashboard), and not past PIN setup.
+  return next && home !== "/onboarding/pin" && next.startsWith(home) ? next : home;
 }

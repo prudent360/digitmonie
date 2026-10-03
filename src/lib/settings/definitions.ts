@@ -38,6 +38,8 @@ export const SECTIONS: Section[] = [
       { key: "fccpcLicence", label: "FCCPC licence / registration number", type: "text", default: "", help: "Shown to customers in loan terms." },
       { key: "pauseLoans", label: "Pause new loan applications", type: "boolean", default: false, help: "Existing loans and repayments carry on as normal." },
       { key: "pauseSignups", label: "Pause new sign-ups", type: "boolean", default: false },
+      { key: "customerIdleMinutes", label: "Sign customers out after this many idle minutes", type: "number", default: 15, min: 5, max: 120, help: "They get a one-minute warning first. Customers are always signed out 12 hours after signing in." },
+      { key: "staffIdleMinutes", label: "Sign staff out after this many idle minutes", type: "number", default: 30, min: 5, max: 240, help: "Staff are always signed out 8 hours after signing in." },
     ],
   },
   {

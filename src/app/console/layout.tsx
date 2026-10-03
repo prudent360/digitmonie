@@ -1,8 +1,9 @@
 import { unreadCount } from "@/lib/notifications";
 import { getLogos } from "@/lib/branding";
+import { SessionWatch } from "@/components/app/session-watch";
 import { AppShell, type NavItem } from "@/components/app/app-shell";
 import { AlertIcon, ChartIcon, CheckIcon, ClockIcon, SettingsIcon, IdCardIcon, LandmarkIcon, ReceiptIcon, TrendUpIcon, UserCogIcon, UsersIcon } from "@/components/icons";
-import { can, fullName, requirePermission } from "@/lib/auth";
+import { can, fullName, requirePermission, sessionTiming } from "@/lib/auth";
 import { pendingKycCount } from "@/lib/kyc/queries";
 import { loanQueueCounts } from "@/lib/loans/queries";
 import type { Permission } from "@/lib/permissions";
@@ -24,6 +25,7 @@ const ITEMS: (NavItem & { permission: Permission; group: "Overview" | "Operation
 
 export default async function ConsoleLayout({ children }: { children: React.ReactNode }) {
   const user = await requirePermission("console.access");
+  const timing = await sessionTiming();
   const kycWaiting = can(user, "kyc.review") ? await pendingKycCount() : 0;
   const loanCounts = can(user, "loans.review") || can(user, "loans.collect") ? await loanQueueCounts() : null;
   const loansWaiting = loanCounts ? loanCounts.review + (can(user, "loans.approve") ? loanCounts.approval + loanCounts.payout : 0) : 0;
@@ -40,6 +42,7 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
   return (
     <AppShell logos={await getLogos()} unread={await unreadCount(user.id)} variant="console" sections={sections} user={{ name: fullName(user), email: user.email, roleLabel: user.role.name }}>
       {children}
+      {timing && <SessionWatch initial={timing} />}
     </AppShell>
   );
 }

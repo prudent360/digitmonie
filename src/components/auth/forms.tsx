@@ -8,11 +8,12 @@ import { CodeInput, FormAlert, SubmitButton } from "./form-bits";
 
 type Action = (state: FormState, fd: FormData) => Promise<FormState>;
 
-export function LoginForm({ action }: { action: Action }) {
+export function LoginForm({ action, next }: { action: Action; next?: string | null }) {
   const [state, formAction] = useActionState(action, undefined);
   return (
     <form action={formAction} className="space-y-5">
       <FormAlert state={state} />
+      {next && <input type="hidden" name="next" value={next} />}
       <Field label="Phone number or email">
         <input className={inputClass} name="identifier" defaultValue={state?.fields?.identifier} placeholder="0803 000 0000 or you@example.com" autoComplete="username" required autoFocus />
       </Field>

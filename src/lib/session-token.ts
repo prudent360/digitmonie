@@ -6,11 +6,15 @@ export const SESSION_COOKIE = "dm_session";
 /** Carries a half-finished sign-in (phone verification, 2FA, password reset) between steps. */
 export const PENDING_COOKIE = "dm_pending";
 
-/** Fintech sessions are short: staff 8 hours, customers 12. */
+/** The hard limit on one sign-in, however active the user is: staff 8 hours, customers 12. */
 export const SESSION_TTL_SECONDS: Record<UserKind, number> = { staff: 8 * 60 * 60, customer: 12 * 60 * 60 };
+/** Idle limits when nothing is saved in Settings. */
+export const DEFAULT_IDLE_MINUTES: Record<UserKind, number> = { staff: 30, customer: 15 };
 export const PENDING_TTL_SECONDS = 15 * 60;
 
-export type SessionPayload = { uid: number; kind: UserKind; v: number };
+/** `st` is when the user signed in (epoch seconds); the token itself expires after the idle limit. */
+export type SessionPayload = { uid: number; kind: UserKind; v: number; st: number };
+export type SessionInfo = SessionPayload & { /** Epoch seconds when this token stops working. */ exp: number };
 export type PendingStep = "verify_contact" | "two_factor" | "two_factor_setup" | "reset_password";
 export type PendingPayload = { uid: number; step: PendingStep };
 
@@ -27,9 +31,14 @@ function secretKey(): Uint8Array {
   return new TextEncoder().encode(process.env.SESSION_SECRET!.trim());
 }
 
-async function sign(payload: Record<string, unknown>, ttlSeconds: number, audience: string) {
-  return new SignJWT(payload).setProtectedHeader({ alg: "HS256" }).setAudience(audience).setIssuedAt().setExpirationTime(`${ttlSeconds}s`).sign(secretKey());
+async function sign(payload: Record<string, unknown>, expiresAt: number, audience: string) {
+  return new SignJWT(payload).setProtectedHeader({ alg: "HS256" }).setAudience(audience).setIssuedAt().setExpirationTime(expiresAt).sign(secretKey());
 }
+
+const nowSeconds = () => Math.floor(Date.now() / 1000);
+
+/** When a session must end, whatever happens: sign-in time plus the hard limit. */
+export const hardExpiry = (p: Pick<SessionPayload, "kind" | "st">) => p.st + SESSION_TTL_SECONDS[p.kind];
 
 async function verify(token: string | undefined, audience: string) {
   if (!token) return null;
@@ -40,13 +49,20 @@ async function verify(token: string | undefined, audience: string) {
   }
 }
 
-export const signSession = (p: SessionPayload) => sign(p, SESSION_TTL_SECONDS[p.kind], "session");
-export const signPending = (p: PendingPayload) => sign(p, PENDING_TTL_SECONDS, "pending");
+/** A session token that lasts `idleSeconds` from now, but never past the hard limit. Returns the token and its expiry. */
+export async function signSession(p: SessionPayload, idleSeconds: number): Promise<{ token: string; exp: number }> {
+  const exp = Math.min(nowSeconds() + idleSeconds, hardExpiry(p));
+  return { token: await sign(p, exp, "session"), exp };
+}
+export const signPending = (p: PendingPayload) => sign(p, nowSeconds() + PENDING_TTL_SECONDS, "pending");
 
-export async function verifySessionToken(token: string | undefined): Promise<SessionPayload | null> {
+export async function verifySessionToken(token: string | undefined): Promise<SessionInfo | null> {
   const p = await verify(token, "session");
-  if (!p || typeof p.uid !== "number" || typeof p.v !== "number" || (p.kind !== "staff" && p.kind !== "customer")) return null;
-  return { uid: p.uid, kind: p.kind, v: p.v };
+  if (!p || typeof p.uid !== "number" || typeof p.v !== "number" || typeof p.exp !== "number" || (p.kind !== "staff" && p.kind !== "customer")) return null;
+  // Tokens from before idle timeouts carry no `st`; their issue time stands in for it.
+  const st = typeof p.st === "number" ? p.st : typeof p.iat === "number" ? p.iat : 0;
+  if (hardExpiry({ kind: p.kind, st }) <= nowSeconds()) return null;
+  return { uid: p.uid, kind: p.kind, v: p.v, st, exp: p.exp };
 }
 
 export async function verifyPendingToken(token: string | undefined): Promise<PendingPayload | null> {

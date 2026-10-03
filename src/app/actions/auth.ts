@@ -8,7 +8,7 @@ import { getDb } from "@/db";
 import { users } from "@/db/schema";
 import { logAudit } from "@/lib/audit";
 import {
-  clearPending, continueSignIn, destroySession, finishSignIn, fullName, getCurrentUser, getPending, loadUser, setPending, type CurrentUser,
+  clearPending, continueSignIn, destroySession, finishSignIn, fullName, getCurrentUser, getPending, loadUser, rememberNext, setPending, type CurrentUser,
 } from "@/lib/auth";
 import { encryptSecret, decryptSecret } from "@/lib/secrets";
 import { issueOtp, verifyOtp } from "@/lib/otp";
@@ -68,6 +68,7 @@ export async function login(_: FormState, fd: FormData): Promise<FormState> {
     await logAudit({ actorId: user.id, action: "auth.password_ok", summary: "entered the correct password", target: { type: "user", id: user.id } });
   }
   await prepareTwoFactorSetup(user);
+  await rememberNext(fd.get("next"));
   redirect(await continueSignIn(user));
 }
 
