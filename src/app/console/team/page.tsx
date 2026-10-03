@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { asc, count, eq } from "drizzle-orm";
-import { changeStaffRole, createRole, deleteRole, inviteStaff, resendInvite, resetStaffTwoFactor, saveRolePermissions, setStaffActive } from "@/app/actions/team";
-import { CreateRoleForm, InviteForm, PermissionMatrix, RoleSelect, RowAction } from "@/components/app/team-forms";
+import { cancelInvite, changeStaffRole, createRole, deleteRole, inviteStaff, resendInvite, resetStaffTwoFactor, saveRolePermissions, setStaffActive, updateStaffDetails } from "@/app/actions/team";
+import { CreateRoleForm, EditStaffForm, InviteForm, PermissionMatrix, RoleSelect, RowAction } from "@/components/app/team-forms";
 import { Avatar, Badge, Card, CardHeader, PageHeader, Table } from "@/components/ui";
 import { getDb } from "@/db";
 import { roles, users } from "@/db/schema";
-import { fullName, requirePermission } from "@/lib/auth";
+import { fullName, requirePermission, staffTwoFactorRequired } from "@/lib/auth";
 import { formatDate } from "@/lib/format";
 import { ADMIN_ROLE, PERMISSION_GROUPS } from "@/lib/permissions";
 
@@ -19,6 +19,7 @@ const STATUS = {
 
 export default async function TeamPage() {
   const me = await requirePermission("team.manage");
+  const twoFactor = await staffTwoFactorRequired();
   const db = await getDb();
 
   const staffRoles = await db.select().from(roles).where(eq(roles.kind, "staff")).orderBy(asc(roles.createdAt));
@@ -55,14 +56,16 @@ export default async function TeamPage() {
                       {self || u.status === "closed" ? <span className="font-semibold text-ink">{roleName}</span> : <RoleSelect action={changeStaffRole} userId={u.id} current={u.roleKey} roles={roleOptions} />}
                     </td>
                     <td className="px-5 py-3.5"><Badge tone={status.tone} dot>{status.label}</Badge></td>
-                    <td className="px-5 py-3.5">{u.totpEnabledAt ? <Badge tone="success">On</Badge> : <Badge tone="neutral">Not set</Badge>}</td>
+                    <td className="px-5 py-3.5">{!twoFactor ? <span className="rounded-[7px] bg-warning-soft px-2 py-0.5 text-xs font-semibold text-warning">Off for all staff</span> : u.totpEnabledAt ? <Badge tone="success">On</Badge> : <Badge tone="neutral">Not set</Badge>}</td>
                     <td className="whitespace-nowrap px-5 py-3.5 text-body">{u.lastLoginAt ? formatDate(u.lastLoginAt.toISOString(), { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "Never"}</td>
                     <td className="px-5 py-3.5">
                       {!self && (
                         <div className="flex flex-col items-end gap-2">
+                          {u.status !== "closed" && <EditStaffForm action={updateStaffDetails} userId={u.id} initial={{ firstName: u.firstName, lastName: u.lastName, email: u.email }} />}
                           {u.status === "pending" && <RowAction action={resendInvite} fields={{ userId: String(u.id) }} label="Resend invite" />}
+                          {u.status === "pending" && !u.lastLoginAt && <RowAction action={cancelInvite} fields={{ userId: String(u.id) }} label="Cancel invite" tone="danger" confirm={`Cancel ${fullName(u)}'s invitation? Their invite link will stop working.`} />}
                           {u.status === "active" && u.totpEnabledAt && <RowAction action={resetStaffTwoFactor} fields={{ userId: String(u.id) }} label="Reset 2FA" confirm={`Reset two-factor sign-in for ${fullName(u)}? They'll be signed out and must set it up again.`} />}
-                          {u.status === "closed"
+                          {u.status === "pending" ? null : u.status === "closed"
                             ? <RowAction action={setStaffActive} fields={{ userId: String(u.id), active: "true" }} label="Reactivate" />
                             : <RowAction action={setStaffActive} fields={{ userId: String(u.id), active: "false" }} label="Deactivate" tone="danger" confirm={`Remove ${fullName(u)}'s access? They'll be signed out immediately.`} />}
                         </div>
@@ -78,7 +81,7 @@ export default async function TeamPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="p-5">
           <h2 className="text-[15px] font-bold text-ink">Invite a team member</h2>
-          <p className="mt-1 text-xs text-muted">They&apos;ll get an email to set a password, then set up two-factor sign-in.</p>
+          <p className="mt-1 text-xs text-muted">They&apos;ll get an email to set a password{twoFactor ? ", then set up two-factor sign-in" : ""}.</p>
           <div className="mt-5"><InviteForm action={inviteStaff} roles={roleOptions} /></div>
         </Card>
         <Card className="p-5">

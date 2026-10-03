@@ -113,6 +113,45 @@ export async function setStaffActive(_: TeamState, fd: FormData): Promise<TeamSt
   return { notice: activate ? "Access restored." : "Access removed and signed out." };
 }
 
+const detailsSchema = z.object({
+  firstName: z.string().trim().min(2, "Enter their first name.").max(60),
+  lastName: z.string().trim().min(2, "Enter their last name.").max(60),
+  email: z.string().trim().toLowerCase().email("Enter a valid email address."),
+});
+
+export async function updateStaffDetails(_: TeamState, fd: FormData): Promise<TeamState> {
+  const me = await requirePermission("team.manage");
+  const target = await staffTarget(Number(fd.get("userId")), me);
+  if (typeof target === "string") return { error: target };
+  const parsed = detailsSchema.safeParse({ firstName: fd.get("firstName") ?? "", lastName: fd.get("lastName") ?? "", email: fd.get("email") ?? "" });
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  const { firstName, lastName, email } = parsed.data;
+  const changes: string[] = [];
+  if (firstName !== target.firstName || lastName !== target.lastName) changes.push(`name to ${firstName} ${lastName}`);
+  if (email !== target.email) {
+    const [taken] = await (await getDb()).select({ id: users.id }).from(users).where(and(eq(sql`lower(${users.email})`, email), ne(users.id, target.id)));
+    if (taken) return { error: "Someone already uses that email." };
+    changes.push(`email from ${target.email} to ${email}`);
+  }
+  if (!changes.length) return { error: "Nothing changed." };
+  await (await getDb()).update(users).set({ firstName, lastName, email }).where(eq(users.id, target.id));
+  await logAudit({ actorId: me.id, action: "staff.details_changed", summary: `changed ${fullName(target)}'s ${changes.join(" and ")}`, target: { type: "user", id: target.id } });
+  revalidatePath(PATH);
+  return { notice: "Details updated." };
+}
+
+/** Deletes an invitation that was never accepted. Anyone who has signed in is deactivated instead, so the audit trail keeps their name. */
+export async function cancelInvite(_: TeamState, fd: FormData): Promise<TeamState> {
+  const me = await requirePermission("team.manage");
+  const target = await staffTarget(Number(fd.get("userId")), me);
+  if (typeof target === "string") return { error: target };
+  if (target.status !== "pending" || target.passwordHash || target.lastLoginAt) return { error: "They've already joined. Deactivate them instead, so their actions stay linked to their name." };
+  await (await getDb()).delete(users).where(eq(users.id, target.id));
+  await logAudit({ actorId: me.id, action: "staff.invite_cancelled", summary: `cancelled the invitation for ${fullName(target)} (${target.email})`, target: { type: "user", id: target.id } });
+  revalidatePath(PATH);
+  return { notice: "Invitation cancelled." };
+}
+
 export async function resetStaffTwoFactor(_: TeamState, fd: FormData): Promise<TeamState> {
   const me = await requirePermission("team.manage");
   const target = await staffTarget(Number(fd.get("userId")), me);

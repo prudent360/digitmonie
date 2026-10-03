@@ -1,6 +1,6 @@
 "use server";
 
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, viewingAs } from "@/lib/auth";
 import { listNotifications, markRead, unreadCount } from "@/lib/notifications";
 
 export type BellItem = { id: number; title: string; body: string; href: string | null; read: boolean; at: string };
@@ -19,5 +19,6 @@ export async function unreadOnly(): Promise<number> {
 
 export async function markNotificationsRead(ids: number[] | "all") {
   const user = await getCurrentUser();
-  if (user) await markRead(user.id, ids);
+  // Staff viewing the account mustn't mark the customer's messages as read.
+  if (user && !(await viewingAs())) await markRead(user.id, ids);
 }

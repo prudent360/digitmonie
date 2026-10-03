@@ -1,6 +1,6 @@
 import "server-only";
 import { eq } from "drizzle-orm";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { getDb } from "@/db";
@@ -9,8 +9,8 @@ import { ADMIN_ROLE, type Permission } from "./permissions";
 import { issueOtp } from "./otp";
 import { getSetting } from "./settings";
 import {
-  DEFAULT_IDLE_MINUTES, PENDING_COOKIE, PENDING_TTL_SECONDS, SESSION_COOKIE, hardExpiry,
-  signPending, signSession, verifyPendingToken, verifySessionToken, type PendingStep, type SessionPayload,
+  DEFAULT_IDLE_MINUTES, PENDING_COOKIE, PENDING_TTL_SECONDS, SESSION_COOKIE, SESSION_TTL_SECONDS, hardExpiry,
+  signPending, signReturn, signSession, verifyPendingToken, verifyReturnToken, verifySessionToken, type PendingStep, type SessionPayload,
 } from "./session-token";
 
 export type CurrentUser = User & { role: Role };
@@ -29,13 +29,43 @@ export async function loadUser(id: number): Promise<CurrentUser | null> {
  * The signed-in user, re-read from the database on every request so role changes,
  * suspensions and "sign out everywhere" take effect immediately.
  */
-export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
+const resolveSession = cache(async (): Promise<{ user: CurrentUser; viewer: CurrentUser | null } | null> => {
   const session = await verifySessionToken((await cookies()).get(SESSION_COOKIE)?.value);
   if (!session) return null;
   const user = await loadUser(session.uid);
   if (!user || !CAN_SIGN_IN.has(user.status) || user.sessionVersion !== session.v || user.role.kind !== session.kind) return null;
-  return user;
+  if (!session.imp) return { user, viewer: null };
+  // Viewing as a customer only lasts while the staff member still has the right to do it.
+  const viewer = await loadUser(session.imp);
+  if (!viewer || viewer.status !== "active" || viewer.role.kind !== "staff" || viewer.sessionVersion !== session.iv || !can(viewer, "users.view_as")) return null;
+  return { user, viewer };
 });
+
+export async function getCurrentUser(): Promise<CurrentUser | null> {
+  return (await resolveSession())?.user ?? null;
+}
+
+/** The staff member viewing this customer's account read-only, if that's what this session is. */
+export async function viewingAs(): Promise<CurrentUser | null> {
+  return (await resolveSession())?.viewer ?? null;
+}
+
+/** True inside a server action (a change), as opposed to rendering a page. */
+async function isServerAction(): Promise<boolean> {
+  return (await headers()).has("next-action");
+}
+
+/** Staff viewing a customer's account can look but never change anything. Sends them back to the page they were on. */
+async function blockChangesWhileViewing() {
+  if (!(await viewingAs()) || !(await isServerAction())) return;
+  const referer = (await headers()).get("referer");
+  let path = "/dashboard";
+  try {
+    const url = referer ? new URL(referer) : null;
+    if (url && url.pathname.startsWith("/dashboard")) path = url.pathname;
+  } catch { /* keep the default */ }
+  redirect(`${path}?view-only=1`);
+}
 
 export function can(user: Pick<CurrentUser, "role">, permission: Permission): boolean {
   if (user.role.kind !== "staff") return false;
@@ -48,6 +78,7 @@ export async function requireCustomer(): Promise<CurrentUser> {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   if (user.role.kind !== "customer") redirect("/console");
+  await blockChangesWhileViewing();
   return user;
 }
 
@@ -99,7 +130,36 @@ export async function sessionTiming(): Promise<SessionTiming | null> {
 export async function extendSession(): Promise<SessionTiming | null> {
   const session = await verifySessionToken((await cookies()).get(SESSION_COOKIE)?.value);
   if (!session || !(await getCurrentUser())) return null;
-  return writeSession({ uid: session.uid, kind: session.kind, v: session.v, st: session.st });
+  return writeSession({ uid: session.uid, kind: session.kind, v: session.v, st: session.st, imp: session.imp, iv: session.iv });
+}
+
+/* ---------- Viewing a customer's account (read-only) ---------- */
+
+/** Holds the staff member's own session while they view a customer's account. */
+const RETURN_COOKIE = "dm_return";
+
+/** Swaps the staff session for a read-only view of the customer's account, keeping the staff session to return to. */
+export async function startViewingAs(staff: CurrentUser, customer: CurrentUser) {
+  const jar = await cookies();
+  const own = await verifySessionToken(jar.get(SESSION_COOKIE)?.value);
+  if (!own || own.uid !== staff.id || own.imp) throw new Error("No staff session to return to.");
+  jar.set(RETURN_COOKIE, await signReturn(own), { ...cookieBase, maxAge: SESSION_TTL_SECONDS.staff });
+  await writeSession({ uid: customer.id, kind: "customer", v: customer.sessionVersion, st: Math.floor(Date.now() / 1000), imp: staff.id, iv: staff.sessionVersion });
+}
+
+/** Ends a view: restores the staff session if it's still valid. Returns the staff member, or null if they must sign in again. */
+export async function stopViewingAs(): Promise<CurrentUser | null> {
+  const jar = await cookies();
+  const session = await verifyReturnToken(jar.get(RETURN_COOKIE)?.value);
+  jar.delete(RETURN_COOKIE);
+  const staff = session ? await loadUser(session.uid) : null;
+  if (!session || !staff || staff.status !== "active" || staff.role.kind !== "staff" || staff.sessionVersion !== session.v) {
+    jar.delete(SESSION_COOKIE);
+    return null;
+  }
+  // Back to their own session, same sign-in time (so the 8-hour limit still applies), idle clock restarted.
+  await writeSession(session);
+  return staff;
 }
 
 /** A path inside the signed-in app, or null. Rejects anything that could leave the site. */
@@ -118,6 +178,7 @@ export async function rememberNext(value: unknown) {
 
 export async function destroySession() {
   (await cookies()).delete(SESSION_COOKIE);
+  (await cookies()).delete(RETURN_COOKIE);
 }
 
 /* ---------- Multi-step sign-in ---------- */
@@ -144,9 +205,15 @@ export function homeFor(user: Pick<CurrentUser, "role" | "pinHash">): string {
   return user.pinHash ? "/dashboard" : "/onboarding/pin";
 }
 
+/** Whether staff must use an authenticator code after their password (Console → Settings → Security). */
+export async function staffTwoFactorRequired(): Promise<boolean> {
+  return (await getSetting<boolean>("staffTwoFactor")) !== false;
+}
+
 /** Called after the password checks out: decides the next step and returns where to go. */
 export async function continueSignIn(user: CurrentUser): Promise<string> {
   if (user.role.kind === "staff") {
+    if (!(await staffTwoFactorRequired())) return finishSignIn(user);
     if (user.totpEnabledAt) {
       await setPending(user.id, "two_factor");
       return "/login/two-factor";

@@ -149,3 +149,21 @@ export function CreateRoleForm({ action, roles }: { action: Action; roles: RoleO
   );
 }
 
+
+/** Name and email for a team member, behind an "Edit" toggle. */
+export function EditStaffForm({ action, userId, initial }: { action: Action; userId: number; initial: { firstName: string; lastName: string; email: string } }) {
+  const [state, formAction] = useActionState(action, undefined);
+  return (
+    <details className="text-left">
+      <summary className="cursor-pointer text-sm font-semibold text-brand">Edit</summary>
+      <form action={formAction} className="mt-2 w-64 space-y-2 rounded-[7px] border border-line bg-white p-3">
+        <input type="hidden" name="userId" value={userId} />
+        <FormAlert state={state} />
+        <input name="firstName" defaultValue={initial.firstName} aria-label="First name" placeholder="First name" className={inputClass} required />
+        <input name="lastName" defaultValue={initial.lastName} aria-label="Last name" placeholder="Last name" className={inputClass} required />
+        <input name="email" type="email" defaultValue={initial.email} aria-label="Email" placeholder="Email" className={inputClass} required />
+        <SubmitButton arrow={false}>Save</SubmitButton>
+      </form>
+    </details>
+  );
+}

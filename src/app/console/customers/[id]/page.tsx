@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { forceSignOutAction, logContactAction, setStatusAction, unlockPinAction } from "@/app/actions/customers";
+import { deleteCustomerAction, forceSignOutAction, logContactAction, setStatusAction, unlockPinAction, updateDetailsAction, viewAsAction } from "@/app/actions/customers";
 import { setLimitOverride } from "@/app/actions/loans";
-import { ContactForm, StatusForm } from "@/components/app/customer-forms";
+import { ContactForm, EditDetailsForm, StatusForm } from "@/components/app/customer-forms";
 import { ActionButton, SimpleActionForm } from "@/components/app/loan-staff";
-import { AlertIcon } from "@/components/icons";
+import { AlertIcon, EyeIcon } from "@/components/icons";
 import { Avatar, Badge, Card, CardHeader, StatusBadge, Table } from "@/components/ui";
 import { logAudit } from "@/lib/audit";
 import { can, fullName, requirePermission } from "@/lib/auth";
@@ -37,6 +37,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   const limit = await creditLimit(user.id, user.kycTier);
   const pinLocked = user.pinLockedUntil && user.pinLockedUntil > new Date();
   const manage = can(staff, "users.manage");
+  const canViewAs = can(staff, "users.view_as") && user.status !== "closed";
 
   return (
     <div className="space-y-6">
@@ -50,6 +51,16 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
         <div className="flex items-center gap-2">{user.kycTier ? <Badge tone="brand">KYC Tier {user.kycTier}</Badge> : <Badge>Not verified</Badge>}<StatusBadge status={user.status} /></div>
       </div>
 
+      {canViewAs && (
+        <details className="rounded-[7px] border border-line bg-white">
+          <summary className="flex cursor-pointer items-center gap-2 px-5 py-3.5 text-sm font-semibold text-brand"><EyeIcon className="size-4" /> View as customer</summary>
+          <div className="border-t border-line p-5">
+            <p className="mb-4 text-sm text-body">See exactly what {user.firstName} sees, to help with a support question. It&apos;s <b>read-only</b>: you can&apos;t apply, pay or change anything. It ends after 30 minutes and is recorded in the audit log with your reason.</p>
+            <SimpleActionForm action={viewAsAction.bind(null, user.id)} submit="Open their account" fields={[{ name: "reason", label: "Why do you need to see it?", placeholder: "For example: ticket #123, can't find their repayment", textarea: true }]} />
+          </div>
+        </details>
+      )}
+
       {user.status !== "active" && user.statusReason && (
         <p className="flex items-start gap-2 rounded-[7px] border border-warning/30 bg-warning-soft px-4 py-3 text-sm text-warning"><AlertIcon className="mt-0.5 size-4 shrink-0" /><span><b className="capitalize">{user.status}</b>{user.statusChangedAt ? ` on ${formatDate(user.statusChangedAt.toISOString())}` : ""}: {user.statusReason}</span></p>
       )}
@@ -62,6 +73,12 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
               ["Phone verified", user.phoneVerifiedAt ? "Yes" : "No"], ["Transaction PIN", user.pinHash ? (pinLocked ? <span key="p" className="text-danger">Locked</span> : "Set") : "Not set"],
               ["Last sign-in", user.lastLoginAt ? when(user.lastLoginAt) : "Never"],
             ]} /></div>
+            {manage && (
+              <details className="mt-4 rounded-[7px] border border-line p-4">
+                <summary className="cursor-pointer text-sm font-semibold text-brand">Edit details</summary>
+                <div className="mt-3"><EditDetailsForm action={updateDetailsAction.bind(null, user.id)} nameLocked={user.kycTier > 0} initial={{ firstName: user.firstName, lastName: user.lastName, email: user.email, phone: user.phone ? formatNgPhone(user.phone) : "" }} /></div>
+              </details>
+            )}
             {manage && (
               <div className="mt-4 flex flex-wrap gap-3 border-t border-line pt-4">
                 {pinLocked && <ActionButton action={unlockPinAction.bind(null, user.id)} label="Unlock PIN" tone="secondary" />}
@@ -99,6 +116,20 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
               <h2 className="text-[15px] font-bold text-ink">Account status</h2>
               <p className="mt-1 text-xs text-muted">Currently <b className="capitalize">{user.status}</b>. Every change is recorded in the audit log.</p>
               <div className="mt-4"><StatusForm action={setStatusAction.bind(null, user.id)} current={user.status} /></div>
+            </Card>
+          )}
+
+          {manage && (
+            <Card className="border-danger/30 p-5">
+              <h2 className="text-[15px] font-bold text-danger">Delete account</h2>
+              {loans.length ? (
+                <p className="mt-1 text-sm text-body">{user.firstName} has loan history, which we&apos;re required to keep, so this account can&apos;t be deleted. Close it instead under Account status.</p>
+              ) : (
+                <>
+                  <p className="mt-1 text-sm text-body">Permanently removes this customer, their identity checks and their notifications. Use it for test sign-ups or duplicates. <b>This can&apos;t be undone.</b></p>
+                  <div className="mt-4"><SimpleActionForm action={deleteCustomerAction.bind(null, user.id)} tone="danger" submit="Delete permanently" confirm={`Permanently delete ${fullName(user)}? This can't be undone.`} fields={[{ name: "confirmEmail", label: `Type ${user.email} to confirm` }]} /></div>
+                </>
+              )}
             </Card>
           )}
         </div>

@@ -5,6 +5,7 @@ export const PERMISSIONS = [
   "console.access",
   "users.view",
   "users.manage",
+  "users.view_as",
   "kyc.review",
   "loans.review",
   "loans.approve",
@@ -28,7 +29,8 @@ export const PERMISSION_GROUPS: { title: string; items: { key: Permission; label
   ] },
   { title: "Customers", items: [
     { key: "users.view", label: "View customers", hint: "Profiles, balances and history" },
-    { key: "users.manage", label: "Manage customers", hint: "Freeze, restrict or edit accounts" },
+    { key: "users.manage", label: "Manage customers", hint: "Freeze, restrict, edit or delete accounts" },
+    { key: "users.view_as", label: "View as customer", hint: "Open a customer's dashboard read-only, to help with support" },
     { key: "kyc.review", label: "Review KYC", hint: "Approve or reject identity documents" },
   ] },
   { title: "Lending", items: [

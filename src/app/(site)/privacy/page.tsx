@@ -2,11 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PolicyPage, type PolicySection } from "@/components/site/policy-page";
 import { LEGAL_UPDATED, legalDetails } from "@/lib/legal";
+import { staffTwoFactorRequired } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Privacy Policy", description: "How DigitMonie collects, uses, shares and protects your personal information." };
 
 export default async function PrivacyPage() {
   const c = await legalDetails();
+  const twoFactor = await staffTwoFactorRequired();
   const sections: PolicySection[] = [
     {
       id: "who-we-are", title: "Who we are",
@@ -84,7 +86,7 @@ export default async function PrivacyPage() {
     },
     {
       id: "security", title: "How we protect it",
-      content: <p>Your BVN and NIN are encrypted, and identity documents are stored privately where only authorised staff can open them. Every staff view is recorded. Staff accounts need two-factor sign-in, access is limited by role, and every staff action is written to an audit log. Data is encrypted in transit. No system is perfectly secure, but we will tell you and the NDPC without undue delay if a breach is likely to put you at risk.</p>,
+      content: <p>Your BVN and NIN are encrypted, and identity documents are stored privately where only authorised staff can open them. Every staff view is recorded. {twoFactor ? "Staff accounts need two-factor sign-in, access" : "Staff access"} is limited by role, and every staff action is written to an audit log. Data is encrypted in transit. No system is perfectly secure, but we will tell you and the NDPC without undue delay if a breach is likely to put you at risk.</p>,
     },
     {
       id: "your-rights", title: "Your rights",

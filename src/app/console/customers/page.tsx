@@ -14,9 +14,9 @@ export const metadata: Metadata = { title: "Customers" };
 
 const daysAgo = (days: number) => new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
-export default async function CustomersPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+export default async function CustomersPage({ searchParams }: { searchParams: Promise<{ q?: string; deleted?: string }> }) {
   await requirePermission("users.view");
-  const { q = "" } = await searchParams;
+  const { q = "", deleted } = await searchParams;
   const query = q.trim().slice(0, 80);
   const db = await getDb();
 
@@ -35,6 +35,7 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
   return (
     <div className="space-y-6">
       <PageHeader title="Customers" subtitle="Everyone with a DigitMonie account." />
+      {deleted && <p role="status" className="rounded-[7px] bg-success-soft px-4 py-3 text-sm font-medium text-success">The account was deleted. A record of who deleted it stays in the audit log.</p>}
       <div className="grid gap-4 sm:grid-cols-4">
         <StatTile label="Total customers" value={formatNumber(total)} />
         <StatTile label="BVN verified" value={total ? `${Math.round((verified / total) * 100)}%` : "—"} hint={`${formatNumber(verified)} of ${formatNumber(total)}`} />

@@ -60,3 +60,22 @@ export function StatusForm({ action, current }: { action: Action; current: strin
     </form>
   );
 }
+
+export function EditDetailsForm({ action, initial, nameLocked }: { action: Action; initial: { firstName: string; lastName: string; email: string; phone: string }; nameLocked: boolean }) {
+  const [state, formAction] = useActionState(action, undefined);
+  return (
+    <form action={formAction} className="space-y-3">
+      <FormAlert state={state} />
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Field label="First name"><input name="firstName" defaultValue={initial.firstName} readOnly={nameLocked} className={`${inputClass} ${nameLocked ? "bg-canvas text-muted" : ""}`} required /></Field>
+        <Field label="Last name"><input name="lastName" defaultValue={initial.lastName} readOnly={nameLocked} className={`${inputClass} ${nameLocked ? "bg-canvas text-muted" : ""}`} required /></Field>
+      </div>
+      {nameLocked && <p className="text-xs text-muted">Their name is verified against their BVN, so it can&apos;t be changed here.</p>}
+      <Field label="Email"><input name="email" type="email" defaultValue={initial.email} className={inputClass} required /></Field>
+      <Field label="Phone"><input name="phone" inputMode="tel" defaultValue={initial.phone} placeholder="0803 123 4567" className={inputClass} /></Field>
+      <p className="text-xs text-muted">A changed email or phone number must be confirmed again by the customer. They&apos;re told their details changed.</p>
+      <Field label="Reason (kept on their file)"><textarea name="reason" rows={2} required minLength={5} className={inputClass} placeholder="For example: customer called from their old number, ticket #123" /></Field>
+      <SubmitButton arrow={false}>Save details</SubmitButton>
+    </form>
+  );
+}

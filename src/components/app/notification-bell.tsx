@@ -23,7 +23,8 @@ export function NotificationBell({ initialUnread, allHref }: { initialUnread: nu
   const box = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const t = setInterval(() => start(async () => setUnread(await unreadOnly())), 60_000);
+    // A failed check (offline, or the session just ended) is ignored; the session watcher handles sign-out.
+    const t = setInterval(() => start(async () => { try { setUnread(await unreadOnly()); } catch { /* try again next minute */ } }), 60_000);
     return () => clearInterval(t);
   }, []);
 
@@ -39,7 +40,7 @@ export function NotificationBell({ initialUnread, allHref }: { initialUnread: nu
   function toggle() {
     const next = !open;
     setOpen(next);
-    if (next) start(async () => { const d = await bellData(); setItems(d.items); setUnread(d.unread); });
+    if (next) start(async () => { try { const d = await bellData(); setItems(d.items); setUnread(d.unread); } catch { setItems([]); } });
   }
 
   function readAll() {

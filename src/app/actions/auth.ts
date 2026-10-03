@@ -8,7 +8,7 @@ import { getDb } from "@/db";
 import { users } from "@/db/schema";
 import { logAudit } from "@/lib/audit";
 import {
-  clearPending, continueSignIn, destroySession, finishSignIn, fullName, getCurrentUser, getPending, loadUser, rememberNext, setPending, type CurrentUser,
+  clearPending, continueSignIn, destroySession, finishSignIn, fullName, getCurrentUser, getPending, loadUser, rememberNext, setPending, staffTwoFactorRequired, viewingAs, type CurrentUser,
 } from "@/lib/auth";
 import { encryptSecret, decryptSecret } from "@/lib/secrets";
 import { issueOtp, verifyOtp } from "@/lib/otp";
@@ -38,7 +38,7 @@ async function findByIdentifier(identifier: string): Promise<CurrentUser | null>
 
 /** Staff need an authenticator secret ready before the setup screen shows its QR code. */
 async function prepareTwoFactorSetup(user: CurrentUser) {
-  if (user.role.kind === "staff" && !user.totpEnabledAt) {
+  if (user.role.kind === "staff" && !user.totpEnabledAt && (await staffTwoFactorRequired())) {
     await (await getDb()).update(users).set({ totpSecret: encryptSecret(generateTotpSecret()) }).where(eq(users.id, user.id));
   }
 }
@@ -150,7 +150,7 @@ export async function resendCode(): Promise<FormState> {
 export async function createPin(_: FormState, fd: FormData): Promise<FormState> {
   const user = await getCurrentUser();
   if (!user || user.role.kind !== "customer") redirect("/login");
-  if (user.pinHash) redirect("/dashboard");
+  if (user.pinHash || (await viewingAs())) redirect("/dashboard");
   const pin = str(fd, "pin");
   const problem = pinProblem(pin);
   if (problem) return { error: problem };

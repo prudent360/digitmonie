@@ -68,7 +68,7 @@ If you didn't ask for this, ignore this email and your password stays the same. 
 
 [[Set your password|{{inviteUrl}}]]
 
-The link works once and expires in 7 days. After setting your password you'll set up two-factor sign-in with an authenticator app.`,
+The link works once and expires in 7 days. Have your phone ready: you may be asked to set up two-factor sign-in with an authenticator app.`,
   },
   welcome: {
     name: "Welcome",

@@ -4,6 +4,9 @@ import { SESSION_COOKIE, verifySessionToken } from "@/lib/session-token";
 // Optimistic check only: bounce visitors without a valid session for the area. Pages and
 // server actions still load the user from the database and check permissions (lib/auth.ts).
 export async function proxy(request: NextRequest) {
+  // Only page loads are redirected. Server actions (POSTs, e.g. the notification bell's background
+  // check) can't follow a redirect to a page: they'd crash the screen. They check the session themselves.
+  if (request.method !== "GET" && request.method !== "HEAD") return NextResponse.next();
   const cookie = request.cookies.get(SESSION_COOKIE)?.value;
   const session = await verifySessionToken(cookie);
   const { pathname, search } = request.nextUrl;

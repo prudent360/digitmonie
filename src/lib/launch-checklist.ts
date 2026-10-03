@@ -14,7 +14,7 @@ export type Check = { label: string; ok: boolean; /** What to do when it isn't. 
 export async function launchChecklist(): Promise<Check[]> {
   const s = await getSettings(
     "flwSecretKey", "flwWebhookHash", "repaymentProvider", "paystackSecretKey", "kycProvider", "dojahEnv", "dojahAppId", "dojahSecretKey",
-    "legalName", "rcNumber", "companyAddress", "fccpcLicence", "dpoEmail",
+    "staffTwoFactor", "legalName", "rcNumber", "companyAddress", "fccpcLicence", "dpoEmail",
   );
   const str = (k: keyof typeof s) => String(s[k] ?? "").trim();
   const site = siteUrl();
@@ -25,6 +25,7 @@ export async function launchChecklist(): Promise<Check[]> {
     .filter(([, k]) => !str(k as keyof typeof s)).map(([label]) => label);
 
   return [
+    { label: "Staff two-factor sign-in", ok: s.staffTwoFactor !== false, fix: "Two-factor sign-in is off, so a stolen staff password is enough to get into the console. Turn it on before launch.", href: "/console/settings?tab=security" },
     { label: "Production database", ok: Boolean(process.env.DATABASE_URL), fix: "Set DATABASE_URL (your Neon connection string) in Vercel → Settings → Environment Variables, then redeploy." },
     { label: "Session secret", ok: !sessionSecretProblem(), fix: "Set SESSION_SECRET to a random value of at least 32 characters (openssl rand -base64 32) in Vercel, then redeploy." },
     { label: "Site address", ok: site.startsWith("https://") && !site.includes("localhost") && !site.endsWith(".vercel.app"), fix: `Set NEXT_PUBLIC_SITE_URL to https://digitmonie.com in Vercel, then redeploy. Links in emails currently use ${site}.` },
