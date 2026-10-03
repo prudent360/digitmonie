@@ -23,6 +23,14 @@ export async function sendSms(to: string, message: string): Promise<void> {
   if (!res.ok) throw new Error(`Termii responded ${res.status}`);
 }
 
+/**
+ * The public address used in links we send (invites, emails, payment callbacks).
+ * NEXT_PUBLIC_SITE_URL wins; on Vercel we fall back to the project's production domain, never localhost.
+ */
 export function siteUrl(): string {
-  return (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3002").replace(/\/$/, "");
+  const explicit = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (explicit) return explicit.replace(/\/$/, "");
+  const production = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim();
+  if (production) return `https://${production.replace(/\/$/, "")}`;
+  return "http://localhost:3002";
 }
