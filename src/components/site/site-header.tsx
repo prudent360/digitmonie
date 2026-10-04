@@ -27,7 +27,7 @@ export function SiteHeader({ logos }: { logos: Logos }) {
   const solid = scrolled || open;
 
   return (
-    <header className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${solid ? "bg-white/95 shadow-[0_8px_30px_-12px_rgba(6,31,77,.18)] backdrop-blur" : "bg-transparent"}`}>
+    <header className={`fixed inset-x-0 top-0 z-50 print:hidden transition-all duration-300 ${solid ? "bg-white/95 shadow-[0_8px_30px_-12px_rgba(6,31,77,.18)] backdrop-blur" : "bg-transparent"}`}>
       <div className="mx-auto flex h-18 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Logo inverted={!solid} logos={logos} />
 

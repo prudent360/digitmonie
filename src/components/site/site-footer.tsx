@@ -12,7 +12,7 @@ export function SiteFooter({ logos, company: c }: { logos: Logos; company: Foote
     { title: "Legal", links: LEGAL },
   ];
   return (
-    <footer className="bg-brand-950 text-white/70">
+    <footer className="bg-brand-950 text-white/70 print:hidden">
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="grid gap-12 lg:grid-cols-[1.4fr_repeat(3,1fr)]">
           <div>
