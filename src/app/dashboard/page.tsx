@@ -6,6 +6,7 @@ import { Badge, Card, CardHeader, Progress } from "@/components/ui";
 import { customerActivity } from "@/lib/activity";
 import { formatDate, formatNaira, formatNairaWhole } from "@/lib/format";
 import { requireCustomer } from "@/lib/auth";
+import { tierNames } from "@/lib/kyc";
 import { loanBalance, loanEligibility, owedOn } from "@/lib/loans/service";
 import { LOAN_STATUS_LABEL, LOAN_STATUS_TONE } from "@/lib/loans/status";
 
@@ -27,6 +28,7 @@ const ctaClass = "inline-flex items-center gap-2 rounded-[7px] bg-gold px-5 py-3
 
 export default async function DashboardHome() {
   const user = await requireCustomer();
+  const names = await tierNames();
   const [{ openLoan, limit, blocked }, activity] = await Promise.all([loanEligibility(user), customerActivity(user.id, 6)]);
   const repaying = openLoan && ["active", "defaulted"].includes(openLoan.status);
   const balance = repaying ? await loanBalance(openLoan.id) : null;
@@ -40,11 +42,21 @@ export default async function DashboardHome() {
         <p className="mt-1 text-sm text-muted">{balance ? "Here's where your loan stands today." : "Here's what you can do today."}</p>
       </div>
 
+      {openLoan?.status === "awaiting_customer" && (
+        <Link href={`/dashboard/loans/offer/${openLoan.id}`} className="flex items-center gap-4 rounded-[7px] border border-brand bg-brand-50 p-4 transition hover:border-brand-600">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-[7px] bg-brand text-white"><ArrowRightIcon /></span>
+          <div className="flex-1">
+            <p className="text-sm font-bold text-ink">A loan is waiting for you to review</p>
+            <p className="text-xs text-body">See the full cost and repayment plan, then accept or decline it.</p>
+          </div>
+        </Link>
+      )}
+
       {user.kycTier < 3 && (
         <Link href="/dashboard/verify" className="flex items-center gap-4 rounded-[7px] border border-gold/40 bg-gold-50 p-4 transition hover:border-gold">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-[7px] bg-gold text-ink"><IdCardIcon /></span>
           <div className="flex-1">
-            <p className="text-sm font-bold text-ink">{user.kycTier === 0 ? "Verify your identity to see how much you can borrow" : `Upgrade to Tier ${user.kycTier + 1} to borrow more`}</p>
+            <p className="text-sm font-bold text-ink">{user.kycTier === 0 ? "Verify your identity to see how much you can borrow" : `Upgrade to ${names[user.kycTier + 1]} to borrow more`}</p>
             <p className="text-xs text-body">{["It takes a minute with your NIN or BVN and date of birth.", "Add a selfie.", "Add your address and a recent utility bill."][user.kycTier]} {user.kycTier} of 3 tiers done.</p>
           </div>
           <ArrowRightIcon className="size-4 text-ink" />
@@ -83,7 +95,7 @@ export default async function DashboardHome() {
               <>
                 <p className="text-sm font-medium text-white/75">You can borrow up to</p>
                 <p className="mt-2 font-display text-4xl font-extrabold tabular-nums">{limit > 0 && !blocked ? formatNairaWhole(limit / 100) : "—"}</p>
-                <p className="mt-3 max-w-md text-sm text-white/75">{blocked ?? "No collateral. You'll see the full cost before you accept, and the money goes straight to your bank account."}</p>
+                <p className="mt-3 max-w-md text-sm text-white/75">{blocked ?? "You'll see the full cost before you accept, and the money goes straight to your bank account."}</p>
                 <Link href={user.kycTier < 1 ? "/dashboard/verify" : "/dashboard/loans/apply"} className={`${ctaClass} mt-6`}>
                   {user.kycTier < 1 ? "Verify my identity" : "Apply for a loan"} <ArrowRightIcon className="size-4" />
                 </Link>

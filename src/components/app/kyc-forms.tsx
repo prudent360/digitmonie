@@ -31,7 +31,8 @@ const ID = {
 } as const;
 
 /** Tier 1: NIN or BVN (whichever Console → Settings allows) and date of birth. */
-export function Tier1Form({ action, idKinds }: { action: Action; idKinds: (keyof typeof ID)[] }) {
+/** `onBehalf` is the customer's first name when a credit officer fills this in for them. */
+export function Tier1Form({ action, idKinds, onBehalf }: { action: Action; idKinds: (keyof typeof ID)[]; onBehalf?: string }) {
   const [state, formAction] = useActionState(action, undefined);
   const f = state?.fields ?? {};
   const [kind, setKind] = useState<keyof typeof ID>(idKinds.find((k) => k === f.idKind) ?? idKinds[0]);
@@ -56,17 +57,20 @@ export function Tier1Form({ action, idKinds }: { action: Action; idKinds: (keyof
         </Field>
         <Field label="Date of birth"><input className={inputClass} type="date" name="dateOfBirth" defaultValue={f.dateOfBirth} max={new Date().toISOString().slice(0, 10)} required /></Field>
       </div>
-      <Consent bvn={kind === "bvn"} />
+      <Consent bvn={kind === "bvn"} onBehalf={onBehalf} />
       <SubmitButton>Verify {id.label}</SubmitButton>
     </form>
   );
 }
 
-function Consent({ bvn }: { bvn: boolean }) {
+function Consent({ bvn, onBehalf }: { bvn: boolean; onBehalf?: string }) {
+  const privacy = <a href="/privacy" target="_blank" rel="noopener" className="font-semibold text-brand">Privacy Policy</a>;
   return (
     <label className="flex items-start gap-3 rounded-[7px] bg-canvas p-4 text-sm text-body">
       <input type="checkbox" name="consent" required className="mt-0.5 size-4 shrink-0 accent-brand" />
-      <span>I agree that DigitMonie may check my details with NIBSS and NIMC through its verification partner to confirm my identity, as described in the <a href="/privacy" target="_blank" rel="noopener" className="font-semibold text-brand">Privacy Policy</a>.{bvn && " My BVN doesn't give DigitMonie access to my bank accounts."}</span>
+      {onBehalf
+        ? <span>{onBehalf} agrees that DigitMonie may check their details with NIBSS and NIMC through its verification partner, as described in the {privacy}. I&apos;ve explained this to them and they gave me these details themselves.</span>
+        : <span>I agree that DigitMonie may check my details with NIBSS and NIMC through its verification partner to confirm my identity, as described in the {privacy}.{bvn && " My BVN doesn't give DigitMonie access to my bank accounts."}</span>}
     </label>
   );
 }
@@ -154,14 +158,14 @@ function SelfieCapture({ value, onChange }: { value: string; onChange: (dataUrl:
 }
 
 /** `ninLast4` is set when the NIN was given at Tier 1, so only the selfie is needed. */
-export function NinSelfieForm({ action, ninLast4 }: { action: Action; ninLast4?: string | null }) {
+export function NinSelfieForm({ action, ninLast4, onBehalf }: { action: Action; ninLast4?: string | null; onBehalf?: string }) {
   const [state, formAction] = useActionState(action, undefined);
   const [selfie, setSelfie] = useState("");
   return (
     <form action={formAction} className="space-y-5">
       <FormAlert state={state} />
       {ninLast4 ? (
-        <p className="text-sm text-body">We&apos;ll match your selfie to the photo on your NIN ending {ninLast4}.</p>
+        <p className="text-sm text-body">We&apos;ll match {onBehalf ? `${onBehalf}'s` : "your"} selfie to the photo on {onBehalf ? "their" : "your"} NIN ending {ninLast4}.</p>
       ) : (
         <Field label="NIN" hint={<span className="text-xs font-normal text-muted">Dial *346#</span>}>
           <input className={`${inputClass} font-mono tracking-widest`} name="nin" defaultValue={state?.fields?.nin} inputMode="numeric" maxLength={11} pattern="\d{11}" placeholder="12345678901" required />

@@ -242,9 +242,13 @@ export async function acceptInvite(token: string, _: FormState, fd: FormData): P
   if (password !== String(fd.get("confirm") ?? "")) return { error: "The two passwords don't match." };
   if (!(await consumeInviteToken(token))) return { error: "This invitation has expired or was already used." };
 
-  await (await getDb()).update(users).set({ passwordHash: await bcrypt.hash(password, 12), status: "active", emailVerifiedAt: new Date() }).where(eq(users.id, userId));
+  const invited = (await loadUser(userId))!;
+  // Customers opened by a credit officer still confirm a code sent to their phone or email next (continueSignIn),
+  // since the officer typed those details in.
+  const customer = invited.role.kind === "customer";
+  await (await getDb()).update(users).set({ passwordHash: await bcrypt.hash(password, 12), status: "active", ...(customer ? {} : { emailVerifiedAt: new Date() }) }).where(eq(users.id, userId));
   const user = (await loadUser(userId))!;
-  await logAudit({ actorId: user.id, action: "staff.invite_accepted", summary: `accepted their invitation (${fullName(user)})`, target: { type: "user", id: user.id } });
+  await logAudit({ actorId: user.id, action: customer ? "customer.setup_completed" : "staff.invite_accepted", summary: customer ? `set up the account a credit officer opened for them (${fullName(user)})` : `accepted their invitation (${fullName(user)})`, target: { type: "user", id: user.id } });
   await prepareTwoFactorSetup(user);
   redirect(await continueSignIn(user));
 }

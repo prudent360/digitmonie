@@ -10,20 +10,20 @@ type Input = {
   bureau: BureauSummary | null;
   accountAgeDays: number;
   /** From Console → Settings → Lending rules. */
-  rules: { autoApproveScore: number; maxRepaymentToIncome: number };
+  rules: { autoApproveScore: number; maxRepaymentToIncome: number; tierPoints: Record<number, number> };
 };
 
 /**
  * Transparent rules-based score (0–100). Every point is explained to the reviewer.
  * Hard stops always decline; otherwise 70+ can be approved automatically (if the product allows), 30–69 goes to a person.
- * A new Tier 1 customer with a clean bureau record and repayments under 20% of income scores exactly 70.
+ * With the default tier points, a new Tier 1 customer with a clean bureau record and repayments under 20% of income scores exactly 70.
  */
 export function scoreApplication(i: Input): ScoreDetails {
   const reasons: { label: string; points: number }[] = [];
   const hardStops: string[] = [];
   const add = (label: string, points: number) => reasons.push({ label, points });
 
-  add(`KYC Tier ${i.kycTier}`, [0, 15, 25, 30][i.kycTier] ?? 0);
+  add(`KYC Tier ${i.kycTier}`, i.rules.tierPoints[i.kycTier] ?? 0);
 
   const dti = i.monthlyIncome > 0 ? i.instalment / i.monthlyIncome : Infinity;
   const dtiPct = Number.isFinite(dti) ? `${Math.round(dti * 100)}%` : "no income";

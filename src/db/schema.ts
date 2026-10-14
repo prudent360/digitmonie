@@ -43,12 +43,15 @@ export const users = pgTable("users", {
   /** Bumped to sign the user out everywhere (password reset, deactivation, role change). */
   sessionVersion: integer("session_version").notNull().default(1),
   lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
+  /** Who invited this staff member, or which staff member onboarded this customer. */
   invitedById: integer("invited_by_id"),
+  /** Customers: the credit officer looking after them (sees them under My customers). */
+  officerId: integer("officer_id"),
   /** Why staff restricted, froze or closed the account (shown in the console). */
   statusReason: text("status_reason"),
   statusChangedAt: timestamp("status_changed_at", { withTimezone: true }),
   createdAt: createdAt(),
-}, (t) => [index("users_role_idx").on(t.roleKey)]);
+}, (t) => [index("users_role_idx").on(t.roleKey), index("users_officer_idx").on(t.officerId)]);
 
 /** Short numeric codes sent by SMS or email. Only the hash is stored. */
 export type OtpPurpose = "verify_phone" | "verify_email" | "reset_password";
@@ -212,6 +215,7 @@ export const creditProfiles = pgTable("credit_profiles", {
 });
 
 export type LoanStatus =
+  | "awaiting_customer" // prepared by a credit officer; the customer hasn't accepted the terms yet
   | "pending" // submitted, waiting for a reviewer
   | "reviewed" // a reviewer recommended approval; waiting for a second person
   | "approved" // approved, waiting for payout
@@ -253,7 +257,10 @@ export const loans = pgTable("loans", {
   declaredIncome: kobo("declared_income"),
   score: jsonb("score").$type<ScoreDetails>(),
   bureau: jsonb("bureau").$type<BureauSummary>(),
-  termsAcceptedAt: timestamp("terms_accepted_at", { withTimezone: true }).notNull(),
+  /** When the customer accepted the loan terms with their PIN. Empty while a prepared loan awaits the customer. */
+  termsAcceptedAt: timestamp("terms_accepted_at", { withTimezone: true }),
+  /** The credit officer who prepared this application for the customer, if any. They can't review or approve it. */
+  preparedById: integer("prepared_by_id").references(() => users.id, { onDelete: "set null" }),
   // Decisions (four-eyes: the approver must not be the reviewer)
   reviewedById: integer("reviewed_by_id").references(() => users.id, { onDelete: "set null" }),
   reviewedAt: timestamp("reviewed_at", { withTimezone: true }),

@@ -7,16 +7,16 @@ import { CheckIcon, ClockIcon, LogoutIcon } from "@/components/icons";
 import { Avatar, Badge, Card, CardHeader, PageHeader, buttonPrimary, buttonSecondary } from "@/components/ui";
 import { fullName, requireCustomer } from "@/lib/auth";
 import { formatDate, formatNairaWhole } from "@/lib/format";
-import { tier1IdKinds } from "@/lib/kyc";
-import { KYC_TIERS, tierNeeds } from "@/lib/kyc/tiers";
+import { getTiers, tier1IdKinds } from "@/lib/kyc";
+import { tierNeeds } from "@/lib/kyc/tiers";
 import { formatNgPhone } from "@/lib/phone";
 
 export const metadata: Metadata = { title: "Settings & KYC" };
 
 export default async function SettingsPage() {
   const user = await requireCustomer();
-  const idKinds = await tier1IdKinds();
-  const TIERS = KYC_TIERS.map((t) => ({ tier: t.tier, limit: `${formatNairaWhole(t.dailyLimit)} daily`, needs: tierNeeds(t, idKinds) }));
+  const [idKinds, tiers] = await Promise.all([tier1IdKinds(), getTiers()]);
+  const TIERS = tiers.map((t) => ({ tier: t.tier, name: t.name, limit: `starting limit ${formatNairaWhole(t.startingLimit / 100)}`, needs: tierNeeds(t, idKinds) }));
   return (
     <div className="space-y-6">
       <PageHeader title="Settings" subtitle="Manage your profile, verification and security." />
@@ -39,7 +39,7 @@ export default async function SettingsPage() {
 
         <Card>
           <div id="kyc" className="scroll-mt-24" />
-          <CardHeader title="Verification (KYC)" subtitle="Higher tiers unlock bigger limits" action={<Badge tone="brand">{user.kycTier ? `Tier ${user.kycTier}` : "Not verified"}</Badge>} />
+          <CardHeader title="Verification (KYC)" subtitle="Higher tiers unlock bigger loans" action={<Badge tone="brand">{user.kycTier ? TIERS[user.kycTier - 1]?.name : "Not verified"}</Badge>} />
           <ol className="space-y-3 p-5">
             {TIERS.map((t) => {
               const done = user.kycTier >= t.tier;
@@ -50,7 +50,7 @@ export default async function SettingsPage() {
                     {done ? <CheckIcon className="size-5" /> : <ClockIcon className="size-5" />}
                   </span>
                   <div className="flex-1">
-                    <p className="font-bold text-ink">Tier {t.tier} <span className="font-normal text-muted">· {t.limit}</span></p>
+                    <p className="font-bold text-ink">{t.name} <span className="font-normal text-muted">· {t.limit}</span></p>
                     <p className="text-xs text-muted">{t.needs}</p>
                   </div>
                   {done ? <Badge tone="success" dot>Verified</Badge> : next ? <Link href="/dashboard/verify" className={buttonPrimary}>Start</Link> : null}

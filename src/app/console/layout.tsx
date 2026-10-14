@@ -10,6 +10,7 @@ import type { Permission } from "@/lib/permissions";
 
 const ITEMS: (NavItem & { permission: Permission; group: "Overview" | "Operations" | "Administration" })[] = [
   { href: "/console", label: "Overview", icon: <ChartIcon />, permission: "console.access", group: "Overview" },
+  { href: "/console/my-customers", label: "My customers", icon: <UserCogIcon />, permission: "customers.onboard", group: "Operations" },
   { href: "/console/customers", label: "Customers", icon: <UsersIcon />, permission: "users.view", group: "Operations" },
   { href: "/console/kyc", label: "KYC reviews", icon: <IdCardIcon />, permission: "kyc.review", group: "Operations" },
   { href: "/console/loans", label: "Loans", icon: <LandmarkIcon />, permission: "loans.review", group: "Operations" },

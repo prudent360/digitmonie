@@ -45,7 +45,7 @@ export async function setCustomerStatus(staff: CurrentUser, customerId: number, 
   if (!customer || customer.role.kind !== "customer") return { ok: false, error: "Customer not found." };
   if (customer.status === status) return { ok: false, error: `The account is already ${status}.` };
   if (status === "closed") {
-    const [open] = await (await getDb()).select({ id: loans.id }).from(loans).where(and(eq(loans.userId, customerId), inArray(loans.status, ["pending", "reviewed", "approved", "active", "defaulted"])));
+    const [open] = await (await getDb()).select({ id: loans.id }).from(loans).where(and(eq(loans.userId, customerId), inArray(loans.status, ["awaiting_customer", "pending", "reviewed", "approved", "active", "defaulted"])));
     if (open) return { ok: false, error: "This customer still has an open or unpaid loan. Freeze the account instead." };
   }
   await (await getDb()).update(users).set({

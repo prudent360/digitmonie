@@ -4,6 +4,15 @@ import { alias } from "drizzle-orm/pg-core";
 import { getDb } from "@/db";
 import { creditProfiles, kycProfiles, loanDocuments, loanInstalments, loanPayments, loanProducts, loans, users, type LoanStatus } from "@/db/schema";
 
+/** Names of the active loan products each tier newly unlocks, e.g. { 1: ["Quick Loan"], 2: ["Salary Advance"] }. */
+export async function productsByTier(): Promise<Record<number, string[]>> {
+  const rows = await (await getDb()).select({ name: loanProducts.name, tier: loanProducts.minKycTier }).from(loanProducts)
+    .where(eq(loanProducts.active, true)).orderBy(asc(loanProducts.minAmount));
+  const out: Record<number, string[]> = {};
+  for (const r of rows) (out[r.tier] ??= []).push(r.name);
+  return out;
+}
+
 export async function customerLoans(userId: number) {
   return (await getDb()).select({ loan: loans, productName: loanProducts.name }).from(loans)
     .innerJoin(loanProducts, eq(loanProducts.id, loans.productId)).where(eq(loans.userId, userId)).orderBy(desc(loans.createdAt));
@@ -19,6 +28,7 @@ export const QUEUES: { key: string; label: string; statuses: LoanStatus[] }[] = 
   { key: "payout", label: "To pay out", statuses: ["approved"] },
   { key: "active", label: "Active", statuses: ["active"] },
   { key: "overdue", label: "Overdue", statuses: ["active"] },
+  { key: "awaiting", label: "Awaiting customer", statuses: ["awaiting_customer"] },
   { key: "closed", label: "Closed", statuses: ["repaid", "declined", "cancelled", "defaulted", "written_off"] },
 ];
 
@@ -50,12 +60,14 @@ export async function loanQueueCounts() {
 
 const reviewer = alias(users, "reviewer");
 const approver = alias(users, "approver");
+const preparer = alias(users, "preparer");
 
 export async function staffLoanDetail(id: number) {
   const db = await getDb();
-  const [row] = await db.select({ loan: loans, product: loanProducts, customer: users, reviewerFirst: reviewer.firstName, reviewerLast: reviewer.lastName, approverFirst: approver.firstName, approverLast: approver.lastName })
+  const [row] = await db.select({ loan: loans, product: loanProducts, customer: users, reviewerFirst: reviewer.firstName, reviewerLast: reviewer.lastName, approverFirst: approver.firstName, approverLast: approver.lastName, preparerFirst: preparer.firstName, preparerLast: preparer.lastName })
     .from(loans).innerJoin(loanProducts, eq(loanProducts.id, loans.productId)).innerJoin(users, eq(users.id, loans.userId))
     .leftJoin(reviewer, eq(reviewer.id, loans.reviewedById)).leftJoin(approver, eq(approver.id, loans.approvedById))
+    .leftJoin(preparer, eq(preparer.id, loans.preparedById))
     .where(eq(loans.id, id));
   if (!row) return null;
   const [kyc] = await db.select().from(kycProfiles).where(eq(kycProfiles.userId, row.customer.id));

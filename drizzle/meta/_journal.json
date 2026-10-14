@@ -57,6 +57,13 @@
       "when": 1790947047239,
       "tag": "0007_email",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791989303131,
+      "tag": "0008_officers",
+      "breakpoints": true
     }
   ]
 }

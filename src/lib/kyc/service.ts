@@ -8,7 +8,7 @@ import type { CurrentUser } from "@/lib/auth";
 import { appUrl, notifyCustomer, notifyStaff } from "@/lib/notifications";
 import { blockedFor, recordFailure } from "@/lib/rate-limit";
 import { decryptSecret, encryptSecret } from "@/lib/secrets";
-import { identityProvider, kycThresholds, tier1IdKinds } from ".";
+import { identityProvider, kycThresholds, tier1IdKinds, tierNames } from ".";
 import { ageOn, nameScore } from "./matching";
 import { normalizeDate, ProviderError, type Applicant, type IdentityRecord, type IdKind } from "./provider";
 import { NIGERIAN_STATES } from "./states";
@@ -27,8 +27,9 @@ export async function getKycState(userId: number) {
 }
 
 async function guard(user: CurrentUser, tier: number): Promise<string | null> {
-  if (user.kycTier >= tier) return `You're already verified to Tier ${tier}.`;
-  if (user.kycTier < tier - 1) return `Complete Tier ${tier - 1} first.`;
+  const names = await tierNames();
+  if (user.kycTier >= tier) return `You're already verified to ${names[tier]}.`;
+  if (user.kycTier < tier - 1) return `Complete ${names[tier - 1]} first.`;
   const [pending] = await (await getDb()).select({ id: kycSubmissions.id }).from(kycSubmissions)
     .where(and(eq(kycSubmissions.userId, user.id), eq(kycSubmissions.tier, tier), eq(kycSubmissions.status, "pending_review")));
   if (pending) return "We're already reviewing your details for this tier.";
@@ -72,6 +73,9 @@ function providerFailure(error: unknown): KycOutcome {
   return { ok: false, error: error instanceof ProviderError ? "Our verification partner isn't responding. Please try again shortly." : "Something went wrong. Please try again." };
 }
 
+/** Audit wording when a credit officer submits for the customer. */
+const onBehalf = (officer: CurrentUser | undefined, user: CurrentUser, summary: string) => (officer ? `${summary} for ${user.firstName} ${user.lastName}` : summary);
+
 /* ---------- Tier 1: NIN or BVN ---------- */
 
 const DIAL = { nin: "Dial *346# to get it.", bvn: "Dial *565*0# to get it." } as const;
@@ -80,7 +84,7 @@ const COLUMNS = {
   bvn: { hash: "bvnHash", encrypted: "bvnEncrypted", last4: "bvnLast4" },
 } as const;
 
-export async function submitTier1(user: CurrentUser, input: { idKind: string; idNumber: string; dateOfBirth: string; consent: boolean }): Promise<KycOutcome> {
+export async function submitTier1(user: CurrentUser, input: { idKind: string; idNumber: string; dateOfBirth: string; consent: boolean }, officer?: CurrentUser): Promise<KycOutcome> {
   const blocked = await guard(user, 1);
   if (blocked) return { ok: false, error: blocked };
   const allowed = await tier1IdKinds();
@@ -98,7 +102,7 @@ export async function submitTier1(user: CurrentUser, input: { idKind: string; id
   const hash = idHash(kind, id);
   if (await idTakenByOther(cols.hash, hash, user.id)) {
     await record(user.id, 1, "rejected", { idKind: kind, duplicate: true }, `This ${label} is already linked to another DigitMonie account.`);
-    await logAudit({ actorId: user.id, action: `kyc.duplicate_${kind}`, summary: `tried a ${label} already linked to another account`, target: { type: "user", id: user.id } });
+    await logAudit({ actorId: officer?.id ?? user.id, action: `kyc.duplicate_${kind}`, summary: onBehalf(officer, user, `tried a ${label} already linked to another account`), target: { type: "user", id: user.id } });
     return { ok: false, error: `This ${label} is already linked to another DigitMonie account. Contact support if that isn't you.` };
   }
 
@@ -139,9 +143,9 @@ export async function submitTier1(user: CurrentUser, input: { idKind: string; id
     await recordFailure(String(user.id), "kyc");
   }
   await record(user.id, 1, status, checks, reason, status === "rejected" ? [] : photoDoc(found));
-  await logAudit({ actorId: user.id, action: `kyc.tier1_${status}`, summary: `submitted ${label} ••${id.slice(-4)} for Tier 1 (${status.replace("_", " ")})`, target: { type: "user", id: user.id }, details: checks });
+  await logAudit({ actorId: officer?.id ?? user.id, action: `kyc.tier1_${status}`, summary: onBehalf(officer, user, `submitted ${label} ••${id.slice(-4)} for Tier 1 (${status.replace("_", " ")})`), target: { type: "user", id: user.id }, details: checks });
 
-  if (status === "approved") return { ok: true, status, message: `Your ${label} is verified. You're now on Tier 1.` };
+  if (status === "approved") return { ok: true, status, message: `Your ${label} is verified. You're now on ${(await tierNames())[1]}.` };
   if (status === "pending_review") return { ok: true, status, message: "Thanks. Our team is checking your details and will update you within one working day." };
   return { ok: false, error: `${reason} Make sure your name on DigitMonie matches your ${kind === "nin" ? "NIN" : "bank"} records.` };
 }
@@ -156,11 +160,11 @@ export function parseImageDataUrl(dataUrl: string, maxBytes: number): { mimeType
 }
 
 /** Tier 2 matches a selfie to the NIN photo. Customers who verified Tier 1 with their NIN aren't asked for it again. */
-export async function submitNinSelfie(user: CurrentUser, input: { nin?: string; selfie: string }): Promise<KycOutcome> {
+export async function submitNinSelfie(user: CurrentUser, input: { nin?: string; selfie: string }, officer?: CurrentUser): Promise<KycOutcome> {
   const blocked = await guard(user, 2);
   if (blocked) return { ok: false, error: blocked };
   const { profile } = await getKycState(user.id);
-  if (!profile?.legalFirstName || !profile.dateOfBirth) return { ok: false, error: "Complete Tier 1 first." };
+  if (!profile?.legalFirstName || !profile.dateOfBirth) return { ok: false, error: `Complete ${(await tierNames())[1]} first.` };
   const ninOnFile = profile.ninEncrypted ? decryptSecret(profile.ninEncrypted) : null;
   const nin = ninOnFile ?? (input.nin ?? "").replace(/\s/g, "");
   if (!/^\d{11}$/.test(nin)) return { ok: false, error: "Your NIN is 11 digits. Dial *346# to get it." };
@@ -213,16 +217,16 @@ export async function submitNinSelfie(user: CurrentUser, input: { nin?: string; 
     await recordFailure(String(user.id), "kyc");
   }
   await record(user.id, 2, status, checks, reason, [{ kind: "selfie", ...selfie }, ...photoDoc(result.record)]);
-  await logAudit({ actorId: user.id, action: `kyc.tier2_${status}`, summary: `submitted NIN ••${nin.slice(-4)} and a selfie for Tier 2 (${status.replace("_", " ")})`, target: { type: "user", id: user.id }, details: checks });
+  await logAudit({ actorId: officer?.id ?? user.id, action: `kyc.tier2_${status}`, summary: onBehalf(officer, user, `submitted NIN ••${nin.slice(-4)} and a selfie for Tier 2 (${status.replace("_", " ")})`), target: { type: "user", id: user.id }, details: checks });
 
-  if (status === "approved") return { ok: true, status, message: "Your NIN and selfie are verified. You're now on Tier 2." };
+  if (status === "approved") return { ok: true, status, message: `Your selfie is verified. You're now on ${(await tierNames())[2]}.` };
   if (status === "pending_review") return { ok: true, status, message: "Thanks. Our team is checking your selfie and will update you within one working day." };
   return { ok: false, error: `${reason} Retake your selfie facing the camera in good light, without glasses or a hat.` };
 }
 
 /* ---------- Tier 3: address ---------- */
 
-export async function submitAddress(user: CurrentUser, input: { addressLine: string; city: string; state: string; document: string }): Promise<KycOutcome> {
+export async function submitAddress(user: CurrentUser, input: { addressLine: string; city: string; state: string; document: string }, officer?: CurrentUser): Promise<KycOutcome> {
   const blocked = await guard(user, 3);
   if (blocked) return { ok: false, error: blocked };
   const addressLine = input.addressLine.trim(), city = input.city.trim();
@@ -235,7 +239,7 @@ export async function submitAddress(user: CurrentUser, input: { addressLine: str
 
   await saveProfile(user.id, { addressLine, city, state: input.state });
   await record(user.id, 3, "pending_review", { notes: ["Proof of address needs a manual check"] }, "Check the document shows this name and address and is less than 3 months old.", [{ kind: "proof_of_address", mimeType: m[1], data: m[2] }]);
-  await logAudit({ actorId: user.id, action: "kyc.tier3_pending_review", summary: "submitted proof of address for Tier 3", target: { type: "user", id: user.id } });
+  await logAudit({ actorId: officer?.id ?? user.id, action: "kyc.tier3_pending_review", summary: onBehalf(officer, user, "submitted proof of address for Tier 3"), target: { type: "user", id: user.id } });
   return { ok: true, status: "pending_review", message: "Thanks. Our team will check your document within one working day." };
 }
 
@@ -268,9 +272,10 @@ export async function decideSubmission(staff: CurrentUser, submissionId: number,
     summary: `${status === "approved" ? "approved" : "rejected"} Tier ${sub.tier} for ${customer.firstName} ${customer.lastName}${status === "rejected" ? `: ${reason.trim()}` : ""}`,
     target: { type: "kyc_submission", id: sub.id },
   });
+  const tierName = (await tierNames())[sub.tier];
   await notifyCustomer(customer.id, status === "approved"
-    ? { category: "kyc", title: `Tier ${sub.tier} verification approved`, body: `Your new limits are active now.`, href: "/dashboard/verify", sms: `your Tier ${sub.tier} verification is approved. Your new limits are active now.`, email: { template: "kyc_approved", vars: { tier: sub.tier, verifyUrl: appUrl("/dashboard/verify") } } }
-    : { category: "kyc", title: `We couldn't approve your Tier ${sub.tier} verification`, body: reason.trim(), href: "/dashboard/verify", sms: `we couldn't approve your Tier ${sub.tier} verification. Open the app to see why and try again.`, email: { template: "kyc_rejected", vars: { tier: sub.tier, reason: reason.trim(), verifyUrl: appUrl("/dashboard/verify") } } });
+    ? { category: "kyc", title: `${tierName} verification approved`, body: `Your new loan limit is active now.`, href: "/dashboard/verify", sms: `your ${tierName} verification is approved. Your new loan limit is active now.`, email: { template: "kyc_approved", vars: { tier: sub.tier, tierName, verifyUrl: appUrl("/dashboard/verify") } } }
+    : { category: "kyc", title: `We couldn't approve your ${tierName} verification`, body: reason.trim(), href: "/dashboard/verify", sms: `we couldn't approve your ${tierName} verification. Open the app to see why and try again.`, email: { template: "kyc_rejected", vars: { tier: sub.tier, tierName, reason: reason.trim(), verifyUrl: appUrl("/dashboard/verify") } } });
   return { ok: true };
 }
 

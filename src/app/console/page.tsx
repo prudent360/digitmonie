@@ -66,7 +66,7 @@ export default async function ConsoleOverview({ searchParams }: { searchParams: 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatTile label="Loan book (principal owed)" value={formatCompactNaira(book.principal / 100)} hint={`${formatNumber(book.activeLoans)} active loan${book.activeLoans === 1 ? "" : "s"}`} icon={<LandmarkIcon className="size-5" />} />
         <StatTile label="Collected this month" value={formatCompactNaira(thisMonth.collected / 100)} change={change(thisMonth.collected, lastMonth.collected)} icon={<TrendUpIcon className="size-5" />} />
-        <StatTile label="Customers" value={formatNumber(people.total)} hint={`${formatNumber(people.fresh)} joined in the last 30 days · ${people.total ? Math.round((people.verified / people.total) * 100) : 0}% BVN verified`} icon={<UsersIcon className="size-5" />} />
+        <StatTile label="Customers" value={formatNumber(people.total)} hint={`${formatNumber(people.fresh)} joined in the last 30 days · ${people.total ? Math.round((people.verified / people.total) * 100) : 0}% ID verified`} icon={<UsersIcon className="size-5" />} />
         <StatTile label="Portfolio at risk (30+ days)" value={`${(book.par30Ratio * 100).toFixed(1)}%`} hint={`${formatCompactNaira(book.par30 / 100)} of principal is over 30 days late`} icon={<ChartIcon className="size-5" />} />
       </div>
 

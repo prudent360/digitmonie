@@ -33,12 +33,12 @@ export function RepayForm({ action, loanId, options }: { action: (s: FormState, 
   );
 }
 
-export function CancelLoanButton({ action, loanId }: { action: (s: FormState, fd: FormData) => Promise<FormState>; loanId: number }) {
+export function CancelLoanButton({ action, loanId, label = "Cancel application", confirm = "Cancel this loan application?" }: { action: (s: FormState, fd: FormData) => Promise<FormState>; loanId: number; label?: string; confirm?: string }) {
   const [state, formAction, pending] = useActionState(action, undefined);
   return (
-    <form action={formAction} onSubmit={(e) => { if (!window.confirm("Cancel this loan application?")) e.preventDefault(); }}>
+    <form action={formAction} onSubmit={(e) => { if (!window.confirm(confirm)) e.preventDefault(); }}>
       <input type="hidden" name="loanId" value={loanId} />
-      <button disabled={pending} className="text-sm font-semibold text-danger disabled:opacity-50">Cancel application</button>
+      <button disabled={pending} className="text-sm font-semibold text-danger disabled:opacity-50">{label}</button>
       {state?.error && <p className="mt-1 text-xs text-danger">{state.error}</p>}
     </form>
   );

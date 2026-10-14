@@ -29,7 +29,7 @@ export async function repaymentHistory(userId: number): Promise<RepaymentHistory
     repaidOnTime: closedIds.filter((id) => !late.has(id)).length,
     repaidLate: late.size,
     defaulted: rows.filter((r) => r.status === "defaulted" || r.status === "written_off").length,
-    open: rows.filter((r) => ["pending", "reviewed", "approved", "active"].includes(r.status)).length,
+    open: rows.filter((r) => ["awaiting_customer", "pending", "reviewed", "approved", "active"].includes(r.status)).length,
   };
 }
 

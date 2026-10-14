@@ -6,6 +6,7 @@ import { LoanProductForm, type ProductValues } from "@/components/app/product-fo
 import { getDb } from "@/db";
 import { loanProducts, type LoanProduct } from "@/db/schema";
 import { requirePermission } from "@/lib/auth";
+import { tierNames } from "@/lib/kyc";
 
 export const metadata: Metadata = { title: "Products" };
 
@@ -22,6 +23,7 @@ function toValues(p: LoanProduct): ProductValues {
 export default async function ProductsPage() {
   await requirePermission("investments.manage");
   const products = await (await getDb()).select().from(loanProducts).orderBy(asc(loanProducts.minAmount));
+  const names = await tierNames();
   return (
     <div className="space-y-6">
       <PageHeader title="Products" subtitle="Loan products offered to customers. Savings and investment products are coming soon."  />
@@ -35,12 +37,12 @@ export default async function ProductsPage() {
                 <span><span className="font-bold text-ink">{p.name}</span> <span className="text-sm text-muted">· {(p.monthlyRateBps / 100).toFixed(2).replace(/\.?0+$/, "")}% a month · ₦{(p.minAmount / 100).toLocaleString()}–₦{(p.maxAmount / 100).toLocaleString()} · Tier {p.minKycTier}+</span></span>
                 <Badge tone={p.active ? "success" : "neutral"} dot>{p.active ? "Offered" : "Hidden"}</Badge>
               </summary>
-              <div className="border-t border-line p-5"><LoanProductForm action={saveLoanProduct} initial={toValues(p)} /></div>
+              <div className="border-t border-line p-5"><LoanProductForm action={saveLoanProduct} initial={toValues(p)} tierNames={names} /></div>
             </details>
           ))}
           <details className="rounded-[7px] border border-dashed border-brand-200 bg-white">
             <summary className="cursor-pointer px-5 py-4 font-bold text-brand">+ New loan product</summary>
-            <div className="border-t border-line p-5"><LoanProductForm action={saveLoanProduct} initial={{ name: "", description: "", minAmount: "", maxAmount: "", tenors: "1, 2, 3", monthlyRate: "4", interestMethod: "reducing", processingFee: "1", lateFee: "1", minKycTier: "1", statementAbove: "", autoApproveUpTo: "", active: false }} /></div>
+            <div className="border-t border-line p-5"><LoanProductForm action={saveLoanProduct} tierNames={names} initial={{ name: "", description: "", minAmount: "", maxAmount: "", tenors: "1, 2, 3", monthlyRate: "4", interestMethod: "reducing", processingFee: "1", lateFee: "1", minKycTier: "1", statementAbove: "", autoApproveUpTo: "", active: false }} /></div>
           </details>
         </div>
       </div>

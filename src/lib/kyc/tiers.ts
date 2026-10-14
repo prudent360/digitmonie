@@ -1,24 +1,20 @@
-// CBN tiered KYC. Limits follow the CBN tiered-account framework; confirm the exact figures
-// with the partner bank before launch and change them here.
+// The three verification tiers. What each tier needs is fixed here; its name, description, starting
+// loan limit and score points are set in Console → Settings → Verification tiers (lib/kyc/index.ts).
 
 export type TierInfo = {
   tier: 1 | 2 | 3;
-  name: string;
   needs: string;
-  singleLimit: number;
-  dailyLimit: number;
-  /** null = no cap */
-  maxBalance: number | null;
   review: "automatic" | "staff";
 };
 
 export const KYC_TIERS: TierInfo[] = [
-  { tier: 1, name: "Tier 1", needs: "NIN or BVN and date of birth", singleLimit: 50_000, dailyLimit: 50_000, maxBalance: 300_000, review: "automatic" },
-  { tier: 2, name: "Tier 2", needs: "A selfie matched to your NIN", singleLimit: 100_000, dailyLimit: 200_000, maxBalance: 500_000, review: "automatic" },
-  { tier: 3, name: "Tier 3", needs: "Home address and proof of address", singleLimit: 5_000_000, dailyLimit: 5_000_000, maxBalance: null, review: "staff" },
+  { tier: 1, needs: "NIN or BVN and date of birth", review: "automatic" },
+  { tier: 2, needs: "A selfie matched to your NIN", review: "automatic" },
+  { tier: 3, needs: "Home address and proof of address", review: "staff" },
 ];
 
-export const tierInfo = (tier: number) => KYC_TIERS.find((t) => t.tier === tier);
+/** A tier with the settings admins control. `startingLimit` is in kobo. */
+export type Tier = TierInfo & { name: string; description: string; startingLimit: number; score: number };
 
 export const ID_LABEL = { nin: "NIN", bvn: "BVN" } as const;
 

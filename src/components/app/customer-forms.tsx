@@ -79,3 +79,26 @@ export function EditDetailsForm({ action, initial, nameLocked }: { action: Actio
     </form>
   );
 }
+
+/** A credit officer opens an account for a customer. */
+export function AddCustomerForm({ action }: { action: Action }) {
+  const [state, formAction] = useActionState(action, undefined);
+  const f = state?.fields ?? {};
+  return (
+    <form action={formAction} className="space-y-5">
+      <FormAlert state={state} />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="First name"><input className={inputClass} name="firstName" defaultValue={f.firstName} required autoComplete="off" /></Field>
+        <Field label="Last name"><input className={inputClass} name="lastName" defaultValue={f.lastName} required autoComplete="off" /></Field>
+        <Field label="Mobile number"><input className={inputClass} name="phone" defaultValue={f.phone} inputMode="tel" placeholder="0803 123 4567" required autoComplete="off" /></Field>
+        <Field label="Email address"><input className={inputClass} type="email" name="email" defaultValue={f.email} required autoComplete="off" /></Field>
+      </div>
+      <p className="text-xs text-muted">Use their name exactly as it appears on their NIN or BVN. We send the set-up link to this phone number and email, so check them with the customer.</p>
+      <label className="flex items-start gap-3 rounded-[7px] bg-canvas p-4 text-sm text-body">
+        <input type="checkbox" name="consent" required className="mt-0.5 size-4 shrink-0 accent-brand" />
+        <span>The customer asked me to open a DigitMonie account for them and agreed to the <a href="/terms" target="_blank" rel="noopener" className="font-semibold text-brand">Terms</a> and <a href="/privacy" target="_blank" rel="noopener" className="font-semibold text-brand">Privacy Policy</a>.</span>
+      </label>
+      <SubmitButton>Open account and send set-up link</SubmitButton>
+    </form>
+  );
+}

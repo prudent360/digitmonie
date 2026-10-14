@@ -73,14 +73,21 @@ export default async function ConsoleLoanPage({ params }: { params: Promise<{ id
           <Card className="border-brand-200 p-5">
             <h2 className="text-[15px] font-bold text-ink">Next step</h2>
             <div className="mt-4">
+              {loan.preparedById && (
+                <p className="mb-4 rounded-[7px] bg-canvas px-3 py-2 text-xs text-body">
+                  Prepared by credit officer <b>{nameOf(data.preparerFirst, data.preparerLast)}</b>. {loan.termsAcceptedAt ? `The customer accepted the terms with their PIN on ${formatDate(loan.termsAcceptedAt.toISOString(), { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}.` : "Waiting for the customer to accept the terms in their app."}
+                </p>
+              )}
+              {loan.status === "awaiting_customer" && <p className="text-sm text-body">Nothing to do yet. It comes to review once the customer accepts it.</p>}
               {loan.status === "pending" && (
-                <>
+                loan.preparedById === staff.id ? <p className="text-sm text-warning">You prepared this application, so someone else must review it.</p>
+                : <>
                   <p className="mb-4 text-sm text-body">Review the score, bureau report and affordability. Recommending approval sends it to a second person with approval rights.</p>
                   <DecisionForm action={reviewLoanAction.bind(null, loan.id)} approveLabel="Recommend approval" />
                 </>
               )}
               {loan.status === "reviewed" && (
-                loan.reviewedById === staff.id ? <p className="text-sm text-warning">You reviewed this application, so another approver must make the final decision.</p>
+                loan.reviewedById === staff.id || loan.preparedById === staff.id ? <p className="text-sm text-warning">You {loan.preparedById === staff.id ? "prepared" : "reviewed"} this application, so another approver must make the final decision.</p>
                 : !can(staff, "loans.approve") ? <p className="text-sm text-body">Waiting for someone with approval rights.</p>
                 : <>
                     <p className="mb-4 text-sm text-body">Recommended by <b>{nameOf(data.reviewerFirst, data.reviewerLast)}</b>{loan.reviewNote ? `: “${loan.reviewNote}”` : "."}</p>

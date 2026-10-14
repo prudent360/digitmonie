@@ -11,9 +11,10 @@ import { formatNaira } from "@/lib/format";
 import { toKobo } from "@/lib/loans/math";
 import { startRepayment } from "@/lib/loans/repay";
 import { confirmPayout, recordManualPayout, sendAutomaticPayout } from "@/lib/loans/payouts";
-import { applyForLoan, approveLoan, cancelLoan, markDefaulted, recordManualPayment, reviewLoan, type Outcome } from "@/lib/loans/service";
+import { acceptPreparedLoan, applyForLoan, approveLoan, cancelLoan, markDefaulted, recordManualPayment, reviewLoan, type Outcome } from "@/lib/loans/service";
 import { lookupAccount } from "@/lib/payments/banks";
 import { blockedFor, recordFailure } from "@/lib/rate-limit";
+import { statementFrom } from "@/lib/form-files";
 import type { FormState } from "./auth";
 
 const str = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
@@ -22,7 +23,6 @@ const nairaToKobo = (v: string) => {
   const n = Number(v.replace(/[₦,\s]/g, ""));
   return Number.isFinite(n) ? toKobo(n) : NaN;
 };
-const STATEMENT_TYPES = ["application/pdf", "image/jpeg", "image/png"];
 
 function result(outcome: Outcome, paths: string[], fields?: Record<string, string>): FormState {
   if (!outcome.ok) return { error: outcome.error, fields };
@@ -36,13 +36,8 @@ export async function applyLoan(_: FormState, fd: FormData): Promise<FormState> 
   const user = await requireCustomer();
   const fields = Object.fromEntries(["productId", "amount", "tenor", "purpose", "monthlyIncome", "employmentType", "employer", "payoutBankCode", "payoutAccount"].map((k) => [k, str(fd, k)]));
 
-  let statement = null;
-  const file = fd.get("statement");
-  if (file instanceof File && file.size > 0) {
-    if (!STATEMENT_TYPES.includes(file.type)) return { error: "Upload your statement as a PDF, JPG or PNG.", fields };
-    if (file.size > 3 * 1024 * 1024) return { error: "That statement is too large (max 3 MB).", fields };
-    statement = { fileName: file.name.slice(0, 120), mimeType: file.type, data: Buffer.from(await file.arrayBuffer()).toString("base64"), size: file.size };
-  }
+  const statement = await statementFrom(fd.get("statement"));
+  if (statement && "error" in statement) return { error: statement.error, fields };
 
   const outcome = await applyForLoan(user, {
     productId: Number(fields.productId), amount: nairaToKobo(fields.amount), tenor: Number(fields.tenor), purpose: fields.purpose,
@@ -53,6 +48,15 @@ export async function applyLoan(_: FormState, fd: FormData): Promise<FormState> 
   if (!outcome.ok) return { error: outcome.error, fields };
   revalidatePath("/dashboard", "layout");
   redirect(`/dashboard/loans?applied=${outcome.loanId}`);
+}
+
+/** The customer accepts a loan their credit officer prepared. */
+export async function acceptLoanOffer(loanId: number, _: FormState, fd: FormData): Promise<FormState> {
+  const user = await requireCustomer();
+  const outcome = await acceptPreparedLoan(user, loanId, { acceptTerms: fd.get("acceptTerms") === "on", pin: str(fd, "pin") });
+  if (!outcome.ok) return { error: outcome.error };
+  revalidatePath("/dashboard", "layout");
+  redirect(`/dashboard/loans?applied=${loanId}`);
 }
 
 export async function cancelApplication(_: FormState, fd: FormData): Promise<FormState> {

@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/ui";
 import { getDb } from "@/db";
 import { creditProfiles } from "@/db/schema";
 import { requireCustomer } from "@/lib/auth";
+import { tierNames } from "@/lib/kyc";
 import { EMPLOYMENT_TYPES, loanEligibility } from "@/lib/loans/service";
 import { listBanks } from "@/lib/payments/banks";
 
@@ -29,6 +30,7 @@ export default async function ApplyPage() {
         products={products.map(({ id, name, description, minAmount, maxAmount, tenors, monthlyRateBps, interestMethod, processingFeeBps, lateFeeBps, minKycTier, statementAbove }) => ({ id, name, description, minAmount, maxAmount, tenors, monthlyRateBps, interestMethod, processingFeeBps, lateFeeBps, minKycTier, statementAbove }))}
         limit={limit}
         kycTier={user.kycTier}
+        tierNames={await tierNames()}
         banks={await listBanks()}
         employmentTypes={EMPLOYMENT_TYPES}
         defaults={{ monthlyIncome: credit?.monthlyIncome ? String(credit.monthlyIncome / 100) : "", employmentType: credit?.employmentType ?? "", employer: credit?.employer ?? "" }}

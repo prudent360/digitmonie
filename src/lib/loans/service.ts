@@ -7,6 +7,7 @@ import { can, type CurrentUser } from "@/lib/auth";
 import { creditBureau } from "@/lib/credit/bureau";
 import { creditLimit } from "@/lib/credit/limits";
 import { scoreApplication } from "@/lib/credit/score";
+import { getTiers, tierNames } from "@/lib/kyc";
 import { verifyTransactionPin } from "@/lib/pin";
 import { decryptSecret } from "@/lib/secrets";
 import { getSetting, getSettings } from "@/lib/settings";
@@ -26,19 +27,25 @@ const fail = (error: string): Outcome => ({ ok: false, error });
 
 /* ---------- Eligibility ---------- */
 
-export async function loanEligibility(user: CurrentUser) {
+/**
+ * What the customer can borrow and why they can't, if they can't. `forOfficer` words the reasons for a
+ * credit officer preparing a loan, and allows customers who haven't finished setting up their account yet.
+ */
+export async function loanEligibility(user: CurrentUser, forOfficer = false) {
   const db = await getDb();
   const products = await db.select().from(loanProducts).where(eq(loanProducts.active, true)).orderBy(asc(loanProducts.minAmount));
   const { limit, history } = await creditLimit(user.id, user.kycTier);
   const [open] = await db.select().from(loans).where(and(eq(loans.userId, user.id), inArray(loans.status, [...OPEN_STATUSES, "defaulted"]))).limit(1);
+  const say = (you: string, they: string) => (forOfficer ? they : you);
   let blocked: string | null = null;
-  if (await getSetting<boolean>("pauseLoans")) blocked = "We've paused new loan applications for a short while. Please check back soon.";
-  else if (user.kycTier < 1) blocked = "Verify your identity to see your loan limit.";
-  else if (user.status !== "active") blocked = "Your account can't take new loans right now. Contact support.";
-  else if (open?.status === "defaulted") blocked = "You can't take a new loan until your overdue loan is repaid.";
-  else if (open) blocked = "You already have a loan in progress. Repay it to apply again.";
-  else if (history.defaulted) blocked = "You can't take a new loan while a previous one is in default.";
-  else if (limit <= 0) blocked = "You don't have a loan limit yet.";
+  if (await getSetting<boolean>("pauseLoans")) blocked = say("We've paused new loan applications for a short while. Please check back soon.", "New loan applications are paused (Console → Settings).");
+  else if (user.kycTier < 1) blocked = say("Verify your identity to see your loan limit.", "Verify the customer's identity first.");
+  else if (user.status !== "active" && !(forOfficer && user.status === "pending")) blocked = say("Your account can't take new loans right now. Contact support.", `The customer's account is ${user.status}, so it can't take new loans.`);
+  else if (open?.status === "defaulted") blocked = say("You can't take a new loan until your overdue loan is repaid.", "The customer has an overdue loan to repay first.");
+  else if (open?.status === "awaiting_customer") blocked = say("You have a loan offer waiting for you to accept or decline.", "A loan is already waiting for the customer to accept.");
+  else if (open) blocked = say("You already have a loan in progress. Repay it to apply again.", "The customer already has a loan in progress.");
+  else if (history.defaulted) blocked = say("You can't take a new loan while a previous one is in default.", "The customer has a loan in default.");
+  else if (limit <= 0) blocked = say("You don't have a loan limit yet.", "The customer doesn't have a loan limit yet.");
   return { products, limit, history, openLoan: open ?? null, blocked };
 }
 
@@ -61,19 +68,24 @@ export type ApplicationInput = {
 
 export const EMPLOYMENT_TYPES = ["Salaried (private)", "Salaried (government)", "Self-employed", "Business owner", "Student", "Other"];
 
-export async function applyForLoan(user: CurrentUser, input: ApplicationInput): Promise<Outcome> {
-  const { products, limit, history, blocked } = await loanEligibility(user);
+/**
+ * A customer's own application, or (with `preparedBy`) one a credit officer prepares for them. A prepared
+ * application skips the terms and PIN here: it waits as "awaiting_customer" until the customer accepts it
+ * in the app (acceptPreparedLoan), and is never approved automatically.
+ */
+export async function applyForLoan(user: CurrentUser, input: ApplicationInput, preparedBy?: CurrentUser): Promise<Outcome> {
+  const { products, limit, history, blocked } = await loanEligibility(user, Boolean(preparedBy));
   if (blocked) return fail(blocked);
   const product = products.find((p) => p.id === input.productId);
   if (!product) return fail("Choose a loan type.");
-  if (user.kycTier < product.minKycTier) return fail(`${product.name} needs KYC Tier ${product.minKycTier}. Verify your identity to unlock it.`);
+  if (user.kycTier < product.minKycTier) return fail(`${product.name} needs ${(await tierNames())[product.minKycTier]}. Verify your identity to unlock it.`);
   const max = Math.min(product.maxAmount, limit);
   if (input.amount < product.minAmount) return fail(`The smallest ${product.name} is ${naira(product.minAmount)}.`);
   if (input.amount > max) return fail(`You can borrow up to ${naira(max)} right now.`);
   if (!product.tenors.includes(input.tenor)) return fail("Choose a repayment period.");
   if (input.purpose.trim().length < 3) return fail("Tell us what the loan is for.");
-  if (input.monthlyIncome <= 0) return fail("Enter your monthly income.");
-  if (!EMPLOYMENT_TYPES.includes(input.employmentType)) return fail("Choose your employment type.");
+  if (input.monthlyIncome <= 0) return fail(preparedBy ? "Enter the customer's monthly income." : "Enter your monthly income.");
+  if (!EMPLOYMENT_TYPES.includes(input.employmentType)) return fail("Choose the employment type.");
   // Re-check the account with the bank (never trust the name the browser sends) and that it's theirs.
   const payoutBank = await bankName(input.payoutBankCode);
   if (!payoutBank) return fail("Choose the bank to pay the loan into.");
@@ -85,13 +97,15 @@ export async function applyForLoan(user: CurrentUser, input: ApplicationInput): 
   if (await getSetting<boolean>("payoutNameCheck")) {
     // How well the BVN first and last names appear among the account name's words (order and middle names don't matter).
     const score = nameScore(legal, { firstName: account.accountName, lastName: "" });
-    if (score < Number(await getSetting("payoutNameMatch"))) return fail(`That account belongs to ${account.accountName}. Loans can only be paid into an account in your own name.`);
+    if (score < Number(await getSetting("payoutNameMatch"))) return fail(`That account belongs to ${account.accountName}. Loans can only be paid into an account in ${preparedBy ? "the customer's" : "your"} own name.`);
   }
   const needsStatement = product.statementAbove != null && input.amount > product.statementAbove;
-  if (needsStatement && !input.statement) return fail("Upload your last 6 months' bank statement for this amount.");
-  if (!input.acceptTerms) return fail("Read and accept the loan terms to continue.");
-  const pin = await verifyTransactionPin(user, input.pin);
-  if (!pin.ok) return fail(pin.error);
+  if (needsStatement && !input.statement) return fail(`Upload ${preparedBy ? "the customer's" : "your"} last 6 months' bank statement for this amount.`);
+  if (!preparedBy) {
+    if (!input.acceptTerms) return fail("Read and accept the loan terms to continue.");
+    const pin = await verifyTransactionPin(user, input.pin);
+    if (!pin.ok) return fail(pin.error);
+  }
 
   const quote = quoteLoan({ principal: input.amount, tenor: input.tenor, monthlyRateBps: product.monthlyRateBps, method: product.interestMethod, processingFeeBps: product.processingFeeBps });
 
@@ -110,16 +124,19 @@ export async function applyForLoan(user: CurrentUser, input: ApplicationInput): 
   const score = scoreApplication({
     kycTier: user.kycTier, monthlyIncome: input.monthlyIncome, instalment: quote.instalment, history, bureau,
     accountAgeDays: Math.floor((Date.now() - user.createdAt.getTime()) / 86_400_000),
-    rules: await getSettings("autoApproveScore", "maxRepaymentToIncome").then((r) => ({ autoApproveScore: Number(r.autoApproveScore), maxRepaymentToIncome: Number(r.maxRepaymentToIncome) })),
+    rules: {
+      ...await getSettings("autoApproveScore", "maxRepaymentToIncome").then((r) => ({ autoApproveScore: Number(r.autoApproveScore), maxRepaymentToIncome: Number(r.maxRepaymentToIncome) })),
+      tierPoints: Object.fromEntries((await getTiers()).map((t) => [t.tier, t.score])),
+    },
   });
 
-  let status: LoanStatus = "pending";
+  let status: LoanStatus = preparedBy ? "awaiting_customer" : "pending";
   let autoApproved = false;
   let declineReason: string | null = null;
   if (score.recommendation === "decline") {
     status = "declined";
     declineReason = score.hardStops[0] ?? "Your application doesn't meet our lending criteria right now.";
-  } else if (score.recommendation === "approve" && bureau && product.autoApproveUpTo != null && input.amount <= product.autoApproveUpTo && !needsStatement) {
+  } else if (!preparedBy && score.recommendation === "approve" && bureau && product.autoApproveUpTo != null && input.amount <= product.autoApproveUpTo && !needsStatement) {
     status = "approved";
     autoApproved = true;
   }
@@ -134,11 +151,23 @@ export async function applyForLoan(user: CurrentUser, input: ApplicationInput): 
     processingFee: quote.processingFee, lateFeeBps: product.lateFeeBps, totalInterest: quote.totalInterest, totalRepayable: quote.totalRepayable,
     instalment: quote.instalment, aprBps: quote.aprBps, purpose: input.purpose.trim().slice(0, 200),
     payoutBank, payoutBankCode: input.payoutBankCode, payoutAccount: input.payoutAccount, payoutName: account.accountName,
-    declaredIncome: input.monthlyIncome, score, bureau, termsAcceptedAt: now,
+    declaredIncome: input.monthlyIncome, score, bureau, termsAcceptedAt: preparedBy ? null : now, preparedById: preparedBy?.id ?? null,
     autoApproved, approvedAt: autoApproved ? now : null, declineReason,
     closedAt: status === "declined" ? now : null,
   }).returning();
   if (input.statement) await db.insert(loanDocuments).values({ loanId: loan.id, kind: "bank_statement", ...input.statement });
+
+  if (preparedBy) {
+    const what = `${naira(input.amount)} ${product.name} over ${input.tenor} month${input.tenor > 1 ? "s" : ""} (${loan.reference})`;
+    await logAudit({
+      actorId: preparedBy.id, action: `loan.prepared_${status === "declined" ? "declined" : "awaiting_customer"}`,
+      summary: `prepared ${what} for ${user.firstName} ${user.lastName} → ${status === "declined" ? "declined automatically" : "sent to the customer to accept"}`,
+      target: { type: "loan", id: loan.id }, details: { score: score.score, band: score.band, recommendation: score.recommendation },
+    });
+    if (status === "declined") return fail(`This application was declined: ${declineReason}`);
+    await notify(user.id, `${preparedBy.firstName} from DigitMonie has prepared a ${naira(input.amount)} loan for you. Sign in to see the full cost and accept it.`, { title: "A loan is ready for you to review", href: `/dashboard/loans/offer/${loan.id}` });
+    return { ok: true, loanId: loan.id, message: "Sent to the customer. They'll see the full cost and repayment plan, and accept it in the app before it goes for review." };
+  }
 
   await logAudit({
     actorId: user.id, action: `loan.applied_${status}`,
@@ -161,12 +190,47 @@ export async function cancelLoan(user: CurrentUser, loanId: number): Promise<Out
   const db = await getDb();
   const [sending] = await db.select({ id: payouts.id }).from(payouts).where(and(eq(payouts.loanId, loanId), eq(payouts.status, "processing")));
   if (sending) return fail("The money is already on its way to your bank, so this loan can't be cancelled.");
+  const [before] = await db.select({ status: loans.status }).from(loans).where(and(eq(loans.id, loanId), eq(loans.userId, user.id)));
   const [loan] = await db.update(loans).set({ status: "cancelled", closedAt: new Date() })
-    .where(and(eq(loans.id, loanId), eq(loans.userId, user.id), inArray(loans.status, ["pending", "reviewed", "approved"])))
+    .where(and(eq(loans.id, loanId), eq(loans.userId, user.id), inArray(loans.status, ["awaiting_customer", "pending", "reviewed", "approved"])))
     .returning();
   if (!loan) return fail("This loan can no longer be cancelled.");
-  await logAudit({ actorId: user.id, action: "loan.cancelled", summary: `cancelled their application ${loan.reference}`, target: { type: "loan", id: loan.id } });
-  return { ok: true, message: "Application cancelled." };
+  const offer = before?.status === "awaiting_customer";
+  await logAudit({ actorId: user.id, action: offer ? "loan.offer_declined" : "loan.cancelled", summary: offer ? `declined the loan prepared for them (${loan.reference})` : `cancelled their application ${loan.reference}`, target: { type: "loan", id: loan.id } });
+  return { ok: true, message: offer ? "Loan declined. Nothing has been taken out in your name." : "Application cancelled." };
+}
+
+/** The customer accepts a loan a credit officer prepared for them, with their PIN. It then goes for review like any other. */
+export async function acceptPreparedLoan(user: CurrentUser, loanId: number, input: { acceptTerms: boolean; pin: string }): Promise<Outcome> {
+  const db = await getDb();
+  const [loan] = await db.select().from(loans).where(and(eq(loans.id, loanId), eq(loans.userId, user.id), eq(loans.status, "awaiting_customer")));
+  if (!loan) return fail("This loan is no longer waiting for you.");
+  const [product] = await db.select().from(loanProducts).where(eq(loanProducts.id, loan.productId));
+  if (!product?.active) return fail("This loan type is no longer offered. Ask your credit officer to prepare a new one.");
+  if (user.status !== "active") return fail("Your account can't take new loans right now. Contact support.");
+  if (await getSetting<boolean>("pauseLoans")) return fail("We've paused new loan applications for a short while. Please check back soon.");
+  const { limit } = await creditLimit(user.id, user.kycTier);
+  if (loan.principal > Math.min(limit, product.maxAmount)) return fail("This loan is now above your limit. Ask your credit officer to prepare a new one.");
+  if (!input.acceptTerms) return fail("Read and accept the loan terms to continue.");
+  const pin = await verifyTransactionPin(user, input.pin);
+  if (!pin.ok) return fail(pin.error);
+
+  const [accepted] = await db.update(loans).set({ status: "pending", termsAcceptedAt: new Date() })
+    .where(and(eq(loans.id, loan.id), eq(loans.status, "awaiting_customer"))).returning();
+  if (!accepted) return fail("This loan is no longer waiting for you.");
+  await logAudit({ actorId: user.id, action: "loan.offer_accepted", summary: `accepted the terms of ${loan.reference} (${naira(loan.principal)}), prepared by a credit officer`, target: { type: "loan", id: loan.id } });
+  await notify(user.id, `thanks for accepting loan ${loan.reference}. We'll update you within one working day.`, { title: "Application received" });
+  await notifyStaff("loans.review", { category: "loan", title: "New loan application", body: `${naira(loan.principal)} ${product.name} from ${user.firstName} ${user.lastName} (prepared by a credit officer)`, href: `/console/loans/${loan.id}` });
+  return { ok: true, loanId: loan.id, message: "Accepted. We'll review it and update you within one working day." };
+}
+
+/** The officer who prepared a loan withdraws it before the customer accepts. */
+export async function withdrawPreparedLoan(staff: CurrentUser, loanId: number): Promise<Outcome> {
+  const [loan] = await (await getDb()).update(loans).set({ status: "cancelled", closedAt: new Date() })
+    .where(and(eq(loans.id, loanId), eq(loans.status, "awaiting_customer"), eq(loans.preparedById, staff.id))).returning();
+  if (!loan) return fail("This loan is no longer waiting for the customer.");
+  await logAudit({ actorId: staff.id, action: "loan.offer_withdrawn", summary: `withdrew ${loan.reference} before the customer accepted it`, target: { type: "loan", id: loan.id } });
+  return { ok: true, message: "Withdrawn." };
 }
 
 /* ---------- Staff decisions ---------- */
@@ -181,6 +245,7 @@ export async function reviewLoan(staff: CurrentUser, loanId: number, decision: "
   if (!can(staff, "loans.review")) return fail("You can't review loans.");
   const loan = await loadLoan(loanId);
   if (!loan || loan.status !== "pending") return fail("This application has already been reviewed.");
+  if (loan.preparedById === staff.id) return fail("You prepared this application, so someone else must review it.");
   if (decision === "decline" && note.trim().length < 5) return fail("Give the customer a reason for declining.");
   const db = await getDb();
   const now = new Date();
@@ -202,6 +267,7 @@ export async function approveLoan(staff: CurrentUser, loanId: number, decision: 
   const loan = await loadLoan(loanId);
   if (!loan || loan.status !== "reviewed") return fail("This loan isn't waiting for approval.");
   if (loan.reviewedById === staff.id) return fail("You reviewed this application, so someone else must approve it.");
+  if (loan.preparedById === staff.id) return fail("You prepared this application, so someone else must approve it.");
   if (decision === "decline" && note.trim().length < 5) return fail("Give the customer a reason for declining.");
   const db = await getDb();
   const now = new Date();

@@ -3,10 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { requireCustomer, requirePermission } from "@/lib/auth";
 import { decideSubmission, submitAddress, submitNinSelfie, submitTier1 } from "@/lib/kyc/service";
+import { addressDocumentFrom } from "@/lib/form-files";
 import type { FormState } from "./auth";
 
 const str = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
-const DOC_TYPES = ["image/jpeg", "image/png", "application/pdf"];
 
 function done(outcome: Awaited<ReturnType<typeof submitTier1>>, fields?: Record<string, string>): FormState {
   if (!outcome.ok) return { error: outcome.error, fields };
@@ -29,11 +29,8 @@ export async function verifyNin(_: FormState, fd: FormData): Promise<FormState> 
 export async function verifyAddress(_: FormState, fd: FormData): Promise<FormState> {
   const user = await requireCustomer();
   const fields = { addressLine: str(fd, "addressLine"), city: str(fd, "city"), state: str(fd, "state") };
-  const file = fd.get("document");
-  if (!(file instanceof File) || file.size === 0) return { error: "Upload a utility bill or bank statement.", fields };
-  if (!DOC_TYPES.includes(file.type)) return { error: "Upload a JPG, PNG or PDF.", fields };
-  if (file.size > 3 * 1024 * 1024) return { error: "That file is too large (max 3 MB).", fields };
-  const document = `data:${file.type};base64,${Buffer.from(await file.arrayBuffer()).toString("base64")}`;
+  const document = await addressDocumentFrom(fd.get("document"));
+  if (typeof document !== "string") return { ...document, fields };
   return done(await submitAddress(user, { ...fields, document }), fields);
 }
 

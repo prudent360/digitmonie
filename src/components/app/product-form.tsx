@@ -10,7 +10,7 @@ export type ProductValues = {
   interestMethod: "reducing" | "flat"; processingFee: string; lateFee: string; minKycTier: string; statementAbove: string; autoApproveUpTo: string; active: boolean;
 };
 
-export function LoanProductForm({ action, initial }: { action: (s: FormState, fd: FormData) => Promise<FormState>; initial: ProductValues }) {
+export function LoanProductForm({ action, initial, tierNames }: { action: (s: FormState, fd: FormData) => Promise<FormState>; initial: ProductValues; tierNames: Record<number, string> }) {
   const [state, formAction] = useActionState(action, undefined);
   const v = { ...initial, ...(state?.fields as Partial<ProductValues> | undefined) };
   const num = (name: keyof ProductValues, label: string, hint?: string) => (
@@ -25,7 +25,7 @@ export function LoanProductForm({ action, initial }: { action: (s: FormState, fd
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Name"><input name="name" defaultValue={v.name} required className={inputClass} /></Field>
         <Field label="Minimum KYC tier">
-          <select name="minKycTier" defaultValue={v.minKycTier} className={inputClass}>{[1, 2, 3].map((t) => <option key={t} value={t}>Tier {t}</option>)}</select>
+          <select name="minKycTier" defaultValue={v.minKycTier} className={inputClass}>{[1, 2, 3].map((t) => <option key={t} value={t}>{tierNames[t] === `Tier ${t}` ? `Tier ${t}` : `Tier ${t} (${tierNames[t]})`}</option>)}</select>
         </Field>
       </div>
       <Field label="Description"><input name="description" defaultValue={v.description} className={inputClass} /></Field>

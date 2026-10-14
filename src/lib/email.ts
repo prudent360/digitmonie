@@ -155,7 +155,9 @@ export async function sendTemplate(to: string, key: TemplateKey, vars: Vars): Pr
   const template = await getTemplate(key);
   const message = { to, ...(await renderEmail(template, vars)) };
   const db = await getDb();
-  const mask = (html: string) => (vars.code ? html.split(String(vars.code)).join("••••••") : html);
+  // One-time codes and set-up links stay out of the log, so no one can use them from there.
+  const secrets = [vars.code, vars.inviteUrl].filter(Boolean).map(String);
+  const mask = (html: string) => secrets.reduce((h, s) => h.split(s).join("••••••"), html);
   if (!template.enabled) {
     await db.insert(emailLog).values({ to, template: key, subject: mask(message.subject), html: mask(message.html), status: "skipped", error: "Template switched off in Settings" });
     return { sent: false };

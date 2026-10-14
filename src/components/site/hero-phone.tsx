@@ -59,7 +59,7 @@ export function HeroPhone() {
               <CountUp value={500000} prefix="₦" />
             </p>
             <p className="mt-0.5 flex items-center gap-1 text-[9px] font-semibold text-gold">
-              <CheckIcon className="size-3" /> No collateral needed
+              <CheckIcon className="size-3" /> Full cost shown upfront
             </p>
           </div>
 

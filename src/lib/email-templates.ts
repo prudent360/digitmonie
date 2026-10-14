@@ -70,6 +70,20 @@ If you didn't ask for this, ignore this email and your password stays the same. 
 
 The link works once and expires in 7 days. Have your phone ready: you may be asked to set up two-factor sign-in with an authenticator app.`,
   },
+  customer_invite: {
+    name: "Account set up for you",
+    group: "Security",
+    description: "Sent when a credit officer opens an account for a customer, with a link to choose their password.",
+    variables: { officer: "Tunde Bello", inviteUrl: "https://digitmonie.com/invite/sample" },
+    subject: "Your {{siteName}} account is ready",
+    body: `Hi {{name}},
+
+**{{officer}}** from {{siteName}} has opened an account for you. Choose your password to sign in, see any loan prepared for you and your repayment plan.
+
+[[Set up my account|{{inviteUrl}}]]
+
+The link works once and expires in 7 days. {{siteName}} staff will never ask for your password or PIN.`,
+  },
   welcome: {
     name: "Welcome",
     group: "Account",
@@ -102,11 +116,11 @@ If you have questions, reply to this email or write to {{supportEmail}}.`,
     name: "Verification approved",
     group: "Verification",
     description: "Sent when staff approve a KYC tier after review.",
-    variables: { tier: "2", verifyUrl: "https://digitmonie.com/dashboard/verify" },
-    subject: "Tier {{tier}} verification approved",
+    variables: { tier: "2", tierName: "Tier 2", verifyUrl: "https://digitmonie.com/dashboard/verify" },
+    subject: "{{tierName}} verification approved",
     body: `Hi {{name}},
 
-Good news: your **Tier {{tier}}** verification is approved and your new limits are active now.
+Good news: your **{{tierName}}** verification is approved and your new loan limit is active now.
 
 [[See my limits|{{verifyUrl}}]]`,
   },
@@ -114,11 +128,11 @@ Good news: your **Tier {{tier}}** verification is approved and your new limits a
     name: "Verification not approved",
     group: "Verification",
     description: "Sent when staff reject a KYC submission. Includes the reason they gave.",
-    variables: { tier: "3", reason: "The utility bill is older than 3 months.", verifyUrl: "https://digitmonie.com/dashboard/verify" },
-    subject: "About your Tier {{tier}} verification",
+    variables: { tier: "3", tierName: "Tier 3", reason: "The utility bill is older than 3 months.", verifyUrl: "https://digitmonie.com/dashboard/verify" },
+    subject: "About your {{tierName}} verification",
     body: `Hi {{name}},
 
-We couldn't approve your **Tier {{tier}}** verification:
+We couldn't approve your **{{tierName}}** verification:
 
 > {{reason}}
 
@@ -235,6 +249,6 @@ As agreed, your loan **{{reference}}** has a new repayment schedule. Open the ap
 export type TemplateKey = keyof typeof EMAIL_TEMPLATES;
 
 /** Security emails can't be switched off. */
-export const REQUIRED_TEMPLATES: TemplateKey[] = ["verification_code", "password_reset_code", "staff_invite"];
+export const REQUIRED_TEMPLATES: TemplateKey[] = ["verification_code", "password_reset_code", "staff_invite", "customer_invite"];
 
 export const isTemplateKey = (key: string): key is TemplateKey => key in EMAIL_TEMPLATES;

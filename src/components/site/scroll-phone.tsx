@@ -53,7 +53,7 @@ const BorrowScreen = (
           <p key={k} className="flex justify-between"><span className="text-muted">{k}</span><span className="font-bold text-ink">{v}</span></p>
         ))}
       </div>
-      <div className="flex items-center gap-2 rounded-[7px] bg-success-soft p-3 text-[11px] font-semibold text-success">{tick} Full cost shown. No collateral.</div>
+      <div className="flex items-center gap-2 rounded-[7px] bg-success-soft p-3 text-[11px] font-semibold text-success">{tick} Full cost shown before you apply.</div>
       <span className={primary}>Apply for ₦250,000</span>
     </div>
   </>

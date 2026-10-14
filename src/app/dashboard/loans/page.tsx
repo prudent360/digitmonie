@@ -6,6 +6,7 @@ import { AlertIcon, CheckIcon, ClockIcon, LandmarkIcon } from "@/components/icon
 import { Badge, Card, CardHeader, PageHeader, StatusBadge, Table, buttonPrimary } from "@/components/ui";
 import { requireCustomer } from "@/lib/auth";
 import { formatDate } from "@/lib/format";
+import { tierNames } from "@/lib/kyc";
 import { bpsToPercent, toNaira } from "@/lib/loans/math";
 import { customerLoans, loanPaymentsFor } from "@/lib/loans/queries";
 import { loanPayouts } from "@/lib/loans/payouts";
@@ -21,6 +22,7 @@ export default async function LoansPage({ searchParams }: { searchParams: Promis
   await refreshInstalments();
   const { applied, paid, payment } = await searchParams;
   const { limit, products, openLoan, blocked, history } = await loanEligibility(user);
+  const names = await tierNames();
   const all = await customerLoans(user.id);
   const open = openLoan ? all.find((l) => l.loan.id === openLoan.id) ?? null : null;
   const repayable = open && ["active", "defaulted"].includes(open.loan.status);
@@ -58,6 +60,11 @@ export default async function LoansPage({ searchParams }: { searchParams: Promis
                   <p className="mt-5 flex items-center gap-2 rounded-[7px] bg-warning-soft px-4 py-3 text-sm text-warning"><ClockIcon className="size-4" /> Next repayment: <b>{ngn(owedOn(balance.next))}</b> on {formatDate(balance.next.dueDate)}</p>
                 )}
               </>
+            ) : open.loan.status === "awaiting_customer" ? (
+              <div className="mt-6 space-y-4">
+                <p className="rounded-[7px] bg-gold-50 px-4 py-3 text-sm text-body">Your credit officer prepared this loan with you. Review the full cost and repayment plan, then accept it to send it for approval.</p>
+                <Link href={`/dashboard/loans/offer/${open.loan.id}`} className={buttonPrimary}>Review and accept</Link>
+              </div>
             ) : (
               <div className="mt-6 space-y-3">
                 {[
@@ -97,7 +104,7 @@ export default async function LoansPage({ searchParams }: { searchParams: Promis
             <div className="relative">
               <p className="text-sm text-white/70">Your loan limit</p>
               <p className="mt-1 font-display text-3xl font-extrabold text-gold">{ngn(limit)}</p>
-              <p className="mt-2 text-sm text-white/70">{user.kycTier < 3 ? `Verify to Tier ${user.kycTier + 1} and repay on time to grow it.` : "Repay on time to grow it."}</p>
+              <p className="mt-2 text-sm text-white/70">{user.kycTier < 3 ? `Verify to ${names[user.kycTier + 1]} and repay on time to grow it.` : "Repay on time to grow it."}</p>
               {history.repaidOnTime > 0 && <p className="mt-3 text-xs text-white/60">{history.repaidOnTime} loan{history.repaidOnTime > 1 ? "s" : ""} repaid on time 🎉</p>}
             </div>
           </Card>
@@ -128,7 +135,7 @@ export default async function LoansPage({ searchParams }: { searchParams: Promis
       <div className="grid gap-4 md:grid-cols-3">
         {products.map((p) => (
           <Card key={p.id} className="p-5">
-            <div className="flex items-center justify-between"><p className="font-bold text-ink">{p.name}</p>{p.minKycTier > user.kycTier && <Badge>Tier {p.minKycTier}</Badge>}</div>
+            <div className="flex items-center justify-between"><p className="font-bold text-ink">{p.name}</p>{p.minKycTier > user.kycTier && <Badge>{names[p.minKycTier]}</Badge>}</div>
             <p className="mt-1 text-sm text-body">{p.description}</p>
             <dl className="mt-3 space-y-1.5 text-sm">
               <div className="flex justify-between"><dt className="text-muted">Amount</dt><dd className="font-semibold text-ink">{ngn(p.minAmount)} – {ngn(p.maxAmount)}</dd></div>

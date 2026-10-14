@@ -1,6 +1,7 @@
 import type { LoanStatus } from "@/db/schema";
 
 export const LOAN_STATUS_LABEL: Record<LoanStatus, string> = {
+  awaiting_customer: "Awaiting customer",
   pending: "Under review",
   reviewed: "Awaiting approval",
   approved: "Approved · awaiting payout",
@@ -13,8 +14,9 @@ export const LOAN_STATUS_LABEL: Record<LoanStatus, string> = {
 };
 
 export const LOAN_STATUS_TONE: Record<LoanStatus, "neutral" | "brand" | "success" | "warning" | "danger" | "gold"> = {
-  pending: "warning", reviewed: "warning", approved: "brand", active: "success", repaid: "neutral",
+  awaiting_customer: "gold", pending: "warning", reviewed: "warning", approved: "brand", active: "success", repaid: "neutral",
   defaulted: "danger", written_off: "danger", declined: "danger", cancelled: "neutral",
 };
 
-export const OPEN_STATUSES: LoanStatus[] = ["pending", "reviewed", "approved", "active"];
+/** Loans that stop the customer starting another one. */
+export const OPEN_STATUSES: LoanStatus[] = ["awaiting_customer", "pending", "reviewed", "approved", "active"];

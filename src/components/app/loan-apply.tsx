@@ -87,10 +87,12 @@ function PayoutAccount({ banks, lookup, initialBank, initialAccount }: { banks: 
   );
 }
 
-export function LoanApplyForm({ action, lookup, products, limit, kycTier, banks, employmentTypes, defaults }: {
+/** `onBehalf` is the customer's first name when a credit officer prepares the application for them to accept. */
+export function LoanApplyForm({ action, lookup, products, limit, kycTier, tierNames, banks, employmentTypes, defaults, onBehalf }: {
   action: (s: FormState, fd: FormData) => Promise<FormState>;
+  onBehalf?: string;
   lookup: Lookup;
-  products: ProductOption[]; limit: number; kycTier: number; banks: { code: string; name: string }[]; employmentTypes: string[];
+  products: ProductOption[]; limit: number; kycTier: number; tierNames: Record<number, string>; banks: { code: string; name: string }[]; employmentTypes: string[];
   defaults: { monthlyIncome: string; employmentType: string; employer: string };
 }) {
   const [state, formAction] = useActionState(action, undefined);
@@ -102,7 +104,7 @@ export function LoanApplyForm({ action, lookup, products, limit, kycTier, banks,
   const [amount, setAmount] = useState(() => (f.amount ? toKobo(Number(f.amount)) : Math.min(maxAllowed, Math.max(product?.minAmount ?? 0, Math.round(maxAllowed / 2 / 100_000) * 100_000))));
   const [tenor, setTenor] = useState(Number(f.tenor) || product?.tenors[Math.min(1, (product?.tenors.length ?? 1) - 1)] || 1);
 
-  if (!product) return <p className="rounded-[7px] bg-canvas p-6 text-sm text-body">No loan is available for your current limit and KYC tier yet.</p>;
+  if (!product) return <p className="rounded-[7px] bg-canvas p-6 text-sm text-body">No loan is available for {onBehalf ? "their" : "your"} current limit and KYC tier yet.</p>;
   const clamped = Math.min(maxAllowed, Math.max(product.minAmount, amount));
   const step = maxAllowed - product.minAmount >= 100_000_000 ? 5_000_000 : 1_000_000;
   const fill = maxAllowed > product.minAmount ? ((clamped - product.minAmount) / (maxAllowed - product.minAmount)) * 100 : 100;
@@ -133,7 +135,7 @@ export function LoanApplyForm({ action, lookup, products, limit, kycTier, banks,
                 <button key={p.id} type="button" disabled={locked} onClick={() => choose(p)} className={`rounded-[7px] border p-4 text-left transition ${selected ? "border-brand bg-brand-50 ring-2 ring-brand-100" : "border-line bg-white hover:border-brand-200"} disabled:cursor-not-allowed disabled:opacity-50`}>
                   <span className="flex items-center justify-between"><span className="font-bold text-ink">{p.name}</span>{selected && <CheckIcon className="size-4 text-brand" />}{locked && <LockIcon className="size-4 text-muted" />}</span>
                   <span className="mt-1 block text-xs text-muted">{bpsToPercent(p.monthlyRateBps)} a month · {p.tenors[0]}–{p.tenors.at(-1)} mo</span>
-                  {locked && <span className="mt-1 block text-xs font-semibold text-warning">{p.minKycTier > kycTier ? `Needs KYC Tier ${p.minKycTier}` : "Above your current limit"}</span>}
+                  {locked && <span className="mt-1 block text-xs font-semibold text-warning">{p.minKycTier > kycTier ? `Needs ${tierNames[p.minKycTier]}` : "Above your current limit"}</span>}
                 </button>
               );
             })}
@@ -144,7 +146,7 @@ export function LoanApplyForm({ action, lookup, products, limit, kycTier, banks,
           <h2 className="text-sm font-bold text-ink">2. How much, and for how long?</h2>
           <div className="mt-4 flex items-end justify-between gap-4">
             <label className="flex-1">
-              <span className="text-xs text-muted">Amount (your limit is {ngn(limit)})</span>
+              <span className="text-xs text-muted">Amount ({onBehalf ? "their" : "your"} limit is {ngn(limit)})</span>
               <input value={toNaira(clamped).toLocaleString("en-NG")} onChange={(e) => setAmount(toKobo(Number(e.target.value.replace(/[^\d]/g, "")) || 0))} inputMode="numeric" className="mt-1 w-full border-0 bg-transparent p-0 font-display text-3xl font-extrabold text-ink outline-none" aria-label="Loan amount in naira" />
             </label>
           </div>
@@ -159,7 +161,7 @@ export function LoanApplyForm({ action, lookup, products, limit, kycTier, banks,
         </section>
 
         <section className="rounded-[7px] border border-line bg-white p-5">
-          <h2 className="text-sm font-bold text-ink">3. About you</h2>
+          <h2 className="text-sm font-bold text-ink">3. About {onBehalf ?? "you"}</h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <Field label="What is the loan for?">
@@ -180,14 +182,14 @@ export function LoanApplyForm({ action, lookup, products, limit, kycTier, banks,
 
         <section className="rounded-[7px] border border-line bg-white p-5">
           <h2 className="text-sm font-bold text-ink">4. Where should we send the money?</h2>
-          <p className="mt-1 text-xs text-muted">The account must be in your own name. We check it with your bank.</p>
+          <p className="mt-1 text-xs text-muted">The account must be in {onBehalf ? `${onBehalf}'s` : "your"} own name. We check it with the bank.</p>
           <PayoutAccount banks={banks} lookup={lookup} initialBank={f.payoutBankCode} initialAccount={f.payoutAccount} />
         </section>
 
         {needsStatement && (
           <section className="rounded-[7px] border border-gold/50 bg-gold-50 p-5">
             <h2 className="text-sm font-bold text-ink">5. Bank statement</h2>
-            <p className="mt-1 text-xs text-body">For loans above {ngn(product.statementAbove!)} we need your last 6 months&apos; statement from your main bank (PDF, JPG or PNG, max 3 MB).</p>
+            <p className="mt-1 text-xs text-body">For loans above {ngn(product.statementAbove!)} we need {onBehalf ? "their" : "your"} last 6 months&apos; statement from your main bank (PDF, JPG or PNG, max 3 MB).</p>
             <input type="file" name="statement" accept="application/pdf,image/jpeg,image/png" required className="mt-3 block w-full rounded-[7px] border border-dashed border-line bg-white p-3 text-sm file:mr-4 file:rounded-[7px] file:border-0 file:bg-brand file:px-4 file:py-2 file:text-sm file:font-bold file:text-white" />
           </section>
         )}
@@ -195,6 +197,12 @@ export function LoanApplyForm({ action, lookup, products, limit, kycTier, banks,
 
       <div className="space-y-4 lg:sticky lg:top-24 lg:self-start">
         <KeyFacts product={product} amount={clamped} tenor={tenor} />
+        {onBehalf ? (
+          <div className="space-y-4 rounded-[7px] border border-line bg-white p-5">
+            <p className="text-sm text-body">{onBehalf} will get a message to sign in, check these key facts and the repayment plan, and accept with their PIN. It only goes for review after they accept. You can&apos;t review or approve a loan you prepared.</p>
+            <SubmitButton>Send to {onBehalf} to accept</SubmitButton>
+          </div>
+        ) : (
         <div className="space-y-4 rounded-[7px] border border-line bg-white p-5">
           <label className="flex items-start gap-3 text-sm text-body">
             <input type="checkbox" name="acceptTerms" required className="mt-0.5 size-4 shrink-0 accent-brand" />
@@ -203,6 +211,7 @@ export function LoanApplyForm({ action, lookup, products, limit, kycTier, banks,
           <Field label="Transaction PIN"><input className={`${inputClass} font-display text-lg tracking-[.5em]`} type="password" name="pin" inputMode="numeric" maxLength={4} pattern="\d{4}" required /></Field>
           <SubmitButton>Submit application</SubmitButton>
         </div>
+        )}
       </div>
     </form>
   );

@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import { AppShell, type NavSection } from "@/components/app/app-shell";
 import { CardIcon, HomeIcon, IdCardIcon, LandmarkIcon, PiggyIcon, ReceiptIcon, SettingsIcon, TrendUpIcon, WalletIcon } from "@/components/icons";
 import { fullName, requireCustomer, sessionTiming, viewingAs } from "@/lib/auth";
+import { tierNames } from "@/lib/kyc";
 
 const SECTIONS: NavSection[] = [
   { items: [
@@ -30,7 +31,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const timing = await sessionTiming();
   const viewer = await viewingAs();
   return (
-    <AppShell logos={await getLogos()} unread={await unreadCount(user.id)} variant="customer" sections={SECTIONS} user={{ name: fullName(user), email: user.email, roleLabel: `Personal · Tier ${user.kycTier}` }}>
+    <AppShell logos={await getLogos()} unread={await unreadCount(user.id)} variant="customer" sections={SECTIONS} user={{ name: fullName(user), email: user.email, roleLabel: user.kycTier ? `Personal · ${(await tierNames())[user.kycTier]}` : "Personal · Not verified" }}>
       {viewer && <Suspense><ViewingBanner customer={fullName(user)} staff={fullName(viewer)} /></Suspense>}
       {user.status !== "active" && (
         <p role="status" className="mb-6 rounded-[7px] border border-warning/30 bg-warning-soft px-4 py-3 text-sm text-warning">

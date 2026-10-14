@@ -10,7 +10,7 @@ import {
 import { legalDetails } from "@/lib/legal";
 import { loanFacts, months, shortNaira, type LoanFacts } from "@/lib/site-facts";
 
-const TRUST = ["Licensed by the FCCPC", "BVN and NIN verified customers", "Identity data encrypted", "Payments by Flutterwave and Paystack", "Full cost shown before you accept", "No collateral", "Repay early, pay less", "Fair, respectful collections"];
+const TRUST = ["Licensed by the FCCPC", "BVN and NIN verified customers", "Identity data encrypted", "Payments by Flutterwave and Paystack", "Full cost shown before you accept", "Repay early, pay less", "Fair, respectful collections"];
 
 const SECURITY = [
   { title: "Licensed and regulated", text: "DigitMonie is licensed by the FCCPC as a digital lender, and we follow its rules on fair pricing and respectful debt collection.", icon: <ShieldIcon className="size-6" /> },
@@ -38,12 +38,12 @@ function borrowCopy(facts: LoanFacts | null): { tab: BorrowCopy; points: string[
   const term = facts ? (facts.minTenor === facts.maxTenor ? months(facts.maxTenor) : `${facts.minTenor} to ${months(facts.maxTenor)}`) : "";
   return {
     tab: {
-      stat: facts ? `Up to ${shortNaira(facts.max)}` : "No collateral",
-      statLabel: facts ? `repaid over ${term}` : "for most customers",
-      text: "See how much you can borrow, pick an amount and how long to repay, and get paid straight into your bank account. No collateral.",
+      stat: facts ? `Up to ${shortNaira(facts.max)}` : "Full cost",
+      statLabel: facts ? `repaid over ${term}` : "shown before you accept",
+      text: "See how much you can borrow, pick an amount and how long to repay, and get paid straight into your bank account.",
       points: ["Licensed by the FCCPC", facts?.instant ? "Instant decisions on smaller loans" : "Every application reviewed by a person", "Full cost shown upfront. Repay early and pay less."],
     },
-    points: ["Full cost shown first", "No collateral", ...(facts ? [`${term}`] : [])],
+    points: ["Full cost shown first", "Repay early, pay less", ...(facts ? [`${term}`] : [])],
   };
 }
 
@@ -95,7 +95,7 @@ export default async function HomePage() {
                 <ShieldIcon className="size-4 text-gold" /> Licensed by the FCCPC
               </span>
               <span className="flex items-center gap-2 rounded-[7px] bg-white/10 px-3 py-2 text-sm font-semibold ring-1 ring-white/20">
-                <CheckIcon className="size-4 text-gold" /> No collateral
+                <CheckIcon className="size-4 text-gold" /> Full cost shown upfront
               </span>
             </div>
           </div>
@@ -133,7 +133,7 @@ export default async function HomePage() {
               { node: <CountUp value={facts.max >= 1_000_000 ? facts.max / 1_000_000 : facts.max / 1_000} prefix="₦" suffix={facts.max >= 1_000_000 ? "m" : "k"} decimals={Number.isInteger(facts.max >= 1_000_000 ? facts.max / 1_000_000 : facts.max / 1_000) ? 0 : 1} />, l: "The most you can borrow" },
               { node: <CountUp value={facts.maxTenor} suffix={facts.maxTenor === 1 ? " month" : " months"} />, l: "The longest time to repay" },
               { node: <CountUp value={facts.lowestRate} suffix="%" decimals={Number.isInteger(facts.lowestRate) ? 0 : 1} />, l: "Monthly interest, from" },
-              { node: <>₦0</>, l: "Collateral needed" },
+              { node: <>₦0</>, l: "To open an account" },
             ].map((stat, i) => (
               <Reveal key={stat.l} delay={i * 100} className="border-l-4 border-gold pl-5">
                 <p className="font-display text-4xl font-extrabold text-brand sm:text-5xl">{stat.node}</p>
@@ -220,7 +220,7 @@ export default async function HomePage() {
                 </div>
               </div>
               <ul className="space-y-3 text-sm">
-                {["Free to open", "No collateral", "Full cost shown upfront", "Repay early, pay less"].map((b) => (
+                {["Free to open", "Full cost shown upfront", "Paid straight to your bank", "Repay early, pay less"].map((b) => (
                   <li key={b} className="flex items-center gap-3 rounded-[7px] bg-white/10 px-5 py-3.5 font-semibold ring-1 ring-white/15">
                     <ZapIcon className="size-4 text-gold" />{b}
                   </li>

@@ -3,17 +3,19 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { deleteCustomerAction, forceSignOutAction, logContactAction, setStatusAction, unlockPinAction, updateDetailsAction, viewAsAction } from "@/app/actions/customers";
 import { setLimitOverride } from "@/app/actions/loans";
+import { assignOfficerAction } from "@/app/actions/onboarding";
 import { ContactForm, EditDetailsForm, StatusForm } from "@/components/app/customer-forms";
-import { ActionButton, SimpleActionForm } from "@/components/app/loan-staff";
+import { ActionButton, SelectForm, SimpleActionForm } from "@/components/app/loan-staff";
 import { AlertIcon, EyeIcon } from "@/components/icons";
 import { Avatar, Badge, Card, CardHeader, StatusBadge, Table } from "@/components/ui";
 import { logAudit } from "@/lib/audit";
-import { can, fullName, requirePermission } from "@/lib/auth";
+import { can, fullName, loadUser, requirePermission } from "@/lib/auth";
 import { creditLimit } from "@/lib/credit/limits";
 import { CHANNELS, OUTCOMES, customerProfile } from "@/lib/customers";
 import { formatDate } from "@/lib/format";
 import { toNaira } from "@/lib/loans/math";
 import { LOAN_STATUS_LABEL, LOAN_STATUS_TONE } from "@/lib/loans/status";
+import { creditOfficers } from "@/lib/onboarding";
 import { formatNgPhone } from "@/lib/phone";
 
 export const metadata: Metadata = { title: "Customer" };
@@ -38,6 +40,9 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   const pinLocked = user.pinLockedUntil && user.pinLockedUntil > new Date();
   const manage = can(staff, "users.manage");
   const canViewAs = can(staff, "users.view_as") && user.status !== "closed";
+  const officers = manage ? await creditOfficers() : [];
+  const officerName = async (id: number | null) => (id ? (await loadUser(id).then((u) => (u ? fullName(u) : "Former staff member"))) : null);
+  const [officer, onboardedBy] = await Promise.all([officerName(user.officerId), officerName(user.invitedById)]);
 
   return (
     <div className="space-y-6">
@@ -72,7 +77,12 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
             <div className="mt-3"><Facts rows={[
               ["Phone verified", user.phoneVerifiedAt ? "Yes" : "No"], ["Transaction PIN", user.pinHash ? (pinLocked ? <span key="p" className="text-danger">Locked</span> : "Set") : "Not set"],
               ["Last sign-in", user.lastLoginAt ? when(user.lastLoginAt) : "Never"],
+              ["Credit officer", officer ?? "None"], ...(onboardedBy ? [["Onboarded by", onboardedBy] as [string, string]] : []),
             ]} /></div>
+            {manage && officers.length > 0 && (
+              <div className="mt-4"><SelectForm action={assignOfficerAction.bind(null, user.id)} name="officerId" label="Credit officer" value={String(user.officerId ?? "")} submit="Assign"
+                options={[{ value: "", label: "No credit officer" }, ...officers.map((o) => ({ value: String(o.id), label: o.name }))]} /></div>
+            )}
             {manage && (
               <details className="mt-4 rounded-[7px] border border-line p-4">
                 <summary className="cursor-pointer text-sm font-semibold text-brand">Edit details</summary>
