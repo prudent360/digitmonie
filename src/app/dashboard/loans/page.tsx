@@ -77,7 +77,7 @@ export default async function LoansPage({ searchParams }: { searchParams: Promis
             <span className="flex size-12 items-center justify-center rounded-[7px] bg-gold-100 text-gold-700"><LandmarkIcon /></span>
             <h2 className="mt-4 font-display text-xl font-bold text-ink">No active loan</h2>
             <p className="mt-1 text-sm text-body">{blocked ?? "Choose an amount and see exactly what you'll repay before you apply."}</p>
-            {blocked && user.kycTier < 1 ? <Link href="/dashboard/verify" className={`${buttonPrimary} mt-5`}>Verify your BVN</Link> : !blocked && <Link href="/dashboard/loans/apply" className={`${buttonPrimary} mt-5`}>Apply now</Link>}
+            {blocked && user.kycTier < 1 ? <Link href="/dashboard/verify" className={`${buttonPrimary} mt-5`}>Verify your identity</Link> : !blocked && <Link href="/dashboard/loans/apply" className={`${buttonPrimary} mt-5`}>Apply now</Link>}
           </Card>
         )}
 

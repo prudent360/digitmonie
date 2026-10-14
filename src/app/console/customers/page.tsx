@@ -38,7 +38,7 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
       {deleted && <p role="status" className="rounded-[7px] bg-success-soft px-4 py-3 text-sm font-medium text-success">The account was deleted. A record of who deleted it stays in the audit log.</p>}
       <div className="grid gap-4 sm:grid-cols-4">
         <StatTile label="Total customers" value={formatNumber(total)} />
-        <StatTile label="BVN verified" value={total ? `${Math.round((verified / total) * 100)}%` : "—"} hint={`${formatNumber(verified)} of ${formatNumber(total)}`} />
+        <StatTile label="ID verified" value={total ? `${Math.round((verified / total) * 100)}%` : "—"} hint={`${formatNumber(verified)} of ${formatNumber(total)}`} />
         <StatTile label="Joined this week" value={formatNumber(recent)} />
         <StatTile label="Restricted / frozen" value={formatNumber(restricted)} />
       </div>

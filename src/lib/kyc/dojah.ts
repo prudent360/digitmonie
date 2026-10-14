@@ -32,7 +32,11 @@ async function call(path: string, init?: RequestInit): Promise<Entity | null> {
   const { base, headers } = await dojahConfig();
   const res = await fetch(`${base}${path}`, { ...init, headers, cache: "no-store" });
   if (res.status === 404 || res.status === 400) return null;
-  if (!res.ok) throw new ProviderError(`Dojah responded ${res.status}`);
+  if (!res.ok) {
+    // Dojah explains the failure in the body (bad keys, empty wallet, NIBSS down), so keep it for the logs.
+    const detail = (await res.text().catch(() => "")).slice(0, 300);
+    throw new ProviderError(`Dojah responded ${res.status}${detail ? `: ${detail}` : ""}`);
+  }
   const body = (await res.json()) as { entity?: Entity };
   return body.entity ?? null;
 }
@@ -41,6 +45,10 @@ export const dojahProvider: IdentityProvider = {
   name: "dojah",
   async lookupBvn(bvn) {
     const entity = await call(`/api/v1/kyc/bvn/full?bvn=${encodeURIComponent(bvn)}`);
+    return entity ? toRecord(entity) : null;
+  },
+  async lookupNin(nin) {
+    const entity = await call(`/api/v1/kyc/nin?nin=${encodeURIComponent(nin)}`);
     return entity ? toRecord(entity) : null;
   },
   async verifyNinSelfie(nin, selfieBase64) {

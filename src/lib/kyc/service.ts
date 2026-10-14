@@ -7,15 +7,16 @@ import { logAudit } from "@/lib/audit";
 import type { CurrentUser } from "@/lib/auth";
 import { appUrl, notifyCustomer, notifyStaff } from "@/lib/notifications";
 import { blockedFor, recordFailure } from "@/lib/rate-limit";
-import { encryptSecret } from "@/lib/secrets";
-import { identityProvider, kycThresholds } from ".";
+import { decryptSecret, encryptSecret } from "@/lib/secrets";
+import { identityProvider, kycThresholds, tier1IdKinds } from ".";
 import { ageOn, nameScore } from "./matching";
-import { normalizeDate, ProviderError, type Applicant, type IdentityRecord } from "./provider";
+import { normalizeDate, ProviderError, type Applicant, type IdentityRecord, type IdKind } from "./provider";
 import { NIGERIAN_STATES } from "./states";
+import { ID_LABEL } from "./tiers";
 
 export type KycOutcome = { ok: true; status: KycStatus; message: string } | { ok: false; error: string };
 
-const idHash = (kind: "bvn" | "nin", value: string) => createHmac("sha256", `kyc-id:${process.env.SESSION_SECRET ?? ""}`).update(`${kind}:${value}`).digest("hex");
+const idHash = (kind: IdKind, value: string) => createHmac("sha256", `kyc-id:${process.env.SESSION_SECRET ?? ""}`).update(`${kind}:${value}`).digest("hex");
 
 export async function getKycState(userId: number) {
   const db = await getDb();
@@ -71,23 +72,34 @@ function providerFailure(error: unknown): KycOutcome {
   return { ok: false, error: error instanceof ProviderError ? "Our verification partner isn't responding. Please try again shortly." : "Something went wrong. Please try again." };
 }
 
-/* ---------- Tier 1: BVN ---------- */
+/* ---------- Tier 1: NIN or BVN ---------- */
 
-export async function submitBvn(user: CurrentUser, input: { bvn: string; dateOfBirth: string; consent: boolean }): Promise<KycOutcome> {
+const DIAL = { nin: "Dial *346# to get it.", bvn: "Dial *565*0# to get it." } as const;
+const COLUMNS = {
+  nin: { hash: "ninHash", encrypted: "ninEncrypted", last4: "ninLast4" },
+  bvn: { hash: "bvnHash", encrypted: "bvnEncrypted", last4: "bvnLast4" },
+} as const;
+
+export async function submitTier1(user: CurrentUser, input: { idKind: string; idNumber: string; dateOfBirth: string; consent: boolean }): Promise<KycOutcome> {
   const blocked = await guard(user, 1);
   if (blocked) return { ok: false, error: blocked };
+  const allowed = await tier1IdKinds();
+  const kind = allowed.find((k) => k === input.idKind);
+  if (!kind) return { ok: false, error: `Verify with your ${allowed.map((k) => ID_LABEL[k]).join(" or ")}.` };
+  const label = ID_LABEL[kind];
   if (!input.consent) return { ok: false, error: "Please agree to the identity check to continue." };
-  const bvn = input.bvn.replace(/\s/g, "");
-  if (!/^\d{11}$/.test(bvn)) return { ok: false, error: "Your BVN is 11 digits. Dial *565*0# to get it." };
+  const id = input.idNumber.replace(/\s/g, "");
+  if (!/^\d{11}$/.test(id)) return { ok: false, error: `Your ${label} is 11 digits. ${DIAL[kind]}` };
   const dob = normalizeDate(input.dateOfBirth);
   if (!dob) return { ok: false, error: "Enter your date of birth." };
   if (ageOn(dob) < 18) return { ok: false, error: "You need to be 18 or older to open a DigitMonie account." };
 
-  const hash = idHash("bvn", bvn);
-  if (await idTakenByOther("bvnHash", hash, user.id)) {
-    await record(user.id, 1, "rejected", { duplicate: true }, "This BVN is already linked to another DigitMonie account.");
-    await logAudit({ actorId: user.id, action: "kyc.duplicate_bvn", summary: "tried a BVN already linked to another account", target: { type: "user", id: user.id } });
-    return { ok: false, error: "This BVN is already linked to another DigitMonie account. Contact support if that isn't you." };
+  const cols = COLUMNS[kind];
+  const hash = idHash(kind, id);
+  if (await idTakenByOther(cols.hash, hash, user.id)) {
+    await record(user.id, 1, "rejected", { idKind: kind, duplicate: true }, `This ${label} is already linked to another DigitMonie account.`);
+    await logAudit({ actorId: user.id, action: `kyc.duplicate_${kind}`, summary: `tried a ${label} already linked to another account`, target: { type: "user", id: user.id } });
+    return { ok: false, error: `This ${label} is already linked to another DigitMonie account. Contact support if that isn't you.` };
   }
 
   const provider = await identityProvider().catch((e: Error) => e);
@@ -96,30 +108,30 @@ export async function submitBvn(user: CurrentUser, input: { bvn: string; dateOfB
   const applicant: Applicant = { firstName: user.firstName, lastName: user.lastName, dateOfBirth: dob };
   let found: IdentityRecord | null;
   try {
-    found = await provider.lookupBvn(bvn, applicant);
+    found = kind === "nin" ? await provider.lookupNin(id, applicant) : await provider.lookupBvn(id, applicant);
   } catch (error) {
     return providerFailure(error);
   }
   if (!found) {
     await recordFailure(String(user.id), "kyc");
-    return { ok: false, error: "We couldn't find that BVN. Check the number and try again." };
+    return { ok: false, error: `We couldn't find that ${label}. Check the number and try again.` };
   }
 
-  const checks: KycChecks = { provider: provider.name, nameScore: nameScore(user, found), dobMatch: found.dateOfBirth === dob, watchlisted: found.watchlisted };
+  const checks: KycChecks = { provider: provider.name, idKind: kind, nameScore: nameScore(user, found), dobMatch: found.dateOfBirth === dob, watchlisted: found.watchlisted };
   let status: KycStatus;
   let reason: string | null = null;
   if (checks.dobMatch && checks.nameScore! >= nameMatch && !checks.watchlisted) status = "approved";
   else if (checks.watchlisted || (checks.dobMatch && checks.nameScore! >= 50)) {
     status = "pending_review";
-    reason = checks.watchlisted ? "BVN is on a watch-list." : "Name only partly matches the BVN record.";
+    reason = checks.watchlisted ? `${label} is on a watch-list.` : `Name only partly matches the ${label} record.`;
   } else {
     status = "rejected";
-    reason = "The name or date of birth on your account doesn't match your BVN record.";
+    reason = `The name or date of birth on your account doesn't match your ${label} record.`;
   }
 
   if (status !== "rejected") {
     await saveProfile(user.id, {
-      bvnEncrypted: encryptSecret(bvn), bvnHash: hash, bvnLast4: bvn.slice(-4),
+      [cols.encrypted]: encryptSecret(id), [cols.hash]: hash, [cols.last4]: id.slice(-4),
       legalFirstName: found.firstName, legalMiddleName: found.middleName, legalLastName: found.lastName,
       dateOfBirth: dob, gender: found.gender || null, consentAt: new Date(),
     });
@@ -127,11 +139,11 @@ export async function submitBvn(user: CurrentUser, input: { bvn: string; dateOfB
     await recordFailure(String(user.id), "kyc");
   }
   await record(user.id, 1, status, checks, reason, status === "rejected" ? [] : photoDoc(found));
-  await logAudit({ actorId: user.id, action: `kyc.tier1_${status}`, summary: `submitted BVN ••${bvn.slice(-4)} for Tier 1 (${status.replace("_", " ")})`, target: { type: "user", id: user.id }, details: checks });
+  await logAudit({ actorId: user.id, action: `kyc.tier1_${status}`, summary: `submitted ${label} ••${id.slice(-4)} for Tier 1 (${status.replace("_", " ")})`, target: { type: "user", id: user.id }, details: checks });
 
-  if (status === "approved") return { ok: true, status, message: "Your BVN is verified. You're now on Tier 1." };
+  if (status === "approved") return { ok: true, status, message: `Your ${label} is verified. You're now on Tier 1.` };
   if (status === "pending_review") return { ok: true, status, message: "Thanks. Our team is checking your details and will update you within one working day." };
-  return { ok: false, error: `${reason} Make sure your name on DigitMonie matches your bank records.` };
+  return { ok: false, error: `${reason} Make sure your name on DigitMonie matches your ${kind === "nin" ? "NIN" : "bank"} records.` };
 }
 
 /* ---------- Tier 2: NIN + selfie ---------- */
@@ -143,18 +155,20 @@ export function parseImageDataUrl(dataUrl: string, maxBytes: number): { mimeType
   return { mimeType: m[1], data: m[2] };
 }
 
-export async function submitNinSelfie(user: CurrentUser, input: { nin: string; selfie: string }): Promise<KycOutcome> {
+/** Tier 2 matches a selfie to the NIN photo. Customers who verified Tier 1 with their NIN aren't asked for it again. */
+export async function submitNinSelfie(user: CurrentUser, input: { nin?: string; selfie: string }): Promise<KycOutcome> {
   const blocked = await guard(user, 2);
   if (blocked) return { ok: false, error: blocked };
-  const nin = input.nin.replace(/\s/g, "");
+  const { profile } = await getKycState(user.id);
+  if (!profile?.legalFirstName || !profile.dateOfBirth) return { ok: false, error: "Complete Tier 1 first." };
+  const ninOnFile = profile.ninEncrypted ? decryptSecret(profile.ninEncrypted) : null;
+  const nin = ninOnFile ?? (input.nin ?? "").replace(/\s/g, "");
   if (!/^\d{11}$/.test(nin)) return { ok: false, error: "Your NIN is 11 digits. Dial *346# to get it." };
   const selfie = parseImageDataUrl(input.selfie, 2 * 1024 * 1024);
   if (typeof selfie === "string") return { ok: false, error: selfie };
 
-  const { profile } = await getKycState(user.id);
-  if (!profile?.legalFirstName || !profile.dateOfBirth) return { ok: false, error: "Complete Tier 1 first." };
   const hash = idHash("nin", nin);
-  if (await idTakenByOther("ninHash", hash, user.id)) {
+  if (!ninOnFile && await idTakenByOther("ninHash", hash, user.id)) {
     await record(user.id, 2, "rejected", { duplicate: true }, "This NIN is already linked to another DigitMonie account.");
     return { ok: false, error: "This NIN is already linked to another DigitMonie account. Contact support if that isn't you." };
   }
@@ -242,7 +256,10 @@ export async function decideSubmission(staff: CurrentUser, submissionId: number,
     if (customer.kycTier >= sub.tier - 1) await db.update(users).set({ kycTier: Math.max(customer.kycTier, sub.tier) }).where(eq(users.id, customer.id));
   } else {
     // Free the BVN/NIN so the customer can try again with the right details.
-    if (sub.tier === 1) await db.update(kycProfiles).set({ bvnEncrypted: null, bvnHash: null, bvnLast4: null, legalFirstName: null, legalMiddleName: null, legalLastName: null, dateOfBirth: null }).where(eq(kycProfiles.userId, customer.id));
+    if (sub.tier === 1) {
+      const id = sub.checks.idKind === "nin" ? { ninEncrypted: null, ninHash: null, ninLast4: null } : { bvnEncrypted: null, bvnHash: null, bvnLast4: null };
+      await db.update(kycProfiles).set({ ...id, legalFirstName: null, legalMiddleName: null, legalLastName: null, dateOfBirth: null }).where(eq(kycProfiles.userId, customer.id));
+    }
     if (sub.tier === 2) await db.update(kycProfiles).set({ ninEncrypted: null, ninHash: null, ninLast4: null }).where(eq(kycProfiles.userId, customer.id));
   }
 

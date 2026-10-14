@@ -103,7 +103,7 @@ export async function logContact(staff: CurrentUser, input: { customerId: number
 export type DetailsInput = { firstName: string; lastName: string; email: string; phone: string; reason: string };
 
 /**
- * Corrects a customer's contact details. Once their BVN is verified, their name comes from the BVN
+ * Corrects a customer's contact details. Once their NIN or BVN is verified, their name comes from that
  * record and can't be edited here. A changed email or phone must be confirmed again by the customer.
  */
 export async function updateCustomerDetails(staff: CurrentUser, customerId: number, input: DetailsInput): Promise<Result> {
@@ -119,7 +119,7 @@ export async function updateCustomerDetails(staff: CurrentUser, customerId: numb
   if (input.phone.trim() && !phone) return { ok: false, error: "Enter a Nigerian mobile number, like 0803 123 4567." };
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { ok: false, error: "Enter a valid email address." };
   const nameChanged = firstName !== customer.firstName || lastName !== customer.lastName;
-  if (nameChanged && customer.kycTier > 0) return { ok: false, error: "Their name is verified against their BVN, so it can't be edited. If the BVN record is wrong, they must fix it with their bank." };
+  if (nameChanged && customer.kycTier > 0) return { ok: false, error: "Their name is verified against their NIN or BVN, so it can't be edited. If that record is wrong, they must fix it with NIMC or their bank." };
   if (nameChanged && (firstName.length < 2 || lastName.length < 2)) return { ok: false, error: "Enter their first and last name." };
 
   const db = await getDb();

@@ -27,7 +27,7 @@ function faqs(facts: LoanFacts | null, email: string) {
     facts && { q: "What does a loan cost?", a: `Interest starts from ${facts.lowestRate}% a month${facts.processingFee ? ", plus a one-off processing fee" : ""}. Before you accept, you'll see your monthly repayment, the total you'll repay and the annual percentage rate (APR). There are no hidden charges.` },
     { q: "Can I repay early?", a: "Yes, at any time. Pay off the whole loan early and you won't be charged interest for the months you don't use." },
     { q: "What happens if I miss a repayment?", a: "We'll remind you, and a late fee may apply as set out in your loan agreement. We contact only you, at reasonable hours, and never your friends, family or employer. If you're struggling, talk to us early; we can often agree a new plan." },
-    { q: "What do I need to apply?", a: "Your phone number, email address and BVN. Bigger loans need your NIN and a selfie, and the largest also need a proof of address." },
+    { q: "What do I need to apply?", a: "Your phone number, email address and NIN or BVN. Bigger loans need a selfie matched to your NIN, and the largest also need a proof of address." },
     { q: "When are savings and investments launching?", a: "Savings, investments, transfers and bill payments are coming soon. When they launch, they'll appear in your DigitMonie account." },
     { q: "How do I contact support?", a: `Email us at ${email} and we'll get back to you as soon as we can.` },
   ].filter((f): f is { q: string; a: string } => Boolean(f));

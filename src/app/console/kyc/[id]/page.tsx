@@ -67,7 +67,7 @@ export default async function KycReviewPage({ params }: { params: Promise<{ id: 
             <dl className="mt-3 space-y-2 text-sm">
               {[
                 ["Name on account", fullName(user)],
-                ["Name on BVN", profile?.legalFirstName ? [profile.legalFirstName, profile.legalMiddleName, profile.legalLastName].filter(Boolean).join(" ") : "—"],
+                ["Name on ID", profile?.legalFirstName ? [profile.legalFirstName, profile.legalMiddleName, profile.legalLastName].filter(Boolean).join(" ") : "—"],
                 ["Date of birth", profile?.dateOfBirth ?? "—"],
                 ["BVN", profile?.bvnLast4 ? `••••••• ${profile.bvnLast4}` : "—"],
                 ["NIN", profile?.ninLast4 ? `••••••• ${profile.ninLast4}` : "—"],

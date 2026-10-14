@@ -80,7 +80,7 @@ The link works once and expires in 7 days. Have your phone ready: you may be ask
 
 Welcome to **{{siteName}}**. Your account is ready.
 
-Next, verify your BVN to see your loan limit. It takes about a minute:
+Next, verify your identity with your NIN or BVN to see your loan limit. It takes about a minute:
 
 [[Verify my identity|{{dashboardUrl}}]]
 

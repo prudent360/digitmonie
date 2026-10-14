@@ -1,5 +1,5 @@
 import "server-only";
-import type { IdentityProvider } from "./provider";
+import type { Applicant, IdentityProvider, IdentityRecord } from "./provider";
 
 /**
  * Test provider for development and demos. It never contacts NIBSS or NIMC.
@@ -9,38 +9,32 @@ import type { IdentityProvider } from "./provider";
  *  NIN ending 2         → face match 41 (rejected)
  *  anything else        → matches the applicant, face match 96
  */
+function record(id: string, applicant: Applicant): IdentityRecord | null {
+  if (id.endsWith("0000")) return null;
+  const other = id.startsWith("1");
+  return {
+    firstName: other ? "John" : applicant.firstName,
+    middleName: "",
+    lastName: other ? "Doe" : applicant.lastName,
+    dateOfBirth: other ? "1980-01-01" : applicant.dateOfBirth,
+    gender: "",
+    phone: "",
+    photo: null,
+    watchlisted: false,
+  };
+}
+
 export const sandboxProvider: IdentityProvider = {
   name: "sandbox",
   async lookupBvn(bvn, applicant) {
-    if (bvn.endsWith("0000")) return null;
-    const other = bvn.startsWith("1");
-    return {
-      firstName: other ? "John" : applicant.firstName,
-      middleName: "",
-      lastName: other ? "Doe" : applicant.lastName,
-      dateOfBirth: other ? "1980-01-01" : applicant.dateOfBirth,
-      gender: "",
-      phone: "",
-      photo: null,
-      watchlisted: false,
-    };
+    return record(bvn, applicant);
+  },
+  async lookupNin(nin, applicant) {
+    return record(nin, applicant);
   },
   async verifyNinSelfie(nin, _selfie, applicant) {
-    if (nin.endsWith("0000")) return null;
-    const other = nin.startsWith("1");
-    const confidence = nin.endsWith("1") ? 78 : nin.endsWith("2") ? 41 : 96;
-    return {
-      confidence,
-      record: {
-        firstName: other ? "John" : applicant.firstName,
-        middleName: "",
-        lastName: other ? "Doe" : applicant.lastName,
-        dateOfBirth: other ? "1980-01-01" : applicant.dateOfBirth,
-        gender: "",
-        phone: "",
-        photo: null,
-        watchlisted: false,
-      },
-    };
+    const found = record(nin, applicant);
+    if (!found) return null;
+    return { confidence: nin.endsWith("1") ? 78 : nin.endsWith("2") ? 41 : 96, record: found };
   },
 };

@@ -44,8 +44,8 @@ export default async function DashboardHome() {
         <Link href="/dashboard/verify" className="flex items-center gap-4 rounded-[7px] border border-gold/40 bg-gold-50 p-4 transition hover:border-gold">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-[7px] bg-gold text-ink"><IdCardIcon /></span>
           <div className="flex-1">
-            <p className="text-sm font-bold text-ink">{user.kycTier === 0 ? "Verify your BVN to see how much you can borrow" : `Upgrade to Tier ${user.kycTier + 1} to borrow more`}</p>
-            <p className="text-xs text-body">{["It takes a minute with your BVN and date of birth.", "Add your NIN and a selfie.", "Add your address and a recent utility bill."][user.kycTier]} {user.kycTier} of 3 tiers done.</p>
+            <p className="text-sm font-bold text-ink">{user.kycTier === 0 ? "Verify your identity to see how much you can borrow" : `Upgrade to Tier ${user.kycTier + 1} to borrow more`}</p>
+            <p className="text-xs text-body">{["It takes a minute with your NIN or BVN and date of birth.", "Add a selfie.", "Add your address and a recent utility bill."][user.kycTier]} {user.kycTier} of 3 tiers done.</p>
           </div>
           <ArrowRightIcon className="size-4 text-ink" />
         </Link>
@@ -85,7 +85,7 @@ export default async function DashboardHome() {
                 <p className="mt-2 font-display text-4xl font-extrabold tabular-nums">{limit > 0 && !blocked ? formatNairaWhole(limit / 100) : "—"}</p>
                 <p className="mt-3 max-w-md text-sm text-white/75">{blocked ?? "No collateral. You'll see the full cost before you accept, and the money goes straight to your bank account."}</p>
                 <Link href={user.kycTier < 1 ? "/dashboard/verify" : "/dashboard/loans/apply"} className={`${ctaClass} mt-6`}>
-                  {user.kycTier < 1 ? "Verify my BVN" : "Apply for a loan"} <ArrowRightIcon className="size-4" />
+                  {user.kycTier < 1 ? "Verify my identity" : "Apply for a loan"} <ArrowRightIcon className="size-4" />
                 </Link>
               </>
             )}

@@ -85,6 +85,7 @@ export const SECTIONS: Section[] = [
     tests: ["dojah"],
     fields: [
       { key: "kycProvider", label: "Provider", type: "select", default: "sandbox", env: "KYC_PROVIDER", help: "The test provider is refused in production.", options: [{ value: "sandbox", label: "Test provider (no real checks)" }, { value: "dojah", label: "Dojah" }] },
+      { key: "tier1Id", label: "Tier 1 is verified with", type: "select", default: "nin", env: "KYC_TIER1_ID", help: "Use only checks your provider has switched on for your account.", options: [{ value: "nin", label: "NIN" }, { value: "bvn", label: "BVN" }, { value: "either", label: "NIN or BVN (customer chooses)" }] },
       { key: "dojahAppId", label: "Dojah App ID", type: "text", default: "", env: "DOJAH_APP_ID" },
       { key: "dojahSecretKey", label: "Dojah secret key", type: "secret", default: "", env: "DOJAH_SECRET_KEY" },
       { key: "dojahEnv", label: "Dojah environment", type: "select", default: "sandbox", env: "DOJAH_ENV", options: [{ value: "sandbox", label: "Sandbox" }, { value: "live", label: "Live" }] },
@@ -112,7 +113,7 @@ export const SECTIONS: Section[] = [
     fields: [
       { key: "payoutMode", label: "Payout method", type: "select", default: "manual", options: [{ value: "manual", label: "Manual: staff send the transfer and record the reference" }, { value: "automatic", label: "Automatic: DigitMonie sends it through Flutterwave on approval" }], help: "Staff can always pay out manually, for example if an automatic transfer fails." },
       { key: "autoPayoutMax", label: "Largest automatic payout", type: "naira", default: 500_000, help: "Bigger loans wait for a staff member to press Send, even in automatic mode." },
-      { key: "payoutNameCheck", label: "Only pay into accounts in the customer's own name", type: "boolean", default: true, help: "The account name from the bank must match the name on their BVN." },
+      { key: "payoutNameCheck", label: "Only pay into accounts in the customer's own name", type: "boolean", default: true, help: "The account name from the bank must match the verified name on their NIN or BVN." },
       { key: "payoutNameMatch", label: "Account name match needed (%)", type: "number", default: 70, min: 40, max: 100 },
     ],
   },

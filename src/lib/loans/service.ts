@@ -33,7 +33,7 @@ export async function loanEligibility(user: CurrentUser) {
   const [open] = await db.select().from(loans).where(and(eq(loans.userId, user.id), inArray(loans.status, [...OPEN_STATUSES, "defaulted"]))).limit(1);
   let blocked: string | null = null;
   if (await getSetting<boolean>("pauseLoans")) blocked = "We've paused new loan applications for a short while. Please check back soon.";
-  else if (user.kycTier < 1) blocked = "Verify your BVN to see your loan limit.";
+  else if (user.kycTier < 1) blocked = "Verify your identity to see your loan limit.";
   else if (user.status !== "active") blocked = "Your account can't take new loans right now. Contact support.";
   else if (open?.status === "defaulted") blocked = "You can't take a new loan until your overdue loan is repaid.";
   else if (open) blocked = "You already have a loan in progress. Repay it to apply again.";

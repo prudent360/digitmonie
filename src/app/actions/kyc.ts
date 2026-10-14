@@ -2,22 +2,22 @@
 
 import { revalidatePath } from "next/cache";
 import { requireCustomer, requirePermission } from "@/lib/auth";
-import { decideSubmission, submitAddress, submitBvn, submitNinSelfie } from "@/lib/kyc/service";
+import { decideSubmission, submitAddress, submitNinSelfie, submitTier1 } from "@/lib/kyc/service";
 import type { FormState } from "./auth";
 
 const str = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
 const DOC_TYPES = ["image/jpeg", "image/png", "application/pdf"];
 
-function done(outcome: Awaited<ReturnType<typeof submitBvn>>, fields?: Record<string, string>): FormState {
+function done(outcome: Awaited<ReturnType<typeof submitTier1>>, fields?: Record<string, string>): FormState {
   if (!outcome.ok) return { error: outcome.error, fields };
   revalidatePath("/dashboard", "layout");
   return { notice: outcome.message };
 }
 
-export async function verifyBvn(_: FormState, fd: FormData): Promise<FormState> {
+export async function verifyTier1(_: FormState, fd: FormData): Promise<FormState> {
   const user = await requireCustomer();
-  const fields = { bvn: str(fd, "bvn"), dateOfBirth: str(fd, "dateOfBirth") };
-  return done(await submitBvn(user, { ...fields, consent: fd.get("consent") === "on" }), fields);
+  const fields = { idKind: str(fd, "idKind"), idNumber: str(fd, "idNumber"), dateOfBirth: str(fd, "dateOfBirth") };
+  return done(await submitTier1(user, { ...fields, consent: fd.get("consent") === "on" }), fields);
 }
 
 export async function verifyNin(_: FormState, fd: FormData): Promise<FormState> {

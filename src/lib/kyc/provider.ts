@@ -18,10 +18,15 @@ export type SelfieResult = { record: IdentityRecord; confidence: number };
 /** What the sandbox echoes back; real providers ignore it. */
 export type Applicant = { firstName: string; lastName: string; dateOfBirth: string };
 
+/** The ID a customer verifies Tier 1 with. */
+export type IdKind = "bvn" | "nin";
+
 export interface IdentityProvider {
   name: string;
   /** null when the number doesn't exist. */
   lookupBvn(bvn: string, applicant: Applicant): Promise<IdentityRecord | null>;
+  /** null when the number doesn't exist. */
+  lookupNin(nin: string, applicant: Applicant): Promise<IdentityRecord | null>;
   /** Looks up the NIN and compares the selfie with its photo. null when the NIN doesn't exist. */
   verifyNinSelfie(nin: string, selfieBase64: string, applicant: Applicant): Promise<SelfieResult | null>;
 }

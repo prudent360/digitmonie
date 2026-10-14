@@ -25,29 +25,48 @@ function toJpeg(source: CanvasImageSource, width: number, height: number, mirror
   return canvas.toDataURL("image/jpeg", 0.85);
 }
 
-export function BvnForm({ action }: { action: Action }) {
+const ID = {
+  nin: { label: "NIN", dial: "Dial *346#" },
+  bvn: { label: "BVN", dial: "Dial *565*0#" },
+} as const;
+
+/** Tier 1: NIN or BVN (whichever Console → Settings allows) and date of birth. */
+export function Tier1Form({ action, idKinds }: { action: Action; idKinds: (keyof typeof ID)[] }) {
   const [state, formAction] = useActionState(action, undefined);
   const f = state?.fields ?? {};
+  const [kind, setKind] = useState<keyof typeof ID>(idKinds.find((k) => k === f.idKind) ?? idKinds[0]);
+  const id = ID[kind];
   return (
     <form action={formAction} className="space-y-5">
       <FormAlert state={state} />
+      {idKinds.length > 1 && (
+        <div role="radiogroup" aria-label="Verify with" className="inline-flex rounded-[7px] border border-line bg-canvas p-1">
+          {idKinds.map((k) => (
+            <button key={k} type="button" role="radio" aria-checked={kind === k} onClick={() => setKind(k)}
+              className={`rounded-[5px] px-4 py-1.5 text-sm font-semibold ${kind === k ? "bg-white text-ink shadow-sm" : "text-muted"}`}>
+              {ID[k].label}
+            </button>
+          ))}
+        </div>
+      )}
+      <input type="hidden" name="idKind" value={kind} />
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="BVN" hint={<span className="text-xs font-normal text-muted">Dial *565*0#</span>}>
-          <input className={`${inputClass} font-mono tracking-widest`} name="bvn" defaultValue={f.bvn} inputMode="numeric" maxLength={11} pattern="\d{11}" placeholder="22222222222" required />
+        <Field label={id.label} hint={<span className="text-xs font-normal text-muted">{id.dial}</span>}>
+          <input key={kind} className={`${inputClass} font-mono tracking-widest`} name="idNumber" defaultValue={f.idKind === kind ? f.idNumber : ""} inputMode="numeric" maxLength={11} pattern="\d{11}" placeholder="12345678901" required />
         </Field>
         <Field label="Date of birth"><input className={inputClass} type="date" name="dateOfBirth" defaultValue={f.dateOfBirth} max={new Date().toISOString().slice(0, 10)} required /></Field>
       </div>
-      <Consent />
-      <SubmitButton>Verify BVN</SubmitButton>
+      <Consent bvn={kind === "bvn"} />
+      <SubmitButton>Verify {id.label}</SubmitButton>
     </form>
   );
 }
 
-function Consent() {
+function Consent({ bvn }: { bvn: boolean }) {
   return (
     <label className="flex items-start gap-3 rounded-[7px] bg-canvas p-4 text-sm text-body">
       <input type="checkbox" name="consent" required className="mt-0.5 size-4 shrink-0 accent-brand" />
-      <span>I agree that DigitMonie may check my details with NIBSS and NIMC through its verification partner to confirm my identity, as described in the <a href="/privacy" target="_blank" rel="noopener" className="font-semibold text-brand">Privacy Policy</a>. My BVN doesn&apos;t give DigitMonie access to my bank accounts.</span>
+      <span>I agree that DigitMonie may check my details with NIBSS and NIMC through its verification partner to confirm my identity, as described in the <a href="/privacy" target="_blank" rel="noopener" className="font-semibold text-brand">Privacy Policy</a>.{bvn && " My BVN doesn't give DigitMonie access to my bank accounts."}</span>
     </label>
   );
 }
@@ -134,18 +153,23 @@ function SelfieCapture({ value, onChange }: { value: string; onChange: (dataUrl:
   );
 }
 
-export function NinSelfieForm({ action }: { action: Action }) {
+/** `ninLast4` is set when the NIN was given at Tier 1, so only the selfie is needed. */
+export function NinSelfieForm({ action, ninLast4 }: { action: Action; ninLast4?: string | null }) {
   const [state, formAction] = useActionState(action, undefined);
   const [selfie, setSelfie] = useState("");
   return (
     <form action={formAction} className="space-y-5">
       <FormAlert state={state} />
-      <Field label="NIN" hint={<span className="text-xs font-normal text-muted">Dial *346#</span>}>
-        <input className={`${inputClass} font-mono tracking-widest`} name="nin" defaultValue={state?.fields?.nin} inputMode="numeric" maxLength={11} pattern="\d{11}" placeholder="12345678901" required />
-      </Field>
+      {ninLast4 ? (
+        <p className="text-sm text-body">We&apos;ll match your selfie to the photo on your NIN ending {ninLast4}.</p>
+      ) : (
+        <Field label="NIN" hint={<span className="text-xs font-normal text-muted">Dial *346#</span>}>
+          <input className={`${inputClass} font-mono tracking-widest`} name="nin" defaultValue={state?.fields?.nin} inputMode="numeric" maxLength={11} pattern="\d{11}" placeholder="12345678901" required />
+        </Field>
+      )}
       <SelfieCapture value={selfie} onChange={setSelfie} />
       <input type="hidden" name="selfie" value={selfie} />
-      {selfie ? <SubmitButton>Verify NIN and selfie</SubmitButton> : <p className="rounded-[7px] bg-canvas py-3.5 text-center text-sm font-semibold text-muted">Take your selfie to continue</p>}
+      {selfie ? <SubmitButton>{ninLast4 ? "Verify selfie" : "Verify NIN and selfie"}</SubmitButton> : <p className="rounded-[7px] bg-canvas py-3.5 text-center text-sm font-semibold text-muted">Take your selfie to continue</p>}
     </form>
   );
 }

@@ -90,7 +90,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
           <Card className="p-5">
             <h2 className="text-[15px] font-bold text-ink">Identity</h2>
             <div className="mt-3"><Facts rows={[
-              ["Name on BVN", kyc?.legalFirstName ? [kyc.legalFirstName, kyc.legalMiddleName, kyc.legalLastName].filter(Boolean).join(" ") : "—"],
+              ["Name on ID", kyc?.legalFirstName ? [kyc.legalFirstName, kyc.legalMiddleName, kyc.legalLastName].filter(Boolean).join(" ") : "—"],
               ["Date of birth", kyc?.dateOfBirth ?? "—"], ["BVN", kyc?.bvnLast4 ? `••••••• ${kyc.bvnLast4}` : "—"], ["NIN", kyc?.ninLast4 ? `••••••• ${kyc.ninLast4}` : "—"],
               ["Address", [kyc?.addressLine, kyc?.city, kyc?.state].filter(Boolean).join(", ") || "—"],
             ]} /></div>

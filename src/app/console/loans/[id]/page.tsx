@@ -222,7 +222,7 @@ export default async function ConsoleLoanPage({ params }: { params: Promise<{ id
           <Card className="p-5">
             <h2 className="text-[15px] font-bold text-ink">Applicant</h2>
             <div className="mt-3"><Facts rows={[
-              ["Name on BVN", kyc?.legalFirstName ? `${kyc.legalFirstName} ${kyc.legalLastName}` : "—"], ["Declared income", loan.declaredIncome ? `${ngn(loan.declaredIncome)} a month` : "—"],
+              ["Name on ID", kyc?.legalFirstName ? `${kyc.legalFirstName} ${kyc.legalLastName}` : "—"], ["Declared income", loan.declaredIncome ? `${ngn(loan.declaredIncome)} a month` : "—"],
               ["Repayment / income", dti != null ? <span key="d" className={dti > 33 ? "text-warning" : "text-success"}>{dti}%</span> : "—"], ["Employment", [credit?.employmentType, credit?.employer].filter(Boolean).join(" · ") || "—"],
               ["Loan limit", `${ngn(limit.limit)}${limit.overridden ? " (set by staff)" : ""}`], ["DigitMonie history", `${limit.history.repaidOnTime} on time · ${limit.history.repaidLate} late · ${limit.history.defaulted} defaulted`],
             ]} /></div>

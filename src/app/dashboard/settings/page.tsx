@@ -7,15 +7,16 @@ import { CheckIcon, ClockIcon, LogoutIcon } from "@/components/icons";
 import { Avatar, Badge, Card, CardHeader, PageHeader, buttonPrimary, buttonSecondary } from "@/components/ui";
 import { fullName, requireCustomer } from "@/lib/auth";
 import { formatDate, formatNairaWhole } from "@/lib/format";
-import { KYC_TIERS } from "@/lib/kyc/tiers";
+import { tier1IdKinds } from "@/lib/kyc";
+import { KYC_TIERS, tierNeeds } from "@/lib/kyc/tiers";
 import { formatNgPhone } from "@/lib/phone";
 
 export const metadata: Metadata = { title: "Settings & KYC" };
 
-const TIERS = KYC_TIERS.map((t) => ({ tier: t.tier, limit: `${formatNairaWhole(t.dailyLimit)} daily`, needs: t.needs }));
-
 export default async function SettingsPage() {
   const user = await requireCustomer();
+  const idKinds = await tier1IdKinds();
+  const TIERS = KYC_TIERS.map((t) => ({ tier: t.tier, limit: `${formatNairaWhole(t.dailyLimit)} daily`, needs: tierNeeds(t, idKinds) }));
   return (
     <div className="space-y-6">
       <PageHeader title="Settings" subtitle="Manage your profile, verification and security." />

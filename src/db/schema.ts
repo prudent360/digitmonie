@@ -127,6 +127,8 @@ export const kycProfiles = pgTable("kyc_profiles", {
 export type KycStatus = "approved" | "pending_review" | "rejected";
 export type KycChecks = {
   provider?: string;
+  /** The ID Tier 1 was checked against (older submissions: BVN). */
+  idKind?: "bvn" | "nin";
   nameScore?: number;
   dobMatch?: boolean;
   faceScore?: number;

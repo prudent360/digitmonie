@@ -70,7 +70,7 @@ export function EditDetailsForm({ action, initial, nameLocked }: { action: Actio
         <Field label="First name"><input name="firstName" defaultValue={initial.firstName} readOnly={nameLocked} className={`${inputClass} ${nameLocked ? "bg-canvas text-muted" : ""}`} required /></Field>
         <Field label="Last name"><input name="lastName" defaultValue={initial.lastName} readOnly={nameLocked} className={`${inputClass} ${nameLocked ? "bg-canvas text-muted" : ""}`} required /></Field>
       </div>
-      {nameLocked && <p className="text-xs text-muted">Their name is verified against their BVN, so it can&apos;t be changed here.</p>}
+      {nameLocked && <p className="text-xs text-muted">Their name is verified against their NIN or BVN, so it can&apos;t be changed here.</p>}
       <Field label="Email"><input name="email" type="email" defaultValue={initial.email} className={inputClass} required /></Field>
       <Field label="Phone"><input name="phone" inputMode="tel" defaultValue={initial.phone} placeholder="0803 123 4567" className={inputClass} /></Field>
       <p className="text-xs text-muted">A changed email or phone number must be confirmed again by the customer. They&apos;re told their details changed.</p>

@@ -16,8 +16,8 @@ const OpenAccountScreen = (
       <div className="flex gap-1">{[0, 1, 2].map((i) => <span key={i} className="h-1 flex-1 rounded-full bg-brand" />)}</div>
       {[
         { label: "Phone and email", detail: "Confirmed with a code", icon: <PhoneIcon className="size-4" /> },
-        { label: "BVN", detail: "Matched · Adaeze Okafor", icon: <IdCardIcon className="size-4" /> },
-        { label: "NIN and selfie", detail: "Face matched", icon: <IdCardIcon className="size-4" /> },
+        { label: "NIN", detail: "Matched · Adaeze Okafor", icon: <IdCardIcon className="size-4" /> },
+        { label: "Selfie", detail: "Face matched", icon: <IdCardIcon className="size-4" /> },
       ].map((row) => (
         <div key={row.label} className={`${tile} flex items-center gap-3`}>
           <span className="flex size-9 items-center justify-center rounded-[7px] bg-brand-50 text-brand">{row.icon}</span>
@@ -73,7 +73,7 @@ const PaidScreen = (
         <span><span className="block text-[12px] font-bold text-ink">Adaeze Okafor</span><span className="block text-[10.5px] text-muted">GTBank · 0123456789</span></span>
       </div>
       <div className={`${tile} space-y-2 text-[11px]`}>
-        {[["Name check", "Matches your BVN"], ["Reference", "DM-91822114"], ["First repayment", "28 Oct"]].map(([k, v]) => (
+        {[["Name check", "Matches your ID"], ["Reference", "DM-91822114"], ["First repayment", "28 Oct"]].map(([k, v]) => (
           <p key={k} className="flex justify-between"><span className="text-muted">{k}</span><span className="font-bold text-ink">{v}</span></p>
         ))}
       </div>
@@ -141,9 +141,9 @@ type Step = { tab: AppTab; title: string; text: string; points: string[]; screen
 
 function buildSteps(borrowPoints: string[]): Step[] {
   return [
-    { tab: "Home", title: "Open an account in minutes", text: "Sign up with your phone number and email, then verify with your BVN. A quick selfie with your NIN unlocks bigger loans.", points: ["No branch visit", "No paperwork", "Free to open"], screen: OpenAccountScreen },
+    { tab: "Home", title: "Open an account in minutes", text: "Sign up with your phone number and email, then verify with your NIN or BVN. A quick selfie unlocks bigger loans.", points: ["No branch visit", "No paperwork", "Free to open"], screen: OpenAccountScreen },
     { tab: "Loans", title: "Choose your amount and time", text: "See how much you can borrow, pick an amount and how long to repay. You see the full cost before you accept.", points: borrowPoints, screen: BorrowScreen },
-    { tab: "Loans", title: "Get paid into your bank account", text: "Once approved, the money goes straight to a bank account in your name. We check the name matches your BVN, so it can't go to the wrong person.", points: ["Account in your name", "Name checked with your BVN", "Receipt in the app"], screen: PaidScreen },
+    { tab: "Loans", title: "Get paid into your bank account", text: "Once approved, the money goes straight to a bank account in your name. We check the name matches your verified ID, so it can't go to the wrong person.", points: ["Account in your name", "Name checked against your ID", "Receipt in the app"], screen: PaidScreen },
     { tab: "Loans", title: "Repay your way", text: "Pay each instalment by card or bank transfer. We remind you before every due date, and you can pay off early to save on interest.", points: ["Card or bank transfer", "Reminders before due dates", "Repay early, pay less"], screen: RepayScreen },
     { tab: "Save", title: "Savings and investments, coming soon", text: "We're building savings goals, investments, transfers and bill payments. They'll appear in your account when they launch.", points: ["Savings goals", "Investments", "Transfers and bills"], screen: SoonScreen },
   ];

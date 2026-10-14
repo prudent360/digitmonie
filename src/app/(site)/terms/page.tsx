@@ -21,7 +21,7 @@ export default async function TermsPage() {
         <p>To open an account you must:</p>
         <ul>
           <li>be at least 18 years old;</li>
-          <li>live in Nigeria and have a valid Bank Verification Number (BVN) and a Nigerian bank account in your own name;</li>
+          <li>live in Nigeria and have a valid National Identification Number (NIN) or Bank Verification Number (BVN), and a Nigerian bank account in your own name;</li>
           <li>give us true, complete and current information; and</li>
           <li>hold only one DigitMonie account. Each BVN and NIN can be linked to one account only.</li>
         </ul>
@@ -42,7 +42,7 @@ export default async function TermsPage() {
     {
       id: "verification", title: "Identity verification (KYC)",
       content: <>
-        <p>Nigerian law requires us to confirm who our customers are. We verify you in tiers: your BVN and date of birth (Tier 1), your NIN and a selfie (Tier 2), and your address with a recent proof of address (Tier 3). Each tier unlocks higher limits.</p>
+        <p>Nigerian law requires us to confirm who our customers are. We verify you in tiers: your NIN or BVN and date of birth (Tier 1), a selfie matched to your NIN (Tier 2), and your address with a recent proof of address (Tier 3). Each tier unlocks higher limits.</p>
         <p>With your consent, we check your details with the Nigeria Inter-Bank Settlement System (NIBSS) and the National Identity Management Commission (NIMC) through a licensed verification partner. Checking your BVN does <strong>not</strong> give us access to your bank accounts. How we handle this information is explained in our <Link href="/privacy">Privacy Policy</Link>.</p>
       </>,
     },
