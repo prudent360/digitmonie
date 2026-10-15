@@ -6,13 +6,17 @@ import { setLimitOverride } from "@/app/actions/loans";
 import { assignOfficerAction } from "@/app/actions/onboarding";
 import { ContactForm, EditDetailsForm, StatusForm } from "@/components/app/customer-forms";
 import { ActionButton, SelectForm, SimpleActionForm } from "@/components/app/loan-staff";
+import { LoanPlan } from "@/components/app/loan-plan";
+import { RepaymentBreakdown } from "@/components/app/repayment-breakdown";
 import { AlertIcon, EyeIcon } from "@/components/icons";
-import { Avatar, Badge, Card, CardHeader, StatusBadge, Table } from "@/components/ui";
+import { Avatar, Badge, Card, CardHeader, StatTile, StatusBadge } from "@/components/ui";
 import { logAudit } from "@/lib/audit";
 import { can, fullName, loadUser, requirePermission } from "@/lib/auth";
 import { creditLimit } from "@/lib/credit/limits";
 import { CHANNELS, OUTCOMES, customerProfile } from "@/lib/customers";
 import { formatDate } from "@/lib/format";
+import { tierNames } from "@/lib/kyc";
+import { ageOn } from "@/lib/kyc/matching";
 import { toNaira } from "@/lib/loans/math";
 import { LOAN_STATUS_LABEL, LOAN_STATUS_TONE } from "@/lib/loans/status";
 import { creditOfficers } from "@/lib/onboarding";
@@ -34,7 +38,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   const { id } = await params;
   const data = await customerProfile(Number(id));
   if (!data) notFound();
-  const { user, kyc, credit, loans, contacts, activity, promises } = data;
+  const { user, kyc, credit, loans, contacts, activity, promises, verifications, instalmentsFor, paymentsFor, totals } = data;
   await logAudit({ actorId: staff.id, action: "customer.viewed", summary: `viewed ${fullName(user)}'s profile`, target: { type: "user", id: user.id } });
   const limit = await creditLimit(user.id, user.kycTier);
   const pinLocked = user.pinLockedUntil && user.pinLockedUntil > new Date();
@@ -43,6 +47,10 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   const officers = manage ? await creditOfficers() : [];
   const officerName = async (id: number | null) => (id ? (await loadUser(id).then((u) => (u ? fullName(u) : "Former staff member"))) : null);
   const [officer, onboardedBy] = await Promise.all([officerName(user.officerId), officerName(user.invitedById)]);
+  const names = await tierNames();
+  const payoutAccounts = [...new Map(loans.filter(({ loan }) => loan.payoutAccount).map(({ loan }) => [`${loan.payoutBank}${loan.payoutAccount}`, `${loan.payoutBank} ••${loan.payoutAccount.slice(-4)} (${loan.payoutName})`])).values()];
+  const current = loans.find(({ loan }) => ["awaiting_customer", "pending", "reviewed", "approved", "active", "defaulted"].includes(loan.status));
+  const verified = (at: Date | null) => (at ? `Yes, ${formatDate(at.toISOString())}` : "No");
 
   return (
     <div className="space-y-6">
@@ -53,7 +61,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
           <h1 className="font-display text-2xl font-bold text-ink">{fullName(user)}</h1>
           <p className="text-sm text-muted">{user.email} · {formatNgPhone(user.phone)} · customer since {formatDate(user.createdAt.toISOString())}</p>
         </div>
-        <div className="flex items-center gap-2">{user.kycTier ? <Badge tone="brand">KYC Tier {user.kycTier}</Badge> : <Badge>Not verified</Badge>}<StatusBadge status={user.status} /></div>
+        <div className="flex items-center gap-2">{user.kycTier ? <Badge tone="brand">KYC {names[user.kycTier]}</Badge> : <Badge>Not verified</Badge>}<StatusBadge status={user.status} /></div>
       </div>
 
       {canViewAs && (
@@ -70,14 +78,23 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
         <p className="flex items-start gap-2 rounded-[7px] border border-warning/30 bg-warning-soft px-4 py-3 text-sm text-warning"><AlertIcon className="mt-0.5 size-4 shrink-0" /><span><b className="capitalize">{user.status}</b>{user.statusChangedAt ? ` on ${formatDate(user.statusChangedAt.toISOString())}` : ""}: {user.statusReason}</span></p>
       )}
 
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <StatTile label="Owes now" value={ngn(totals.outstanding)} hint={current ? `${current.loan.reference} · ${LOAN_STATUS_LABEL[current.loan.status]}` : "No open loan"} />
+        <StatTile label="Total borrowed" value={ngn(totals.borrowed)} hint={`${loans.filter(({ loan }) => loan.disbursedAt).length} loan${loans.filter(({ loan }) => loan.disbursedAt).length === 1 ? "" : "s"} paid out`} />
+        <StatTile label="Total repaid" value={ngn(totals.repaid)} />
+        <StatTile label="Repaid on time" value={totals.paidInstalments ? `${Math.round((totals.paidOnTime / totals.paidInstalments) * 100)}%` : "—"} hint={`${totals.paidOnTime} of ${totals.paidInstalments} instalments`} />
+        <StatTile label="Loan limit" value={ngn(limit.limit)} hint={limit.overridden ? "Set by staff" : "Calculated"} />
+      </div>
+
       <div className="grid gap-6 xl:grid-cols-[1fr_1.35fr]">
         <div className="space-y-6">
           <Card className="p-5">
             <h2 className="text-[15px] font-bold text-ink">Account</h2>
             <div className="mt-3"><Facts rows={[
-              ["Phone verified", user.phoneVerifiedAt ? "Yes" : "No"], ["Transaction PIN", user.pinHash ? (pinLocked ? <span key="p" className="text-danger">Locked</span> : "Set") : "Not set"],
+              ["Joined", onboardedBy ? `Opened by ${onboardedBy}, ${formatDate(user.createdAt.toISOString())}` : `Signed up, ${formatDate(user.createdAt.toISOString())}`],
+              ["Phone verified", verified(user.phoneVerifiedAt)], ["Email verified", verified(user.emailVerifiedAt)], ["Transaction PIN", user.pinHash ? (pinLocked ? <span key="p" className="text-danger">Locked</span> : "Set") : "Not set"],
               ["Last sign-in", user.lastLoginAt ? when(user.lastLoginAt) : "Never"],
-              ["Credit officer", officer ?? "None"], ...(onboardedBy ? [["Onboarded by", onboardedBy] as [string, string]] : []),
+              ["Credit officer", officer ?? "None"],
             ]} /></div>
             {manage && officers.length > 0 && (
               <div className="mt-4"><SelectForm action={assignOfficerAction.bind(null, user.id)} name="officerId" label="Credit officer" value={String(user.officerId ?? "")} submit="Assign"
@@ -101,9 +118,32 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
             <h2 className="text-[15px] font-bold text-ink">Identity</h2>
             <div className="mt-3"><Facts rows={[
               ["Name on ID", kyc?.legalFirstName ? [kyc.legalFirstName, kyc.legalMiddleName, kyc.legalLastName].filter(Boolean).join(" ") : "—"],
-              ["Date of birth", kyc?.dateOfBirth ?? "—"], ["BVN", kyc?.bvnLast4 ? `••••••• ${kyc.bvnLast4}` : "—"], ["NIN", kyc?.ninLast4 ? `••••••• ${kyc.ninLast4}` : "—"],
+              ["Date of birth", kyc?.dateOfBirth ? `${formatDate(kyc.dateOfBirth)} (${ageOn(kyc.dateOfBirth)})` : "—"], ["Gender", kyc?.gender || "—"],
+              ["NIN", kyc?.ninLast4 ? `••••••• ${kyc.ninLast4}` : "—"], ["BVN", kyc?.bvnLast4 ? `••••••• ${kyc.bvnLast4}` : "—"],
               ["Address", [kyc?.addressLine, kyc?.city, kyc?.state].filter(Boolean).join(", ") || "—"],
+              ["Consented to checks", kyc?.consentAt ? formatDate(kyc.consentAt.toISOString()) : "—"],
             ]} /></div>
+          </Card>
+
+          <Card>
+            <CardHeader title="Verification history" subtitle="Every identity check, newest first" />
+            {verifications.length ? (
+              <ol className="divide-y divide-line">
+                {verifications.map(({ s, reviewerFirst, reviewerLast }) => (
+                  <li key={s.id} className="px-5 py-3 text-sm">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="font-semibold text-ink">{can(staff, "kyc.review") ? <Link href={`/console/kyc/${s.id}`} className="hover:text-brand">{names[s.tier]}</Link> : names[s.tier]}{s.tier === 1 && s.checks.idKind && <span className="font-normal text-muted"> · {s.checks.idKind.toUpperCase()}</span>}</span>
+                      <StatusBadge status={s.status === "approved" ? "successful" : s.status === "rejected" ? "failed" : "pending"} />
+                    </div>
+                    <p className="mt-0.5 text-xs text-muted">
+                      {formatDate(s.createdAt.toISOString())} · {s.decidedBy === "manual" ? `decided by ${reviewerFirst ? `${reviewerFirst} ${reviewerLast}` : "staff"}` : s.decidedBy === "auto" ? "checked automatically" : "waiting for review"}
+                      {[s.checks.nameScore != null && `name ${s.checks.nameScore}%`, s.checks.faceScore != null && `face ${s.checks.faceScore}%`, s.checks.dobMatch === false && "DOB differs"].filter(Boolean).map((x) => ` · ${x}`).join("")}
+                    </p>
+                    {s.reason && <p className="mt-1 text-xs text-body">{s.reason}</p>}
+                  </li>
+                ))}
+              </ol>
+            ) : <p className="p-5 text-sm text-muted">No identity checks yet.</p>}
           </Card>
 
           <Card className="p-5">
@@ -112,6 +152,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
               ["Loan limit", `${ngn(limit.limit)}${limit.overridden ? " (set by staff)" : ""}`],
               ["History", `${limit.history.repaidOnTime} on time · ${limit.history.repaidLate} late · ${limit.history.defaulted} defaulted`],
               ["Declared income", credit?.monthlyIncome ? `${ngn(credit.monthlyIncome)} a month` : "—"], ["Employment", [credit?.employmentType, credit?.employer].filter(Boolean).join(" · ") || "—"],
+              ["Paid into", payoutAccounts.length ? <span key="p">{payoutAccounts.map((a) => <span key={a} className="block">{a}</span>)}</span> : "—"],
             ]} /></div>
             {can(staff, "loans.approve") && (
               <details className="mt-4 rounded-[7px] border border-line p-4">
@@ -146,19 +187,30 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
 
         <div className="space-y-6">
           <Card>
-            <CardHeader title="Loans" />
+            <CardHeader title="Loans and repayment plans" subtitle="Open a loan to see each instalment and payment" />
             {loans.length ? (
-              <div className="mt-3">
-                <Table head={["Loan", "Amount", "Applied", "Status"]}>
-                  {loans.map(({ loan, productName }) => (
-                    <tr key={loan.id} className="hover:bg-canvas/60">
-                      <td className="px-5 py-3"><Link href={`/console/loans/${loan.id}`} className="font-semibold text-ink hover:text-brand">{productName}</Link><p className="font-mono text-xs text-muted">{loan.reference}</p></td>
-                      <td className="px-5 py-3 tabular-nums">{ngn(loan.principal)}</td>
-                      <td className="px-5 py-3 text-body">{formatDate(loan.createdAt.toISOString())}</td>
-                      <td className="px-5 py-3"><Badge tone={LOAN_STATUS_TONE[loan.status]} dot>{LOAN_STATUS_LABEL[loan.status]}</Badge></td>
-                    </tr>
-                  ))}
-                </Table>
+              <div className="divide-y divide-line border-t border-line">
+                {loans.map(({ loan, productName }) => {
+                  const plan = instalmentsFor(loan.id);
+                  return (
+                    <details key={loan.id} open={loan.id === current?.loan.id} className="group">
+                      <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-3 px-5 py-3.5 hover:bg-canvas/60">
+                        <span>
+                          <span className="font-semibold text-ink">{ngn(loan.principal)} {productName}</span>
+                          <span className="ml-2 font-mono text-xs text-muted">{loan.reference}</span>
+                          <span className="block text-xs text-muted">{loan.tenorMonths} month{loan.tenorMonths > 1 ? "s" : ""} at {(loan.monthlyRateBps / 100).toFixed(2).replace(/\.?0+$/, "")}% a month · applied {formatDate(loan.createdAt.toISOString())}{loan.purpose ? ` · ${loan.purpose}` : ""}</span>
+                        </span>
+                        <Badge tone={LOAN_STATUS_TONE[loan.status]} dot>{LOAN_STATUS_LABEL[loan.status]}</Badge>
+                      </summary>
+                      <div className="space-y-3 px-5 pb-5">
+                        {plan.length ? <RepaymentBreakdown loan={loan} instalments={plan} payments={paymentsFor(loan.id)} />
+                          : ["awaiting_customer", "pending", "reviewed", "approved"].includes(loan.status) ? <LoanPlan loan={loan} productName={productName} />
+                          : <p className="text-sm text-muted">{loan.declineReason ? `Declined: ${loan.declineReason}` : "This loan was never paid out, so it has no repayment plan."}</p>}
+                        <Link href={`/console/loans/${loan.id}`} className="inline-block text-sm font-semibold text-brand">Open loan file →</Link>
+                      </div>
+                    </details>
+                  );
+                })}
               </div>
             ) : <p className="p-5 text-sm text-muted">No loans yet.</p>}
             {promises.length > 0 && (

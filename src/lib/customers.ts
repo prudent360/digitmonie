@@ -1,8 +1,8 @@
 import "server-only";
-import { and, desc, eq, inArray, ne, notInArray, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, ne, notInArray, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { getDb } from "@/db";
-import { auditLogs, creditProfiles, customerContacts, kycProfiles, loanProducts, loans, paymentPromises, users, type ContactChannel, type ContactOutcome, type UserStatus } from "@/db/schema";
+import { auditLogs, creditProfiles, customerContacts, kycProfiles, kycSubmissions, loanInstalments, loanPayments, loanProducts, loans, paymentPromises, users, type ContactChannel, type ContactOutcome, type UserStatus } from "@/db/schema";
 import { logAudit } from "./audit";
 import { can, fullName, loadUser, startViewingAs, type CurrentUser } from "./auth";
 import { normalizeNgPhone } from "./phone";
@@ -26,8 +26,25 @@ export async function customerProfile(id: number) {
     // Views are in the audit log but would drown out real activity here.
     .where(and(notInArray(auditLogs.action, ["customer.viewed", "kyc.viewed", "loan.document_viewed"]), or(and(eq(auditLogs.targetType, "user"), eq(auditLogs.targetId, String(id))), loanIds.length ? and(eq(auditLogs.targetType, "loan"), inArray(auditLogs.targetId, loanIds)) : undefined)))
     .orderBy(desc(auditLogs.createdAt)).limit(30);
-  const promises = loanIds.length ? await db.select().from(paymentPromises).where(inArray(paymentPromises.loanId, customerLoans.map((l) => l.loan.id))).orderBy(desc(paymentPromises.createdAt)) : [];
-  return { user, kyc: kyc ?? null, credit: credit ?? null, loans: customerLoans, contacts, activity, promises };
+  const ids = customerLoans.map((l) => l.loan.id);
+  const promises = ids.length ? await db.select().from(paymentPromises).where(inArray(paymentPromises.loanId, ids)).orderBy(desc(paymentPromises.createdAt)) : [];
+  const instalments = ids.length ? await db.select().from(loanInstalments).where(inArray(loanInstalments.loanId, ids)).orderBy(asc(loanInstalments.n)) : [];
+  const payments = ids.length ? await db.select().from(loanPayments).where(and(inArray(loanPayments.loanId, ids), eq(loanPayments.status, "success"))).orderBy(desc(loanPayments.paidAt)) : [];
+  const reviewer = alias(users, "reviewer");
+  const verifications = await db.select({ s: kycSubmissions, reviewerFirst: reviewer.firstName, reviewerLast: reviewer.lastName })
+    .from(kycSubmissions).leftJoin(reviewer, eq(reviewer.id, kycSubmissions.reviewedById)).where(eq(kycSubmissions.userId, id)).orderBy(desc(kycSubmissions.createdAt));
+  return {
+    user, kyc: kyc ?? null, credit: credit ?? null, loans: customerLoans, contacts, activity, promises, verifications,
+    instalmentsFor: (loanId: number) => instalments.filter((i) => i.loanId === loanId),
+    paymentsFor: (loanId: number) => payments.filter((p) => p.loanId === loanId),
+    totals: {
+      borrowed: customerLoans.filter((l) => l.loan.disbursedAt).reduce((s, l) => s + l.loan.principal, 0),
+      repaid: payments.reduce((s, p) => s + p.amount, 0),
+      outstanding: instalments.filter((i) => customerLoans.some((l) => l.loan.id === i.loanId && ["active", "defaulted"].includes(l.loan.status))).reduce((s, i) => s + Math.max(0, i.principal + i.interest + i.lateFee - i.paid), 0),
+      paidInstalments: instalments.filter((i) => i.status === "paid").length,
+      paidOnTime: instalments.filter((i) => i.status === "paid" && i.paidAt && i.paidAt.toISOString().slice(0, 10) <= i.dueDate).length,
+    },
+  };
 }
 
 const STATUS_COPY: Record<Exclude<UserStatus, "pending">, { verb: string; tell: string | null }> = {

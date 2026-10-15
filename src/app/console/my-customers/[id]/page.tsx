@@ -5,6 +5,7 @@ import { officerAddress, officerSelfie, officerTier1, resendSetupLink, withdrawL
 import { AddressForm, NinSelfieForm, Tier1Form } from "@/components/app/kyc-forms";
 import { ActionButton } from "@/components/app/loan-staff";
 import { LoanPlan } from "@/components/app/loan-plan";
+import { RepaymentBreakdown } from "@/components/app/repayment-breakdown";
 import { CancelLoanButton } from "@/components/app/loan-repay";
 import { AlertIcon, CheckIcon, ClockIcon, LockIcon } from "@/components/icons";
 import { Badge, Card, CardHeader, PageHeader, buttonPrimary } from "@/components/ui";
@@ -15,8 +16,8 @@ import { getKycState } from "@/lib/kyc/service";
 import { NIGERIAN_STATES } from "@/lib/kyc/states";
 import { tierNeeds } from "@/lib/kyc/tiers";
 import { toNaira } from "@/lib/loans/math";
-import { customerLoans } from "@/lib/loans/queries";
-import { loanBalance, loanEligibility, owedOn } from "@/lib/loans/service";
+import { customerLoans, loanPaymentsFor } from "@/lib/loans/queries";
+import { loanBalance, loanEligibility } from "@/lib/loans/service";
 import { LOAN_STATUS_LABEL, LOAN_STATUS_TONE } from "@/lib/loans/status";
 import { officerCustomer } from "@/lib/onboarding";
 import { formatNgPhone } from "@/lib/phone";
@@ -37,6 +38,7 @@ export default async function OfficerCustomerPage({ params, searchParams }: { pa
   ]);
   const open = loans.find((l) => ["awaiting_customer", "pending", "reviewed", "approved", "active", "defaulted"].includes(l.loan.status)) ?? null;
   const balance = open && ["active", "defaulted"].includes(open.loan.status) ? await loanBalance(open.loan.id) : null;
+  const payments = balance && open ? await loanPaymentsFor(open.loan.id) : [];
   const stageOf = (tier: number) => {
     if (customer.kycTier >= tier) return "done";
     if (latest(tier)?.status === "pending_review") return "pending";
@@ -117,19 +119,7 @@ export default async function OfficerCustomerPage({ params, searchParams }: { pa
                 <div><p className="text-sm text-muted">{open.productName} · {open.loan.reference}</p><p className="font-display text-2xl font-bold tabular-nums text-ink">{ngn(balance.outstanding)} <span className="text-sm font-normal text-muted">left of {ngn(open.loan.totalRepayable)}</span></p></div>
                 <Badge tone={LOAN_STATUS_TONE[open.loan.status]} dot>{LOAN_STATUS_LABEL[open.loan.status]}</Badge>
               </div>
-              <table className="mt-4 w-full text-sm">
-                <thead><tr className="text-left text-xs text-muted"><th className="py-1.5 font-semibold">#</th><th className="py-1.5 font-semibold">Due</th><th className="py-1.5 text-right font-semibold">Amount</th><th className="py-1.5 text-right font-semibold">Still owed</th><th className="py-1.5 text-right font-semibold">Status</th></tr></thead>
-                <tbody>
-                  {balance.instalments.map((i) => (
-                    <tr key={i.n} className="border-t border-line">
-                      <td className="py-2 text-muted">{i.n}</td><td className="py-2 text-ink">{formatDate(i.dueDate)}</td>
-                      <td className="py-2 text-right tabular-nums text-ink">{ngn(i.principal + i.interest + i.lateFee)}</td>
-                      <td className="py-2 text-right font-semibold tabular-nums text-ink">{ngn(owedOn(i))}</td>
-                      <td className="py-2 text-right"><Badge tone={i.status === "paid" ? "success" : i.status === "overdue" ? "danger" : "neutral"}>{i.status}</Badge></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div className="mt-4"><RepaymentBreakdown loan={open.loan} instalments={balance.instalments} payments={payments} /></div>
             </div>
           )}
 
